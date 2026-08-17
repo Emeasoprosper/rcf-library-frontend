@@ -1,0 +1,175 @@
+/* RCFMOUAULIBRARYreact/student-dashboard/src/index.css */
+@import "tailwindcss";
+@import "material-symbols/outlined.css";
+@custom-variant dark (&:where(.dark, .dark *));
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/inter/800.css";
+
+@theme {
+  --color-on-error-container: #93000a;
+  --color-on-background: #1a1c1c;
+  --color-surface-variant: #e2e2e2;
+  --color-on-primary-fixed: #1b1b1b;
+  --color-on-tertiary-fixed-variant: #474747;
+  --color-tertiary-fixed-dim: #c6c6c6;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #626262;
+  --color-surface-container: #eeeeee;
+  --color-inverse-surface: #2f3131;
+  --color-surface-container-low: #f4f3f3;
+  --color-on-surface: #1a1c1c;
+  --color-surface-container-high: #e8e8e8;
+  --color-secondary-fixed: #e4e2e2;
+  --color-on-primary-fixed-variant: #474747;
+  --color-inverse-on-surface: #f1f1f1;
+  --color-on-surface-variant: #4c4546;
+  --color-surface-bright: #f9f9f9;
+  --color-outline-variant: #cfc4c5;
+  --color-tertiary-fixed: #e2e2e2;
+  --color-tertiary-container: #1b1b1b;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-fixed: #1b1b1b;
+  --color-primary-fixed-dim: #c6c6c6;
+  --color-surface-container-highest: #e2e2e2;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-tint: #5e5e5e;
+  --color-outline: #7e7576;
+  --color-error: #ba1a1a;
+  --color-secondary-container: #e1dfdf;
+  --color-primary-container: #1b1b1b;
+  --color-on-secondary-fixed: #1b1c1c;
+  --color-surface-dim: #dadada;
+  --color-primary-fixed: #e2e2e2;
+  --color-on-primary-container: #848484;
+  --color-background: #f9f9f9;
+  --color-on-tertiary-container: #848484;
+  --color-secondary: #5e5e5e;
+  --color-on-secondary-fixed-variant: #464747;
+  --color-inverse-primary: #c6c6c6;
+  --color-surface: #f9f9f9;
+  --color-primary: #000000;
+  --color-on-error: #ffffff;
+  --color-on-primary: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-secondary-fixed-dim: #c7c6c6;
+  --color-tertiary: #000000;
+
+  --radius-DEFAULT: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+
+  --spacing-stack-lg: 32px;
+  --spacing-unit: 8px;
+  --spacing-gutter: 12px;
+  --spacing-stack-sm: 8px;
+  --spacing-margin-mobile: 20px;
+  --spacing-stack-md: 16px;
+
+  --font-display: "Inter", sans-serif;
+  --font-body-md: "Inter", sans-serif;
+
+  --text-display: 34px;
+  --text-display--line-height: 41px;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
+
+  --text-label-sm: 11px;
+  --text-label-sm--line-height: 14px;
+  --text-label-sm--font-weight: 600;
+
+  --text-headline-md: 20px;
+  --text-headline-md--line-height: 25px;
+  --text-headline-md--font-weight: 600;
+
+  --text-body-lg: 17px;
+  --text-body-lg--line-height: 24px;
+
+  --text-body-md: 15px;
+  --text-body-md--line-height: 22px;
+
+  --text-label-md: 13px;
+  --text-label-md--line-height: 18px;
+  --text-label-md--letter-spacing: 0.01em;
+  --text-label-md--font-weight: 500;
+
+  --text-headline-lg: 24px;
+  --text-headline-lg--line-height: 30px;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 600;
+}
+
+.dark {
+  --color-background: #141414;
+  --color-surface: #141414;
+  --color-surface-dim: #141414;
+  --color-surface-bright: #232525;
+  --color-surface-container-lowest: #0D0D0D;
+  --color-surface-container-low: #1C1C1C;
+  --color-surface-container: #242424;
+  --color-surface-container-high: #2C2C2C;
+  --color-surface-container-highest: #333333;
+
+  --color-on-background: #141414;
+  --color-on-surface: #FFFFFF;
+  --color-on-surface-variant: #A0A0A0;
+
+  --color-inverse-surface: #2f3131;
+  --color-inverse-on-surface: #f1f1f1;
+
+  --color-outline: #2E2E2E;
+  --color-outline-variant: #2E2E2E;
+
+  --color-primary: #FFFFFF;
+  --color-on-primary: #000000;
+  --color-primary-container: #FFFFFF;
+  --color-on-primary-container: #000000;
+
+  --color-secondary: #A0A0A0;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #262626;
+  --color-on-secondary-container: #626262;
+
+  --color-tertiary: #FFFFFF;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #1b1b1b;
+  --color-on-tertiary-container: #848484;
+}
+
+/*
+  Fix: white flash/glitch strip below content on iOS Safari (visible
+  whenever a scroll container hits its end and the page rubber-bands).
+  That white patch is the browser's default canvas color showing through
+  underneath html/body — this app never set a background on them, only
+  on individual sections, so anything beyond the tallest section's edge
+  (during overscroll bounce) was pure white. Setting the theme's
+  background color on html/body/#root, plus disabling vertical
+  overscroll navigation/bounce, removes both the flash and the
+  swipe-back/refresh gesture some pages don't want.
+*/
+html,
+body,
+#root {
+  height: 100%;
+  background-color: var(--color-background);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
