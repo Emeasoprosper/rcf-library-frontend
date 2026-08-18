@@ -18,10 +18,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="RCF Library" />
 
-    <!-- Android/desktop installability comes from the manifest VitePWA
-         generates at build time; this static file is a fallback for tools
-         that look up /site.webmanifest by convention. -->
-    <link rel="manifest" href="/site.webmanifest" />
+    <!-- No manual manifest <link> here on purpose. VitePWA injects its own
+         <link rel="manifest" href="/manifest.webmanifest"> automatically at
+         build/dev time. A hardcoded link to /site.webmanifest here would
+         override VitePWA's generated one and point the browser at a stale
+         manifest, breaking installability/icon detection. -->
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

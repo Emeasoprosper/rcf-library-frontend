@@ -10,6 +10,17 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
 
+      // Without this, the manifest + service worker are ONLY generated
+      // during `vite build`. Under plain `vite dev` (what's running when
+      // testing through a trycloudflare.com tunnel), there is no manifest
+      // link and no SW registration at all — so the browser has zero
+      // installability signals and beforeinstallprompt can never fire,
+      // no matter how correct the manifest config below is.
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
+
       includeAssets: [
         'favicon.ico',
         'favicon-16x16.png',
@@ -43,10 +54,11 @@ export default defineConfig({
             purpose: 'any'
           },
           {
-            // Required for Android's install prompt to treat this as a
-            // "real" app icon (adaptive icon shape) instead of a plain
-            // square screenshot pasted onto the home screen.
-            src: '/android-chrome-512x512.png',
+            // Separate file, not the plain logo — Android crops maskable
+            // icons into a circle/squircle, so this one has the logo
+            // shrunk and centered on a solid background so nothing near
+            // the edges gets clipped.
+            src: '/maskable-icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
