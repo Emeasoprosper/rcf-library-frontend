@@ -1,17 +1,25 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/pages/SignIn.jsx
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import SplashLight from '../assets/SplahLightMode.svg'
 import SplashDark from '../assets/SplashDarkMode.svg'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const GOOGLE_REDIRECT_LOGIN_URI = `${import.meta.env.VITE_API_BASE_URL}/auth/google/redirect-callback`
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const ERROR_MESSAGES = {
+  missing_credential: 'Google sign-in was cancelled or failed. Please try again.',
+  suspended: 'This account has been suspended.',
+  signin_failed: 'Sign-in failed. Please try again.',
+}
 
 function SignIn() {
   const navigate = useNavigate()
-  const { loginWithGoogleToken, loginWithEmail, signupWithEmail } = useAuth()
+  const [searchParams] = useSearchParams()
+  const { loginWithEmail, signupWithEmail } = useAuth()
   const buttonRef = useRef(null)
   const [error, setError] = useState('')
   const [checking, setChecking] = useState(true)
@@ -23,31 +31,36 @@ function SignIn() {
   const [showPassword, setShowPassword] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
 
-  // null = not checked yet, false = new account (show signup), true = existing (show login)
   const [accountExists, setAccountExists] = useState(null)
   const [emailChecking, setEmailChecking] = useState(false)
   const [googleOnly, setGoogleOnly] = useState(false)
   const debounceRef = useRef(null)
 
+  // Surface any error Google's redirect flow bounced back with
+  // (?error=... appended by the backend's redirect-callback route).
+  useEffect(() => {
+    const errParam = searchParams.get('error')
+    if (errParam) {
+      setError(ERROR_MESSAGES[errParam] || 'Sign-in failed. Please try again.')
+    }
+  }, [searchParams])
+
+  // Full-page redirect flow — no popup is ever opened, so there's no
+  // "Failed to open popup window" failure mode to hit. Google navigates
+  // the whole page to accounts.google.com, then POSTs the credential
+  // straight to the backend's redirect-callback route (a real HTML form
+  // submission, not a JS fetch), which sets session cookies and
+  // redirects back here already signed in.
   useEffect(() => {
     let cancelled = false
-
-    async function handleCredentialResponse(response) {
-      try {
-        setError('')
-        await loginWithGoogleToken(response.credential)
-        navigate('/home')
-      } catch (err) {
-        setError('Sign-in failed. Please try again.')
-      }
-    }
 
     function tryRender() {
       if (cancelled) return
       if (window.google?.accounts?.id && buttonRef.current) {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
+          ux_mode: 'redirect',
+          login_uri: GOOGLE_REDIRECT_LOGIN_URI,
         })
         window.google.accounts.id.renderButton(buttonRef.current, {
           theme: 'filled_black',
@@ -66,12 +79,8 @@ function SignIn() {
     return () => {
       cancelled = true
     }
-  }, [loginWithGoogleToken, navigate])
+  }, [])
 
-  // Auto-detect whether this email already has an account, debounced
-  // while the user types, so we know whether to show the password-only
-  // login form or the signup form (with a name field) — without the
-  // user having to pick "Sign in" vs "Sign up" themselves.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
@@ -112,8 +121,6 @@ function SignIn() {
       setError('Please enter your password.')
       return
     }
-    // Treat "unconfirmed" (null) the same as "new account" so we never
-    // silently sign someone up without collecting their name.
     if (accountExists !== true && !name.trim()) {
       setError('Please enter your name.')
       return

@@ -4,6 +4,8 @@ import { resourcesApi } from '../services/api'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { getMediaKind } from '../lib/mediaKind'
+import { isRunningAsInstalledApp } from '../lib/pwaInstall'
+import DownloadGateModal from '../components/ui/DownloadGateModal'
 
 function formatMinutes(mins) {
   if (!mins) return null
@@ -90,6 +92,7 @@ function ResourceDetail() {
   const [downloaded, setDownloaded] = useState(false)
   const [saved, setSaved] = useState(false)
   const [savingBookmark, setSavingBookmark] = useState(false)
+  const [showGate, setShowGate] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -134,12 +137,27 @@ function ResourceDetail() {
     isOfflineAvailable(id).then(setDownloaded)
   }, [id])
 
+  // Strict install gate: nothing is fetched until we've confirmed this
+  // tab is currently running inside the installed PWA. If not, block
+  // here and show the gate popup — the fetch/save flow below never runs.
   const handleDownload = async () => {
+    if (!isRunningAsInstalledApp()) {
+      setShowGate(true)
+      return
+    }
+
     setDownloading(true)
     try {
       await resourcesApi.download(id)
       const { blob, mimeType } = await resourcesApi.downloadFileForOffline(id)
-      await saveOffline(id, blob, mimeType)
+      await saveOffline(id, blob, mimeType, {
+        title: resource?.title,
+        author: resource?.author,
+        category: resource?.category,
+        department: resource?.department,
+        level: resource?.level,
+        thumbnail: resource?.thumbnail_url,
+      })
       setDownloaded(true)
     } catch {
       alert('Download failed — please try again.')
@@ -304,6 +322,8 @@ function ResourceDetail() {
           </span>
         </button>
       </div>
+
+      <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
     </div>
   )
 }

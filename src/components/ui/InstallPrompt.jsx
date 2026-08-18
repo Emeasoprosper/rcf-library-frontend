@@ -21,12 +21,32 @@ function InstallPrompt() {
   useEffect(() => {
     if (isStandalone()) return undefined
 
-    function handleBeforeInstallPrompt(e) {
-      e.preventDefault()
-      setDeferredPrompt(e)
+    // Pick up an event that fired BEFORE this component mounted (captured
+    // globally in main.jsx) — this is the common case, since
+    // beforeinstallprompt usually fires during initial page load, before
+    // routing/AppLoader finishes and this component renders.
+    if (window.__deferredInstallPrompt) {
+      setDeferredPrompt(window.__deferredInstallPrompt)
       setVisible(true)
     }
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+
+    // Also listen live, in case it fires later than expected on a slow load.
+    function handleReady() {
+      setDeferredPrompt(window.__deferredInstallPrompt)
+      setVisible(true)
+    }
+    window.addEventListener('installpromptready', handleReady)
+
+    // Covers the user installing via the browser's own address-bar icon
+    // (desktop) or its own menu (Android) instead of tapping our button —
+    // without this, the 5-min re-nag interval keeps bringing the banner
+    // back even though the app is already installed.
+    function handleInstalled() {
+      clearInterval(intervalRef.current)
+      setVisible(false)
+      setDeferredPrompt(null)
+    }
+    window.addEventListener('appinstalled-app', handleInstalled)
 
     if (isIos()) {
       setShowIosHint(true)
@@ -43,7 +63,8 @@ function InstallPrompt() {
     }, RENAG_INTERVAL_MS)
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('installpromptready', handleReady)
+      window.removeEventListener('appinstalled-app', handleInstalled)
       clearInterval(intervalRef.current)
     }
   }, [])
@@ -51,10 +72,15 @@ function InstallPrompt() {
   if (!visible) return null
 
   const handleInstall = async () => {
+    if (!deferredPrompt) {
+      setVisible(false)
+      return
+    }
+    deferredPrompt.prompt()
+    const choice = await deferredPrompt.userChoice
     setVisible(false)
-    if (!deferredPrompt) return
-    const choice = await deferredPrompt.userChoice ?? (deferredPrompt.prompt(), await deferredPrompt.userChoice)
-    if (choice?.outcome === 'accepted') clearInterval(intervalRef.current)
+    if (choice.outcome === 'accepted') clearInterval(intervalRef.current)
+    window.__deferredInstallPrompt = null
     setDeferredPrompt(null)
   }
 

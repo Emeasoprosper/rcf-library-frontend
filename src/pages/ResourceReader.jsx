@@ -1,12 +1,16 @@
+// RCFMOUAULIBRARYreact/student-dashboard/src/pages/ResourceReader.jsx
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
 import { resourcesApi } from '../services/api'
-import { getOffline, saveOffline } from '../lib/offlineStorage'
+import { getOffline, saveOffline, saveReadingProgress } from '../lib/offlineStorage'
 import { getFileGradient } from '../lib/fileGradient'
 import { getMediaKind } from '../lib/mediaKind'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import HorizontalRail from '../components/resource/HorizontalRail'
+import { useNetworkStatus, useSlowFetchWarning } from '../hooks/useNetworkStatus'
+import { isRunningAsInstalledApp } from '../lib/pwaInstall'
+import DownloadGateModal from '../components/ui/DownloadGateModal'
 
 GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -51,9 +55,32 @@ const VIDEO_SUBTYPE_LABEL = {
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2]
 const SLEEP_OPTIONS = [null, 15, 30, 45, 60]
 
+// Small fixed banner shown when the user is offline (playing from a
+// downloaded copy if one exists) or when a network fetch is taking
+// unusually long. Purely informational — never blocks interaction.
+function NetworkBanner({ isOnline, isSlow, hasOfflineCopy }) {
+  if (isOnline && !isSlow) return null
+
+  const label = !isOnline
+    ? (hasOfflineCopy ? "You're offline — playing your downloaded copy" : "You're offline")
+    : 'Slow connection — this may take a moment'
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-2 bg-surface-container-highest/95 backdrop-blur border-b border-outline px-4 py-2 text-on-surface text-xs font-label-sm">
+      <span className="material-symbols-outlined text-[16px]">
+        {!isOnline ? 'cloud_off' : 'hourglass_top'}
+      </span>
+      {label}
+    </div>
+  )
+}
+
 function ResourceReader() {
   const { id } = useParams()
   const navigate = useNavigate()
+
+  const isOnline = useNetworkStatus()
+  const { isSlow, start: startSlowWatch, stop: stopSlowWatch } = useSlowFetchWarning()
 
   const containerRef = useRef(null)
   const pdfRef = useRef(null)
@@ -101,8 +128,16 @@ function ResourceReader() {
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  // Set when the device is offline and no downloaded copy of this
+  // resource exists — distinct from a hard `error`, since the fix here
+  // is "connect to the internet or download it earlier", not "something
+  // broke". Locks the viewer to a dedicated screen instead of trying
+  // (and failing) to hit the stream endpoint.
+  const [offlineNoCopy, setOfflineNoCopy] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
+  const [hasOfflineCopy, setHasOfflineCopy] = useState(false)
+  const [showGate, setShowGate] = useState(false)
 
   const [related, setRelated] = useState([])
 
@@ -132,13 +167,31 @@ function ResourceReader() {
 
         const offlineEntry = await getOffline(id)
         if (cancelled) return
+        setHasOfflineCopy(Boolean(offlineEntry))
+
+        // App-only viewing lock: if there's no downloaded copy and the
+        // device has no connectivity, don't attempt the stream/download
+        // endpoints at all — those only serve authenticated, in-app
+        // requests and will just fail. Show a dedicated "go online or
+        // download this first" screen instead.
+        if (!offlineEntry && !navigator.onLine) {
+          setOfflineNoCopy(true)
+          setLoading(false)
+          return
+        }
 
         if (kind === 'pdf') {
           let arrayBuffer
           if (offlineEntry) {
             arrayBuffer = await offlineEntry.blob.arrayBuffer()
           } else {
-            const streamRes = await fetch(resourcesApi.streamUrl(id), { credentials: 'include' })
+            startSlowWatch()
+            let streamRes
+            try {
+              streamRes = await fetch(resourcesApi.streamUrl(id), { credentials: 'include' })
+            } finally {
+              stopSlowWatch()
+            }
             if (!streamRes.ok) throw new Error('Failed to load file')
             arrayBuffer = await streamRes.arrayBuffer()
           }
@@ -193,27 +246,51 @@ function ResourceReader() {
     }
     load()
     return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate])
 
   useEffect(() => {
     async function checkOffline() {
       const entry = await getOffline(id)
       setDownloaded(Boolean(entry))
+      setHasOfflineCopy(Boolean(entry))
     }
     checkOffline()
   }, [id])
 
   const handleDownload = async () => {
+    // Strict install gate — checked before anything else. If this tab
+    // isn't currently running inside the installed PWA, block here and
+    // show the gate popup. No fetch, no blob, no IndexedDB write happens
+    // below this point until the check passes.
+    if (!isRunningAsInstalledApp()) {
+      setShowGate(true)
+      return
+    }
+    if (!isOnline) {
+      alert('You need an internet connection to download this for offline use.')
+      return
+    }
     setDownloading(true)
+    startSlowWatch()
     try {
       await resourcesApi.download(id)
       const { blob, mimeType } = await resourcesApi.downloadFileForOffline(id)
-      await saveOffline(id, blob, mimeType)
+      await saveOffline(id, blob, mimeType, {
+        title: resource?.title,
+        author: resource?.author,
+        category: resource?.category,
+        department: resource?.department,
+        level: resource?.level,
+        thumbnail: resource?.thumbnail_url,
+      })
       setDownloaded(true)
+      setHasOfflineCopy(true)
     } catch {
       alert('Download failed — please try again.')
     } finally {
       setDownloading(false)
+      stopSlowWatch()
     }
   }
 
@@ -343,8 +420,10 @@ function ResourceReader() {
 
   useEffect(() => {
     if (viewerKind !== 'pdf' || !numPages) return
-    const percent = Math.round((currentPage / numPages) * 100)
-    resourcesApi.updateProgress(id, percent).catch(() => {})
+    resourcesApi.updateProgress(id, Math.round((currentPage / numPages) * 100)).catch(() => {})
+    // Local copy — works even with no connection, and is what lets a
+    // downloaded book resume from the last page when reopened offline.
+    saveReadingProgress(id, currentPage).catch(() => {})
   }, [currentPage, numPages, id, viewerKind])
 
   useEffect(() => {
@@ -584,6 +663,20 @@ function ResourceReader() {
     return () => { if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current) }
   }, [])
 
+  if (offlineNoCopy) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <span className="material-symbols-outlined text-on-surface-variant text-4xl">cloud_off</span>
+        <p className="text-on-surface font-body-md font-semibold">You're offline</p>
+        <p className="text-on-surface-variant font-body-sm max-w-xs">
+          This resource hasn't been downloaded yet, so it can only be opened in-app while you have a connection.
+          Connect to the internet to view it, or come back and download it next time you're online.
+        </p>
+        <button onClick={() => navigate(-1)} className="text-primary font-label-md">Go back</button>
+      </div>
+    )
+  }
+
   if (error) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
@@ -621,6 +714,7 @@ function ResourceReader() {
 
     return (
       <div className="min-h-screen bg-background flex flex-col">
+        <NetworkBanner isOnline={isOnline} isSlow={isSlow} hasOfflineCopy={hasOfflineCopy} />
         <div
           ref={videoContainerRef}
           className="relative w-full bg-black aspect-video max-h-[70vh] flex items-center justify-center overflow-hidden"
@@ -709,7 +803,7 @@ function ResourceReader() {
                 </button>
                 <button
                   onClick={handleDownload}
-                  disabled={downloading || downloaded}
+                  disabled={downloading || downloaded || !isOnline}
                   aria-label="Download for offline"
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/15 transition-colors disabled:opacity-60"
                 >
@@ -760,6 +854,8 @@ function ResourceReader() {
             <HorizontalRail title="More Videos Like This" items={related} />
           </div>
         )}
+
+        <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
       </div>
     )
   }
@@ -770,6 +866,7 @@ function ResourceReader() {
         className="h-screen overflow-hidden bg-background flex flex-col px-margin-mobile py-stack-md"
         style={{ background: bgGradient || undefined }}
       >
+        <NetworkBanner isOnline={isOnline} isSlow={isSlow} hasOfflineCopy={hasOfflineCopy} />
         <div className="flex-none flex items-center justify-between mb-stack-sm">
           <button onClick={() => navigate(-1)} aria-label="Close">
             <span className="material-symbols-outlined text-on-surface">expand_more</span>
@@ -777,7 +874,7 @@ function ResourceReader() {
           <span className="font-label-md text-label-md text-on-surface-variant tracking-widest uppercase">Now Playing</span>
           <button
             onClick={handleDownload}
-            disabled={downloading || downloaded}
+            disabled={downloading || downloaded || !isOnline}
             className="disabled:opacity-60"
             aria-label="Download for offline"
           >
@@ -873,15 +970,6 @@ function ResourceReader() {
             </button>
           </div>
 
-          {/* FIX: these two pills previously used bg-surface-container-high —
-              a fixed neutral gray-brown from the theme that does not adapt
-              to bgGradient (the color sampled from the resource's own
-              thumbnail). On a vivid background like green album art, that
-              fixed color reads as a flat, mismatched "cotton" patch. Now
-              using the same translucent bg-white/10 + backdrop-blur
-              treatment the video player's control bar already uses, which
-              sits correctly on top of any sampled accent color instead of
-              fighting it. */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
               onClick={cycleSleepTimer}
@@ -901,6 +989,8 @@ function ResourceReader() {
         </div>
 
         {mediaUrl && <audio ref={mediaRef} src={mediaUrl} className="hidden" />}
+
+        <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
       </div>
     )
   }
@@ -908,6 +998,7 @@ function ResourceReader() {
   if (viewerKind === 'pdf') {
     return (
       <div className="h-screen overflow-hidden bg-background flex flex-col">
+        <NetworkBanner isOnline={isOnline} isSlow={isSlow} hasOfflineCopy={hasOfflineCopy} />
         <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b border-outline bg-background">
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex-shrink-0 flex items-center justify-center" aria-label="Close">
             <span className="material-symbols-outlined text-on-surface">close</span>
@@ -924,7 +1015,7 @@ function ResourceReader() {
 
           <button
             onClick={handleDownload}
-            disabled={downloading || downloaded}
+            disabled={downloading || downloaded || !isOnline}
             className="w-10 h-10 flex-shrink-0 flex items-center justify-center disabled:opacity-60"
             aria-label="Download for offline"
           >
@@ -1066,12 +1157,15 @@ function ResourceReader() {
             )}
           </div>
         )}
+
+        <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <NetworkBanner isOnline={isOnline} isSlow={isSlow} hasOfflineCopy={hasOfflineCopy} />
       <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b border-outline bg-background">
         <button onClick={() => navigate(-1)} className="w-10 h-10 flex-shrink-0 flex items-center justify-center" aria-label="Close">
           <span className="material-symbols-outlined text-on-surface">close</span>
