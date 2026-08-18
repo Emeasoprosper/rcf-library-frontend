@@ -91,7 +91,7 @@ function DownloadGateModal({ open, onClose }) {
                 }}
                 className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
               >
-                Open App
+                Continue in App
               </button>
               <button
                 onClick={handleClose}

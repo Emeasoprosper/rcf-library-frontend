@@ -1,152 +1,172 @@
 // components/ui/InstallPrompt.jsx
-import { useEffect, useState, useRef } from 'react'
-import { Share, PlusSquare, X, Smartphone, Zap } from 'lucide-react'
-
-const RENAG_INTERVAL_MS = 5 * 60 * 1000 // re-show every 5 min until installed
-
-function isIos() {
-  return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
-}
-
-function isStandalone() {
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
-}
+//
+// Shown once per page load/reload, before the user does anything else.
+// Two completely different popups depending on install state — this file
+// does NOT try to guess perfectly whether the app is installed somewhere
+// on the device; the only 100%-reliable signal is "am I currently running
+// standalone right now" (isRunningAsInstalledApp). For "installed but I'm
+// in a normal browser tab right now", the strongest signal available is
+// wasEverInstalled() — a flag this same app sets in localStorage the
+// moment the installed app is actually opened once in standalone mode.
+// That is an honest best-effort signal, not a platform guarantee — no
+// browser exposes a universal "is any PWA installed for this origin"
+// API to a page running in a normal tab.
+import { useEffect, useState } from 'react'
+import {
+  canPromptInstall,
+  triggerInstall,
+  isIos,
+  isIosSafari,
+  isRunningAsInstalledApp,
+  wasEverInstalled,
+} from '../../lib/pwaInstall'
 
 function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
-  const [showIosHint, setShowIosHint] = useState(false)
   const [visible, setVisible] = useState(false)
-  const intervalRef = useRef(null)
+  const [mode, setMode] = useState(null) // 'install' | 'continue'
+  const [installing, setInstalling] = useState(false)
+  const [justInstalled, setJustInstalled] = useState(false)
+  // Bumped whenever beforeinstallprompt arrives after this component has
+  // already mounted, purely to force a re-render so canPromptInstall()
+  // gets re-read (it reads a plain window global, not React state).
+  const [, setPromptTick] = useState(0)
 
   useEffect(() => {
-    if (isStandalone()) return undefined
+    // Already running as the installed app right now — nothing to show.
+    if (isRunningAsInstalledApp()) return
 
-    // Pick up an event that fired BEFORE this component mounted (captured
-    // globally in main.jsx) — this is the common case, since
-    // beforeinstallprompt usually fires during initial page load, before
-    // routing/AppLoader finishes and this component renders.
-    if (window.__deferredInstallPrompt) {
-      setDeferredPrompt(window.__deferredInstallPrompt)
-      setVisible(true)
+    setMode(wasEverInstalled() ? 'continue' : 'install')
+    setVisible(true)
+
+    function handlePromptReady() {
+      setPromptTick((t) => t + 1)
     }
+    window.addEventListener('installpromptready', handlePromptReady)
 
-    // Also listen live, in case it fires later than expected on a slow load.
-    function handleReady() {
-      setDeferredPrompt(window.__deferredInstallPrompt)
-      setVisible(true)
-    }
-    window.addEventListener('installpromptready', handleReady)
-
-    // Covers the user installing via the browser's own address-bar icon
-    // (desktop) or its own menu (Android) instead of tapping our button —
-    // without this, the 5-min re-nag interval keeps bringing the banner
-    // back even though the app is already installed.
     function handleInstalled() {
-      clearInterval(intervalRef.current)
       setVisible(false)
-      setDeferredPrompt(null)
     }
     window.addEventListener('appinstalled-app', handleInstalled)
 
-    if (isIos()) {
-      setShowIosHint(true)
-      setVisible(true)
-    }
-
-    intervalRef.current = setInterval(() => {
-      if (isStandalone()) {
-        clearInterval(intervalRef.current)
-        setVisible(false)
-        return
-      }
-      setVisible(true)
-    }, RENAG_INTERVAL_MS)
-
     return () => {
-      window.removeEventListener('installpromptready', handleReady)
+      window.removeEventListener('installpromptready', handlePromptReady)
       window.removeEventListener('appinstalled-app', handleInstalled)
-      clearInterval(intervalRef.current)
     }
   }, [])
 
-  if (!visible) return null
+  if (!visible || !mode) return null
+
+  const canPrompt = canPromptInstall()
+  const ios = isIos()
+  const iosButNotSafari = ios && !isIosSafari()
 
   const handleInstall = async () => {
-    if (!deferredPrompt) {
-      setVisible(false)
-      return
+    if (!canPrompt) return
+    setInstalling(true)
+    try {
+      const outcome = await triggerInstall()
+      if (outcome === 'accepted') setJustInstalled(true)
+    } finally {
+      setInstalling(false)
     }
-    deferredPrompt.prompt()
-    const choice = await deferredPrompt.userChoice
-    setVisible(false)
-    if (choice.outcome === 'accepted') clearInterval(intervalRef.current)
-    window.__deferredInstallPrompt = null
-    setDeferredPrompt(null)
   }
 
-  const handleDismiss = () => setVisible(false) // 5-min interval brings it back on its own
+  const handleContinueToApp = () => {
+    // Best-effort only — no browser API can force-launch an installed
+    // PWA in standalone mode from a normal tab. This navigates to the
+    // app's own start_url; on some Android/Chrome configurations that
+    // can trigger an OS "Open in app?" suggestion, but it isn't
+    // guaranteed on every device. The dismiss/instruction path below is
+    // the fallback that always works: opening the home-screen icon.
+    window.location.href = window.location.origin + '/'
+  }
+
+  const handleCancel = () => setVisible(false)
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[60] rounded-2xl bg-[#121212]/90 backdrop-blur-md border border-[#282828] p-4 shadow-2xl transition-all duration-300">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1ed760] to-[#00b048] text-black shadow-md shadow-[#1ed760]/20">
-          <Zap className="h-5 w-5 fill-black stroke-none" />
-        </div>
-
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h4 className="text-sm font-bold text-white">Get the App Experience</h4>
-            <span className="rounded-full bg-[#1ed760]/10 px-2 py-0.5 text-[10px] font-semibold text-[#1ed760]">
-              FAST
-            </span>
-          </div>
-
-          <p className="mt-1 text-xs text-[#b3b3b3] leading-relaxed">
-            {showIosHint ? (
-              <>
-                Tap <Share className="inline h-3.5 w-3.5 text-white" /> then{' '}
-                <span className="font-semibold text-white">Add to Home Screen</span> for instant offline play & zero lag.
-              </>
-            ) : (
-              'Install for instant access, offline reading, and zero lag.'
-            )}
-          </p>
-
-          {!showIosHint && (
-            <div className="flex gap-2 mt-3">
+    <div className="fixed inset-0 z-[120] bg-black/70 flex items-end sm:items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-surface-container rounded-2xl border border-outline p-stack-lg">
+        {mode === 'continue' ? (
+          <>
+            <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">check_circle</span>
+            <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Continue to App</h3>
+            <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
+              The app is already installed on your device. Open the installed app to access your downloaded
+              materials and continue using the full app experience.
+            </p>
+            <div className="flex flex-col gap-2">
               <button
-                onClick={handleInstall}
-                className="px-4 py-1.5 rounded-full bg-[#1ed760] text-black text-xs font-semibold"
+                onClick={handleContinueToApp}
+                className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
               >
-                Install
+                Continue to App
               </button>
               <button
-                onClick={handleDismiss}
-                className="px-4 py-1.5 rounded-full text-[#b3b3b3] text-xs font-medium hover:text-white transition-colors"
+                onClick={handleCancel}
+                className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
               >
-                Not now
+                Cancel
               </button>
             </div>
-          )}
-        </div>
+          </>
+        ) : justInstalled ? (
+          <>
+            <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">check_circle</span>
+            <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">App installed</h3>
+            <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
+              Open it from your home screen to start downloading materials for offline reading.
+            </p>
+            <button
+              onClick={handleCancel}
+              className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
+            >
+              Got it
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm">install_mobile</span>
+            <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Install App</h3>
+            <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
+              Install the app to access downloaded materials and use the app offline.
+            </p>
 
-        <button
-          onClick={handleDismiss}
-          className="text-[#b3b3b3] hover:text-white transition-colors"
-          aria-label="Dismiss"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+            {iosButNotSafari && (
+              <p className="font-label-sm text-label-sm text-error mb-stack-sm">
+                This link was opened outside Safari. On iPhone/iPad, open this site in Safari to install the app.
+              </p>
+            )}
 
-      <div className="mt-3 flex items-center justify-between rounded-lg bg-[#181818] px-3 py-1.5 text-[11px] text-[#b3b3b3]">
-        <span className="flex items-center gap-1.5">
-          <Smartphone className="h-3.5 w-3.5 text-[#1ed760]" /> No App Store download needed
-        </span>
-        {showIosHint && (
-          <span className="flex items-center gap-1 text-white font-medium">
-            Share <Share className="h-3 w-3" /> → Add <PlusSquare className="h-3 w-3" />
-          </span>
+            <div className="mb-stack-md rounded-xl bg-surface-container-high p-3 flex flex-col gap-2">
+              <p className="font-label-sm text-label-sm text-on-surface-variant">
+                <span className="font-semibold text-on-surface">iPhone / iPad (Safari):</span> Tap the Share icon, then "Add to Home Screen".
+              </p>
+              <p className="font-label-sm text-label-sm text-on-surface-variant">
+                <span className="font-semibold text-on-surface">Android:</span> Tap the ⋮ menu, then "Install app" or "Add to Home screen".
+              </p>
+              <p className="font-label-sm text-label-sm text-on-surface-variant">
+                <span className="font-semibold text-on-surface">Desktop:</span> Look for an install icon in the address bar, or check the browser menu for "Install app".
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {canPrompt && (
+                <button
+                  onClick={handleInstall}
+                  disabled={installing}
+                  className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg disabled:opacity-60"
+                >
+                  {installing ? 'Installing…' : 'Install App'}
+                </button>
+              )}
+              <button
+                onClick={handleCancel}
+                className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
