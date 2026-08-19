@@ -3,49 +3,60 @@ import { useState } from 'react'
 import {
   canPromptInstall,
   triggerInstall,
+  downloadApk,
+  tryOpenInstalledAndroidApp,
+  isAndroid,
   isIos,
   isIosSafari,
-  wasEverInstalled,
+  wasEverOpenedApk,
 } from '../../lib/pwaInstall'
 
 // Blocking popup shown the moment a Download action is attempted outside
-// the installed PWA. Nothing is fetched before or during this modal — the
-// caller (ResourceDetail / ResourceReader) must not start any network
-// request until this resolves.
+// the installed app. Nothing is fetched before or during this modal.
 //
-// Three distinct states, because "not currently running as the installed
-// app" covers different situations:
-//   1. This device has never installed the app  → show install path.
-//   2. This device HAS installed it before, but the person is just
-//      browsing the normal website right now     → tell them to open the
-//      app they already have, don't ask them to install it again.
-//   3. Detection can't fully tell (unknown browser, blocked APIs, etc.)
-//      → ALWAYS show full manual instructions covering every platform,
-//      never leave the popup with no path forward.
+// Android's primary path is now the real signed APK, not the browser's
+// PWA install prompt. iOS/desktop still use the PWA path since there is
+// no APK for those platforms.
 function DownloadGateModal({ open, onClose }) {
   const [installing, setInstalling] = useState(false)
-  const [justInstalled, setJustInstalled] = useState(false)
+  const [apkDownloaded, setApkDownloaded] = useState(false)
 
   if (!open) return null
 
-  const canPrompt = canPromptInstall()
+  const android = isAndroid()
   const ios = isIos()
   const iosButNotSafari = ios && !isIosSafari()
-  const alreadyInstalled = wasEverInstalled()
+  const canPrompt = canPromptInstall()
+  // Soft signal only, used for copy — actual gating still happens via
+  // isRunningAsInstalledApp() in the caller (ResourceDetail), which is
+  // the only thing that actually allows a download to proceed.
+  const everOpened = wasEverOpenedApk()
 
-  const handleInstall = async () => {
+  const handleDownloadApk = () => {
+    downloadApk()
+    setApkDownloaded(true)
+  }
+
+  const handleContinueToApp = () => {
+    if (android) {
+      tryOpenInstalledAndroidApp()
+    } else {
+      window.location.href = window.location.origin + '/'
+    }
+  }
+
+  const handleInstallPwa = async () => {
     if (!canPrompt) return
     setInstalling(true)
     try {
-      const outcome = await triggerInstall()
-      if (outcome === 'accepted') setJustInstalled(true)
+      await triggerInstall()
     } finally {
       setInstalling(false)
     }
   }
 
   const handleClose = () => {
-    setJustInstalled(false)
+    setApkDownloaded(false)
     onClose()
   }
 
@@ -55,12 +66,13 @@ function DownloadGateModal({ open, onClose }) {
         className="w-full max-w-sm bg-surface-container rounded-2xl border border-outline p-stack-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        {justInstalled ? (
+        {apkDownloaded ? (
           <>
-            <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">check_circle</span>
-            <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">App installed</h3>
+            <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">download_done</span>
+            <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">APK downloaded</h3>
             <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
-              Open the app from your home screen, then tap Download again — downloads only work inside the installed app.
+              Open the downloaded file from your notifications or Downloads folder, then tap Install. Once it's
+              installed, open the app and tap Download again — downloads only work inside the installed app.
             </p>
             <button
               onClick={handleClose}
@@ -69,38 +81,60 @@ function DownloadGateModal({ open, onClose }) {
               Got it
             </button>
           </>
-        ) : alreadyInstalled ? (
-          <>
-            <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">check_circle</span>
-            <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Continue in the App</h3>
-            <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
-              You've already installed RCF Library. Downloads only work inside the installed app — find its icon on
-              your home screen and open it from there.
-            </p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  // Best-effort only — there is no browser API that can
-                  // force-launch an already-installed PWA in standalone
-                  // mode from inside a normal tab. This just reloads at
-                  // the app's start_url; on some Android/Chrome versions
-                  // that triggers an OS "Open in app?" suggestion, but it
-                  // is not guaranteed. The instruction above is the real
-                  // fallback that always works.
-                  window.location.href = window.location.origin + '/'
-                }}
-                className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
-              >
-                Continue in App
-              </button>
-              <button
-                onClick={handleClose}
-                className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
-              >
-                Got it
-              </button>
-            </div>
-          </>
+        ) : android ? (
+          everOpened ? (
+            <>
+              <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">check_circle</span>
+              <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Continue to App</h3>
+              <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
+                You already have the app installed. Continue to the app to download and access this material offline.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleContinueToApp}
+                  className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
+                >
+                  Continue to App
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+              <p className="font-label-sm text-label-sm text-on-surface-variant mt-stack-sm">
+                Not installed anymore, or this button didn't open the app?{' '}
+                <button onClick={handleDownloadApk} className="text-primary underline">
+                  Download the app again
+                </button>
+                .
+              </p>
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm">android</span>
+              <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Install App</h3>
+              <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
+                You need the app before you can download this material. Install the Android app to save materials
+                and read them offline.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleDownloadApk}
+                  className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
+                >
+                  Install App
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )
         ) : (
           <>
             <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm">download_for_offline</span>
@@ -115,15 +149,9 @@ function DownloadGateModal({ open, onClose }) {
               </p>
             )}
 
-            {/* Always show every platform's manual path — never leave
-                this popup with no instructions, regardless of whether
-                device detection guessed right. */}
             <div className="mb-stack-md rounded-xl bg-surface-container-high p-3 flex flex-col gap-2">
               <p className="font-label-sm text-label-sm text-on-surface-variant">
                 <span className="font-semibold text-on-surface">iPhone / iPad (Safari):</span> Tap the Share icon, then "Add to Home Screen".
-              </p>
-              <p className="font-label-sm text-label-sm text-on-surface-variant">
-                <span className="font-semibold text-on-surface">Android:</span> Tap the ⋮ menu, then "Install app" or "Add to Home screen".
               </p>
               <p className="font-label-sm text-label-sm text-on-surface-variant">
                 <span className="font-semibold text-on-surface">Desktop:</span> Look for an install icon in the address bar, or check the browser menu for "Install app".
@@ -133,11 +161,11 @@ function DownloadGateModal({ open, onClose }) {
             <div className="flex flex-col gap-2">
               {canPrompt && (
                 <button
-                  onClick={handleInstall}
+                  onClick={handleInstallPwa}
                   disabled={installing}
                   className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg disabled:opacity-60"
                 >
-                  {installing ? 'Installing…' : 'Download App'}
+                  {installing ? 'Installing…' : 'Install App'}
                 </button>
               )}
               <button

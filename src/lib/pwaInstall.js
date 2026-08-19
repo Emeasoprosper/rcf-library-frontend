@@ -1,22 +1,26 @@
 // lib/pwaInstall.js
-// Single source of truth for "is this session currently running inside the
-// installed PWA", for triggering the real browser install prompt, and for
-// remembering (across tabs/visits) whether this device has installed the
-// app before — so the download-gate popup can tell "never installed" apart
-// from "installed, but you're in the browser tab right now".
 //
-// Reuses window.__deferredInstallPrompt / 'installpromptready' /
-// 'appinstalled-app' — the same globals InstallPrompt.jsx already relies on
-// (captured in main.jsx) — so there is only ONE beforeinstallprompt capture
-// system in the app, not a second competing one.
+// Android's primary install path is now the real APK — not the browser's
+// beforeinstallprompt/PWA flow. The PWA prompt logic below is KEPT and
+// still used as the fallback path for iOS and desktop, where there is no
+// APK to install. Nothing about "installed" is ever inferred from a
+// localStorage flag alone — see wasEverOpenedApk() below, which is
+// explicitly a soft, best-effort signal for UI copy only, never treated
+// as proof.
 
+const APK_DOWNLOADED_FLAG_KEY = 'rcf_apk_downloaded'
 const INSTALLED_FLAG_KEY = 'rcf_pwa_installed'
 
-// Broadened beyond a plain userAgent check: iPadOS has reported a
-// desktop "Mac" user agent by default since iPadOS 13, so an iPad in
-// its normal browsing mode fails a userAgent-only test. Touch-point
-// count is the accepted way to tell a real Mac from an iPad claiming
-// to be one.
+// Real, existing file — copied into public/ at build time from the
+// actual signed APK PWABuilder generated. Never invent this path.
+export const APK_DOWNLOAD_PATH = '/app-release.apk'
+
+// Must match the Package ID set during APK packaging (PWABuilder →
+// Package ID field). If that ever changes, update this to match —
+// otherwise the "Continue to App" intent link silently fails to find
+// the installed app.
+export const ANDROID_PACKAGE_ID = 'com.rcfmouaulibrary.app'
+
 export function isIos() {
   const ua = window.navigator.userAgent
   const isAppleTouch = /iphone|ipad|ipod/i.test(ua)
@@ -29,22 +33,16 @@ export function isAndroid() {
   return /android/i.test(window.navigator.userAgent)
 }
 
-// True only for actual Safari — Chrome/Firefox/Edge/in-app browsers on
-// iOS all use Safari's rendering engine under the hood but CANNOT
-// install PWAs; only Safari itself exposes "Add to Home Screen". This
-// matters because a person on an iPhone using Chrome (or an in-app
-// browser from Instagram/Twitter/etc.) will never see an install path
-// no matter what we show them — they need to open the link in Safari.
 export function isIosSafari() {
   if (!isIos()) return false
   const ua = window.navigator.userAgent
   return /safari/i.test(ua) && !/crios|fxios|edgios|opios|instagram|fban|fbav|line|twitter/i.test(ua)
 }
 
-// The ONLY signal we trust for "currently running inside the installed
-// app". display-mode: standalone covers Android/desktop Chrome & Edge.
-// navigator.standalone covers iOS Safari's "Add to Home Screen". Neither
-// is spoofable just by having installed the app in a different tab.
+// Still the only 100%-reliable "am I running inside an installed app"
+// signal — covers both the PWA-installed case (display-mode: standalone)
+// and, on Android, a TWA-wrapped APK launch (Chrome reports standalone
+// display-mode there too, since a TWA is a thin Chrome Custom Tab shell).
 export function isRunningAsInstalledApp() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -52,27 +50,32 @@ export function isRunningAsInstalledApp() {
   )
 }
 
-// Whether the browser has handed us a programmatic install prompt yet.
-// On Android Chrome this event does NOT always fire on first visit — it
-// depends on Chrome's own engagement heuristics (repeat visits, time on
-// site, etc.), so its absence does not mean the app can't be installed,
-// only that we can't trigger install with one tap right now. iOS never
-// fires this event at all — installation there is always manual.
 export function canPromptInstall() {
   return Boolean(window.__deferredInstallPrompt)
 }
 
-// True if THIS device has completed installation at some point before —
-// persisted in localStorage (survives closing the browser tab), set the
-// moment the 'appinstalled-app' event fires below, or manually via
-// markInstalledManually() for iOS where there's no completion event at
-// all (the user just has to tell us, or we detect it next launch via
-// isRunningAsInstalledApp()).
-export function wasEverInstalled() {
+// Soft signal only — "has this browser triggered an APK download or PWA
+// install before". NEVER proof of actual installation (the user may have
+// cancelled the Android install screen, or cleared the app since). Used
+// only to decide whether to show "Install App" vs "Continue to App"
+// copy — actual download-gating still requires isRunningAsInstalledApp()
+// to be true, exactly like before.
+export function wasEverOpenedApk() {
   try {
-    return localStorage.getItem(INSTALLED_FLAG_KEY) === '1'
+    return (
+      localStorage.getItem(APK_DOWNLOADED_FLAG_KEY) === '1' ||
+      localStorage.getItem(INSTALLED_FLAG_KEY) === '1'
+    )
   } catch {
     return false
+  }
+}
+
+function markApkDownloaded() {
+  try {
+    localStorage.setItem(APK_DOWNLOADED_FLAG_KEY, '1')
+  } catch {
+    // non-fatal
   }
 }
 
@@ -80,26 +83,50 @@ function markInstalled() {
   try {
     localStorage.setItem(INSTALLED_FLAG_KEY, '1')
   } catch {
-    // Storage unavailable — non-fatal, falls back to always showing
-    // the install flow instead of the "open the app" flow.
+    // non-fatal
   }
 }
 
-// Persist the installed flag the moment installation completes,
-// regardless of which component is mounted when it happens.
 window.addEventListener('appinstalled-app', markInstalled)
-// Also covers the case where display-mode is already standalone the
-// first time this module loads (e.g. app was installed in a previous
-// session, or on iOS where there's no 'appinstalled' event at all —
-// the FIRST time the user opens the installed icon, this line is what
-// sets the flag).
 if (isRunningAsInstalledApp()) markInstalled()
 
-// Fires the real native install prompt. Resolves with the browser's
-// actual outcome ('accepted' | 'dismissed') — never fakes acceptance.
-// Returns null if the browser gave us no programmatic prompt (iOS,
-// or Android Chrome hasn't fired beforeinstallprompt yet), so callers
-// fall back to manual "Add to Home Screen" / "Install app" instructions.
+// Triggers a REAL download of the actual signed APK file — not a fake
+// success message. The browser handles the actual file transfer; this
+// only marks that a download was *attempted*, not that install
+// succeeded (the user still has to open the file and confirm the
+// Android install prompt themselves).
+export function downloadApk() {
+  const link = document.createElement('a')
+  link.href = APK_DOWNLOAD_PATH
+  link.setAttribute('download', 'RCF-Library.apk')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  markApkDownloaded()
+}
+
+// Attempts to open the already-installed Android app via an Android
+// Intent URL — the legitimate, browser-supported mechanism for this,
+// NOT a guess. If the app with ANDROID_PACKAGE_ID is installed and its
+// Digital Asset Links (assetlinks.json) are verified, Android routes
+// this straight into the app. If it's not installed, the
+// S.browser_fallback_url param sends the browser back to this same
+// site instead of leaving the user on a dead intent:// URL. This only
+// works on Android Chrome — everywhere else this function does nothing
+// and the caller should fall back to a plain navigation.
+export function tryOpenInstalledAndroidApp() {
+  if (!isAndroid()) return false
+
+  const fallback = encodeURIComponent(window.location.origin + '/')
+  const host = window.location.host
+  const intentUrl = `intent://${host}/#Intent;scheme=https;package=${ANDROID_PACKAGE_ID};S.browser_fallback_url=${fallback};end`
+
+  window.location.href = intentUrl
+  return true
+}
+
+// Fires the browser's native PWA install prompt — kept as the iOS/desktop
+// fallback path only. Android's primary path is downloadApk() above.
 export async function triggerInstall() {
   const promptEvent = window.__deferredInstallPrompt
   if (!promptEvent) return null
