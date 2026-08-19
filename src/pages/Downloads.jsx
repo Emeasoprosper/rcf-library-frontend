@@ -14,16 +14,25 @@ function formatDate(ts) {
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+// FIX: thumbnails are local data URLs going forward (see
+// offlineStorage.js), but resources downloaded BEFORE that fix still
+// have the old raw remote URL stored in IndexedDB. isLocalImage() only
+// trusts actual data: URLs — anything else (including stale remote
+// URLs from old downloads) is treated as "no thumbnail" up front, so it
+// falls back to the menu_book icon instead of ever attempting a dead
+// network request while offline.
+function isLocalImage(value) {
+  return typeof value === 'string' && value.startsWith('data:')
+}
+
 function Downloads() {
   const navigate = useNavigate()
   const [downloads, setDownloads] = useState([])
   const [loading, setLoading] = useState(true)
   const [removingId, setRemovingId] = useState(null)
-  // FIX: thumbnails are now local data URLs by the time they land here
-  // (see offlineStorage.js), so this should never actually fire — but
-  // it's kept as a defensive fallback so a corrupted/unexpected stored
-  // value can never render the browser's native broken-image icon,
-  // only the existing menu_book placeholder.
+  // Secondary safety net for the rare case a data: URL itself is
+  // corrupted — isLocalImage() above handles the common stale-entry
+  // case up front.
   const [failedThumbIds, setFailedThumbIds] = useState(() => new Set())
 
   const load = useCallback(() => {
@@ -98,7 +107,7 @@ function Downloads() {
             </h2>
             <div className="flex flex-col gap-gutter">
               {downloads.map((item) => {
-                const showThumb = Boolean(item.thumbnail) && !failedThumbIds.has(item.id)
+                const showThumb = isLocalImage(item.thumbnail) && !failedThumbIds.has(item.id)
                 return (
                   <div
                     key={item.id}

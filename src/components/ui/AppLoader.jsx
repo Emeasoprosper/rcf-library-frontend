@@ -14,18 +14,24 @@ import { isRunningAsInstalledApp } from '../../lib/pwaInstall'
 //       connection" screen with a reload button, same as before.
 //     - Installed app (TWA/PWA, isRunningAsInstalledApp() true): renders
 //       AppOfflineShell instead — keeps top/bottom nav visible, offers a
-//       real "Continue to Downloads" path backed by actual local storage,
-//       matching a native-app offline experience rather than a dead page.
+//       real "Continue to Downloads" path.
+//
+//       FIX: previously this check had no awareness of navigation at
+//       all — AppLoader replaced `children` (the whole router/AppRoutes
+//       tree) with AppOfflineShell for as long as isOnline stayed
+//       false, full stop. Tapping "Continue to Downloads" called
+//       navigate('/downloads') which updated the URL, but AppLoader kept
+//       rendering AppOfflineShell regardless of what the URL was — so
+//       the button visibly did nothing. `bypassOfflineShell` fixes this:
+//       once the user taps through from the offline shell, AppLoader
+//       stops overriding children for the rest of the offline session,
+//       letting the real router (and therefore the real Downloads page,
+//       which reads from IndexedDB and works fine with no network) take
+//       over. Reset back to false the moment connectivity returns, so a
+//       future offline session shows the gate fresh again.
 //  2. Not ready — AuthContext's `loading` (the initial authApi.me()
 //     check hasn't resolved yet). Renders a Home-shaped skeleton with a
 //     shimmer sweep instead of a bare spinner.
-//
-// Skeleton shapes are matched against the real TopAppBar/HorizontalRail/
-// BookGrid source. One thing NOT verified: lib/mediaKind.js's exact
-// aspect ratios per kind (video/audio/book) — the video=aspect-video,
-// book=aspect-[2/3], audio=aspect-square assumption below is inferred
-// from how Home.jsx filters each rail to a single kind, not confirmed
-// against mediaKind.js directly.
 
 function ShimmerStyles() {
   return (
@@ -53,9 +59,6 @@ function Block({ className = '' }) {
   return <div className={`app-loader-shimmer bg-surface-container-high rounded ${className}`} />
 }
 
-// One rail's worth of skeleton cards. aspect/width vary per kind so the
-// three rails don't look identical, matching how Continue Watching
-// (video), Popular (books), New Audio are each single-kind on Home.jsx.
 function RailSkeleton({ titleWidth, cardWidth, cardAspect, count = 4 }) {
   return (
     <section className="mb-stack-lg">
@@ -80,8 +83,6 @@ function HomeSkeleton() {
     <div className="min-h-screen bg-background">
       <ShimmerStyles />
 
-      {/* TopAppBar — fixed bar with avatar circle + title on the left,
-          matching the real component's actual structure. */}
       <div className="fixed top-0 left-0 z-50 w-full px-margin-mobile py-stack-md bg-surface/80 backdrop-blur-md border-b border-outline">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -92,14 +93,10 @@ function HomeSkeleton() {
         </div>
       </div>
 
-      {/* pt-[68px] offset matches Home.jsx's own <main> padding under
-          the fixed TopAppBar. */}
       <div className="pt-[68px]">
         <div className="pt-stack-md px-margin-mobile">
-          {/* Search bar */}
           <Block className="h-12 w-full rounded-full mb-stack-lg" />
 
-          {/* Categories row */}
           <div className="flex justify-between items-end mb-stack-sm">
             <Block className="h-6 w-28" />
             <Block className="h-5 w-14" />
@@ -111,17 +108,10 @@ function HomeSkeleton() {
           </div>
         </div>
 
-        {/* Continue Watching-shaped rail — video kind, wide cards */}
         <RailSkeleton titleWidth="w-44" cardWidth="w-40" cardAspect="aspect-video" count={3} />
-
-        {/* Popular-shaped rail — book kind, portrait cards */}
         <RailSkeleton titleWidth="w-52" cardWidth="w-24" cardAspect="aspect-[2/3]" count={4} />
-
-        {/* New Audio-shaped rail — audio kind, square cards */}
         <RailSkeleton titleWidth="w-32" cardWidth="w-28" cardAspect="aspect-square" count={4} />
 
-        {/* Recently Added grid — BookGrid compact variant: rounded-lg,
-            single text line only (author line hidden in compact). */}
         <section className="mb-stack-lg">
           <div className="px-margin-mobile flex justify-between items-end mb-stack-sm">
             <Block className="h-6 w-44" />
@@ -138,7 +128,6 @@ function HomeSkeleton() {
         </section>
       </div>
 
-      {/* BottomNav approximation — not verified against real BottomNav.jsx */}
       <div className="fixed bottom-0 left-0 right-0 h-16 border-t border-outline bg-background flex items-center justify-around px-margin-mobile">
         {Array.from({ length: 4 }).map((_, i) => (
           <Block key={i} className="h-6 w-6 rounded-full" />
@@ -152,9 +141,16 @@ function AppLoader({ children }) {
   const { loading: authLoading } = useAuth()
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
+  const [bypassOfflineShell, setBypassOfflineShell] = useState(false)
 
   useEffect(() => {
-    function handleOnline() { setIsOnline(true) }
+    function handleOnline() {
+      setIsOnline(true)
+      // Reconnected — clear the bypass so a future offline session
+      // shows the gate again from scratch instead of staying silently
+      // bypassed forever.
+      setBypassOfflineShell(false)
+    }
     function handleOffline() { setIsOnline(false) }
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
@@ -169,14 +165,11 @@ function AppLoader({ children }) {
     return () => clearTimeout(timer)
   }, [])
 
-  if (!isOnline) {
-    // Installed app (TWA APK or PWA) — keep the app shell alive instead
-    // of replacing the whole screen with a dead "no connection" page.
+  if (!isOnline && !bypassOfflineShell) {
     if (isRunningAsInstalledApp()) {
-      return <AppOfflineShell />
+      return <AppOfflineShell onContinue={() => setBypassOfflineShell(true)} />
     }
 
-    // Plain website in a normal browser tab — unchanged from before.
     return (
       <main className="flex flex-col min-h-screen w-full px-margin-mobile items-center justify-center gap-stack-md bg-surface-container-lowest text-on-surface text-center">
         <img src={SplashLight} alt="" className="w-40 h-40 dark:hidden opacity-60" />

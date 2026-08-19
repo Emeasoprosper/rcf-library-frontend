@@ -5,23 +5,37 @@
 // Internet Connection" screen, this keeps the app's own top/bottom
 // navigation visible and pulls the real downloaded-resource count and
 // first cover straight from IndexedDB via offlineStorage.js — no
-// network request, no fake numbers. If listDownloads() ever returns
-// fewer usable entries than expected (a corrupted blob, etc.), the
-// count shown is whatever it actually returns — never a hardcoded or
-// assumed value.
+// network request, no fake numbers.
 //
-// firstCover is now guaranteed to be a local data URL (offlineStorage.js
-// resolves it at download time) rather than a remote URL — but imgFailed
-// is kept as a defensive fallback in case a stored entry is ever missing
-// or corrupted, so this can NEVER render the browser's native
-// broken-image icon.
+// FIX 1 (broken thumbnail icon): resources downloaded BEFORE the
+// thumbnail-embedding fix in offlineStorage.js still have their old
+// metadata sitting in IndexedDB with `thumbnail` set to a raw remote
+// URL, not a local data URL. With zero network that remote URL can't
+// load, producing the browser's native broken-image icon — and
+// onError doesn't reliably catch every failure mode across browsers.
+// isLocalImage() below only trusts values that are actually data: URLs
+// (the only kind offlineStorage.js produces going forward) and treats
+// anything else as "no thumbnail" up front, so old stale entries fall
+// back to the wifi_off icon instead of ever attempting to load a dead
+// remote URL. Existing downloads made before this fix will show the
+// fallback icon until the person re-downloads them — there's no way to
+// retroactively fix already-stored bad data without a migration, which
+// is out of scope here.
+//
+// FIX 2 (Continue to Downloads not working): this component now takes
+// an onContinue prop, called before navigating — see AppLoader.jsx for
+// why this is required for the navigation to actually take effect.
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../layout/TopAppBar'
 import BottomNav from '../layout/BottomNav'
 import { listDownloads } from '../../lib/offlineStorage'
 
-function AppOfflineShell() {
+function isLocalImage(value) {
+  return typeof value === 'string' && value.startsWith('data:')
+}
+
+function AppOfflineShell({ onContinue }) {
   const navigate = useNavigate()
   const [downloads, setDownloads] = useState(null) // null = still loading
   const [imgFailed, setImgFailed] = useState(false)
@@ -35,8 +49,8 @@ function AppOfflineShell() {
   }, [])
 
   const count = downloads?.length ?? 0
-  const firstCover = downloads?.[0]?.thumbnail || null
-  const showCover = Boolean(firstCover) && !imgFailed
+  const rawFirstCover = downloads?.[0]?.thumbnail || null
+  const showCover = isLocalImage(rawFirstCover) && !imgFailed
   const countLabel =
     downloads === null
       ? '' // still reading local storage, avoid a flash of "0"
@@ -46,6 +60,11 @@ function AppOfflineShell() {
       ? '1 resource available offline'
       : `${count} resources available offline`
 
+  const handleContinue = () => {
+    onContinue?.()
+    navigate('/downloads')
+  }
+
   return (
     <div className="min-h-screen bg-background text-on-surface flex flex-col">
       <TopAppBar title="Offline" />
@@ -54,7 +73,7 @@ function AppOfflineShell() {
         {showCover ? (
           <div className="w-32 h-44 rounded-xl overflow-hidden border border-outline shadow-lg mb-stack-sm">
             <img
-              src={firstCover}
+              src={rawFirstCover}
               alt=""
               className="w-full h-full object-cover"
               onError={() => setImgFailed(true)}
@@ -82,7 +101,7 @@ function AppOfflineShell() {
         )}
 
         <button
-          onClick={() => navigate('/downloads')}
+          onClick={handleContinue}
           className="mt-stack-sm px-6 h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
         >
           {count > 0 ? 'Continue to Downloads' : 'Go to Downloads'}
