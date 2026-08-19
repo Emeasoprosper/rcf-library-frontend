@@ -67,12 +67,20 @@ export default defineConfig({
       },
 
       workbox: {
-        // FIX: was missing jpg/jpeg/webp/woff2 — public/logoapp.jpg
-        // (visible in the project's public folder) and any webfonts
-        // were silently excluded from precaching, meaning they'd
-        // vanish from the UI the moment the device went offline even
-        // though the rest of the app shell loaded fine.
+        // Was missing jpg/jpeg/webp/woff2 — public/logoapp.jpg and any
+        // webfonts were silently excluded from precaching, meaning
+        // they'd vanish from the UI the moment the device went offline
+        // even though the rest of the app shell loaded fine.
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,webp,ico,woff,woff2}'],
+        // Material Symbols' variable-weight woff2 font is ~4MB — bigger
+        // than Workbox's default 2MB precache limit, which fails the
+        // production build outright ("Configure
+        // workbox.maximumFileSizeToCacheInBytes"). Raised to 6MB to
+        // comfortably cover it plus any similar large static asset —
+        // this must stay paired with the globPatterns fix above, since
+        // widening file-type coverage without raising this limit just
+        // trades "font missing from cache" for "build fails outright."
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         // Without this, opening any deep link (e.g. /resources/12/read)
         // while offline 404s instead of loading the app shell — the
         // service worker has index.html cached but doesn't know to serve
