@@ -162,6 +162,13 @@ export const resourcesApi = {
   updateProgress: (id, progressPercent) =>
     apiFetch(`/resources/${id}/progress`, { method: 'PUT', body: JSON.stringify({ progressPercent }) }),
   streamUrl: (id) => `${API_BASE}/resources/${id}/stream`,
+  // NEW: points at the backend's own thumbnail proxy (resources.js ->
+  // GET /:id/thumbnail), which streams the cover through our API origin
+  // rather than exposing Drive's webContentLink directly. Used both for
+  // normal <img> display and — critically — as the fetch source when
+  // embedding a thumbnail for offline storage, since it's reliably
+  // same-origin/CORS-safe in a way a raw Drive link is not.
+  thumbnailUrl: (id) => `${API_BASE}/resources/${id}/thumbnail`,
   downloadFileForOffline: async (id) => {
     const res = await fetch(`${API_BASE}/resources/${id}/download-file`, { credentials: 'include' })
     if (!res.ok) throw new Error('Failed to download file')

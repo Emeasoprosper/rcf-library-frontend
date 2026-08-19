@@ -19,6 +19,12 @@ function Downloads() {
   const [downloads, setDownloads] = useState([])
   const [loading, setLoading] = useState(true)
   const [removingId, setRemovingId] = useState(null)
+  // FIX: thumbnails are now local data URLs by the time they land here
+  // (see offlineStorage.js), so this should never actually fire — but
+  // it's kept as a defensive fallback so a corrupted/unexpected stored
+  // value can never render the browser's native broken-image icon,
+  // only the existing menu_book placeholder.
+  const [failedThumbIds, setFailedThumbIds] = useState(() => new Set())
 
   const load = useCallback(() => {
     setLoading(true)
@@ -29,6 +35,10 @@ function Downloads() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  const handleThumbError = (id) => {
+    setFailedThumbIds((prev) => new Set(prev).add(id))
+  }
 
   const handleRemove = async (id, e) => {
     e.stopPropagation()
@@ -87,42 +97,51 @@ function Downloads() {
               Downloaded
             </h2>
             <div className="flex flex-col gap-gutter">
-              {downloads.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => navigate(`/resources/${item.id}/read`)}
-                  className="flex items-center gap-4 p-stack-sm rounded-xl bg-surface-container border border-outline text-left w-full cursor-pointer"
-                >
-                  <div className="w-14 h-20 bg-surface-container-highest rounded flex-shrink-0 flex items-center justify-center overflow-hidden border border-outline/50">
-                    {item.thumbnail ? (
-                      <img src={item.thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
-                    ) : (
-                      <span className="material-symbols-outlined text-on-surface-variant">menu_book</span>
-                    )}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <h3 className="font-body-md text-body-md font-semibold text-on-surface truncate">{item.title}</h3>
-                    {item.author && (
-                      <p className="font-label-sm text-label-sm text-on-surface-variant truncate">{item.author}</p>
-                    )}
-                    <p className="font-label-sm text-label-sm text-on-surface-variant">
-                      {[item.category, item.level, formatSize(item.fileSize), formatDate(item.downloadDate)]
-                        .filter(Boolean)
-                        .join(' • ')}
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => handleRemove(item.id, e)}
-                    disabled={removingId === item.id}
-                    className="w-9 h-9 flex-none rounded-full flex items-center justify-center text-on-surface-variant hover:text-error transition-colors disabled:opacity-50"
-                    aria-label="Remove download"
+              {downloads.map((item) => {
+                const showThumb = Boolean(item.thumbnail) && !failedThumbIds.has(item.id)
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate(`/resources/${item.id}/read`)}
+                    className="flex items-center gap-4 p-stack-sm rounded-xl bg-surface-container border border-outline text-left w-full cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[20px]">
-                      {removingId === item.id ? 'progress_activity' : 'delete_outline'}
-                    </span>
-                  </button>
-                </div>
-              ))}
+                    <div className="w-14 h-20 bg-surface-container-highest rounded flex-shrink-0 flex items-center justify-center overflow-hidden border border-outline/50">
+                      {showThumb ? (
+                        <img
+                          src={item.thumbnail}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={() => handleThumbError(item.id)}
+                        />
+                      ) : (
+                        <span className="material-symbols-outlined text-on-surface-variant">menu_book</span>
+                      )}
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <h3 className="font-body-md text-body-md font-semibold text-on-surface truncate">{item.title}</h3>
+                      {item.author && (
+                        <p className="font-label-sm text-label-sm text-on-surface-variant truncate">{item.author}</p>
+                      )}
+                      <p className="font-label-sm text-label-sm text-on-surface-variant">
+                        {[item.category, item.level, formatSize(item.fileSize), formatDate(item.downloadDate)]
+                          .filter(Boolean)
+                          .join(' • ')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => handleRemove(item.id, e)}
+                      disabled={removingId === item.id}
+                      className="w-9 h-9 flex-none rounded-full flex items-center justify-center text-on-surface-variant hover:text-error transition-colors disabled:opacity-50"
+                      aria-label="Remove download"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        {removingId === item.id ? 'progress_activity' : 'delete_outline'}
+                      </span>
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           </section>
         )}

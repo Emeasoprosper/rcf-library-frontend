@@ -156,7 +156,18 @@ function ResourceDetail() {
         category: resource?.category,
         department: resource?.department,
         level: resource?.level,
-        thumbnail: resource?.thumbnail_url,
+        // FIX: was `thumbnail: resource?.thumbnail_url` (the raw Drive
+        // webContentLink) — stored as-is it can't load with zero network,
+        // AND Drive's direct-download links are unreliable for
+        // programmatic fetch() even while online (inconsistent CORS
+        // headers, redirects). resourcesApi.thumbnailUrl(id) instead
+        // points at our OWN backend's /resources/:id/thumbnail route,
+        // which streams the same image through our already-CORS-safe API
+        // origin. offlineStorage.js fetches these bytes once (here, while
+        // still online) and stores a local data URL — this field name
+        // is just telling it where to fetch from; the URL itself is
+        // never persisted.
+        thumbnailUrl: resourcesApi.thumbnailUrl(id),
       })
       setDownloaded(true)
     } catch {

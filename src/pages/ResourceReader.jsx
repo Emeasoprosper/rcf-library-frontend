@@ -147,9 +147,13 @@ function ResourceReader() {
     let cancelled = false
     setBgGradient(null)
     if (resource?.thumbnail_url) {
-      extractAccentColorMixedWithBlack(resource.thumbnail_url).then((gradient) => {
-        if (!cancelled) setBgGradient(gradient)
-      })
+      extractAccentColorMixedWithBlack(resource.thumbnail_url)
+        .then((gradient) => {
+          if (!cancelled) setBgGradient(gradient)
+        })
+        .catch(() => {
+          // Non-essential — background stays the default gradient.
+        })
     }
     return () => { cancelled = true }
   }, [resource?.thumbnail_url])
@@ -159,14 +163,47 @@ function ResourceReader() {
 
     async function load() {
       try {
-        const metaRes = await resourcesApi.get(id)
-        if (cancelled) return
-        setResource(metaRes.resource)
-        const kind = getViewerKind(metaRes.resource.file_type)
-        setViewerKind(kind)
-
+        // FIX (root cause of "Continue Reading" failing on a fully
+        // offline reopen): this used to call resourcesApi.get(id) — a
+        // network request — unconditionally FIRST, before ever checking
+        // whether a local copy existed. With zero connectivity that
+        // fetch throws, execution jumps straight to the catch block
+        // below, and the user sees a hard "couldn't be opened" error —
+        // even for a resource that was successfully downloaded. The
+        // local copy is now checked first; metadata is fetched
+        // opportunistically and never blocks the offline path.
         const offlineEntry = await getOffline(id)
+        const offlineMeta = offlineEntry ? await getOfflineMeta(id) : null
         if (cancelled) return
+
+        let resourceData
+        try {
+          const metaRes = await resourcesApi.get(id)
+          resourceData = metaRes.resource
+        } catch (metaErr) {
+          // No network reachable for metadata. If there's no local copy
+          // either, there's genuinely nothing to show — surface the
+          // real error via the outer catch.
+          if (!offlineEntry) throw metaErr
+          // Otherwise, build enough of a resource object from what was
+          // captured at download time so the local file can still open
+          // with zero network involved.
+          resourceData = {
+            id,
+            title: offlineMeta?.title || 'Downloaded Resource',
+            author: offlineMeta?.author || '',
+            category: offlineMeta?.category || '',
+            department: offlineMeta?.department || '',
+            level: offlineMeta?.level || '',
+            file_type: offlineMeta?.fileType,
+            thumbnail_url: null,
+          }
+        }
+        if (cancelled) return
+
+        setResource(resourceData)
+        const kind = getViewerKind(resourceData.file_type)
+        setViewerKind(kind)
         setHasOfflineCopy(Boolean(offlineEntry))
 
         // App-only viewing lock: if there's no downloaded copy and the
@@ -210,29 +247,40 @@ function ResourceReader() {
             setMediaUrl(resourcesApi.streamUrl(id))
           }
 
-          if (kind === 'video') {
-            const relatedRes = await resourcesApi.list({ sort: 'popular', pageSize: 30 })
-            if (cancelled) return
-            const sameKindItems = (relatedRes.items || []).filter(
-              (r) => r.id !== id && getMediaKind(r.file_type) === kind
-            )
-            const ranked = sameKindItems
-              .map((r) => ({ r, score: relatedScore(r, metaRes.resource) }))
-              .sort((a, b) => b.score - a.score)
-              .slice(0, 6)
-              .map(({ r }) => ({
-                id: r.id,
-                title: r.title,
-                subtitle: r.author,
-                thumbnailUrl: r.thumbnail_url,
-                thumbnailStatus: r.thumbnail_status,
-                fileType: r.file_type,
-                contributorName: r.contributor_name,
-                contributorAvatarUrl: r.contributor_avatar_url,
-                isAdminUpload: r.is_admin_upload,
-                onClick: () => navigate(`/resources/${r.id}/read`),
-              }))
-            setRelated(ranked)
+          // FIX: this used to run unconditionally, with no try/catch of
+          // its own. Offline (or backend unreachable), the fetch threw,
+          // which propagated to the OUTER catch and wiped out a video
+          // that had already loaded successfully from the local blob
+          // above. Related items are supplementary — gated on
+          // navigator.onLine and now fully isolated so a failure here
+          // can never take down actual playback.
+          if (kind === 'video' && navigator.onLine) {
+            try {
+              const relatedRes = await resourcesApi.list({ sort: 'popular', pageSize: 30 })
+              if (cancelled) return
+              const sameKindItems = (relatedRes.items || []).filter(
+                (r) => r.id !== id && getMediaKind(r.file_type) === kind
+              )
+              const ranked = sameKindItems
+                .map((r) => ({ r, score: relatedScore(r, resourceData) }))
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 6)
+                .map(({ r }) => ({
+                  id: r.id,
+                  title: r.title,
+                  subtitle: r.author,
+                  thumbnailUrl: r.thumbnail_url,
+                  thumbnailStatus: r.thumbnail_status,
+                  fileType: r.file_type,
+                  contributorName: r.contributor_name,
+                  contributorAvatarUrl: r.contributor_avatar_url,
+                  isAdminUpload: r.is_admin_upload,
+                  onClick: () => navigate(`/resources/${r.id}/read`),
+                }))
+              setRelated(ranked)
+            } catch {
+              // Non-essential — reader still works with no related rail.
+            }
           }
         }
 
@@ -282,7 +330,12 @@ function ResourceReader() {
         category: resource?.category,
         department: resource?.department,
         level: resource?.level,
-        thumbnail: resource?.thumbnail_url,
+        // FIX: same bug as ResourceDetail.jsx's handleDownload (this is a
+        // separate, duplicated download entry point) — was storing the
+        // remote resource.thumbnail_url, which can't load with zero
+        // network. Points at our own backend's thumbnail proxy instead;
+        // offlineStorage.js fetches and embeds the bytes locally.
+        thumbnailUrl: resourcesApi.thumbnailUrl(id),
       })
       setDownloaded(true)
       setHasOfflineCopy(true)

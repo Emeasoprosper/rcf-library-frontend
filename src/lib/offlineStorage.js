@@ -19,14 +19,53 @@ async function requestPersistence() {
   }
 }
 
+// FIX (root cause of the broken-image-while-offline bug): metadata.thumbnail
+// used to be stored as whatever string the caller passed in — which, from
+// ResourceDetail.jsx, was `resource.thumbnail_url`, a REMOTE URL. That gets
+// rendered directly by <img> in AppOfflineShell.jsx and Downloads.jsx, so
+// with zero network the browser shows its native broken-image icon.
+//
+// This fetches the actual image bytes ONCE, at download time (while we're
+// still online), and converts them to a data: URL — a self-contained
+// string with no network dependency, safe to store in IndexedDB and safe
+// to drop straight into <img src> forever after, online or off.
+//
+// If the fetch fails (CORS-restricted host, thumbnail briefly 404s, etc.)
+// this returns null rather than throwing — a missing thumbnail is not a
+// reason to fail the whole download. Callers fall back to the existing
+// icon/gradient placeholder UI, never to a broken <img>.
+async function resolveThumbnailToDataUrl(remoteUrl) {
+  if (!remoteUrl) return null
+  try {
+    const res = await fetch(remoteUrl, { credentials: 'include' })
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return await new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch (err) {
+    console.warn('[offlineStorage] could not embed thumbnail for offline use:', err)
+    return null
+  }
+}
+
 // Saves a downloaded file + its metadata, then reads both back to confirm
 // they actually landed in IndexedDB before returning. Throws (and cleans
 // up any partial write) if verification fails — callers must NOT mark an
 // item as downloaded unless this resolves successfully.
+//
+// metadata.thumbnailUrl is the REMOTE source (e.g. resource.thumbnail_url).
+// It is resolved to local bytes here and never itself persisted — only the
+// resulting local data URL (metadata.thumbnail, no "Url" suffix) is stored.
 export async function saveOffline(resourceId, blob, mimeType, metadata = {}) {
   if (!blob || blob.size === 0) throw new Error('Empty file — refusing to save')
 
   await requestPersistence()
+
+  const localThumbnail = await resolveThumbnailToDataUrl(metadata.thumbnailUrl)
 
   const fileEntry = { blob, mimeType, savedAt: Date.now() }
   const metaEntry = {
@@ -39,7 +78,7 @@ export async function saveOffline(resourceId, blob, mimeType, metadata = {}) {
     fileType: mimeType,
     fileSize: blob.size,
     downloadDate: Date.now(),
-    thumbnail: metadata.thumbnail || null,
+    thumbnail: localThumbnail, // always local bytes (data URL) or null — never a remote URL
     lastReadPage: 0,
   }
 

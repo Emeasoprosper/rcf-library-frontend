@@ -67,7 +67,12 @@ export default defineConfig({
       },
 
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        // FIX: was missing jpg/jpeg/webp/woff2 — public/logoapp.jpg
+        // (visible in the project's public folder) and any webfonts
+        // were silently excluded from precaching, meaning they'd
+        // vanish from the UI the moment the device went offline even
+        // though the rest of the app shell loaded fine.
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,webp,ico,woff,woff2}'],
         // Without this, opening any deep link (e.g. /resources/12/read)
         // while offline 404s instead of loading the app shell — the
         // service worker has index.html cached but doesn't know to serve

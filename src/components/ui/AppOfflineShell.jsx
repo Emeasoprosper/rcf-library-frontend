@@ -9,6 +9,12 @@
 // fewer usable entries than expected (a corrupted blob, etc.), the
 // count shown is whatever it actually returns — never a hardcoded or
 // assumed value.
+//
+// firstCover is now guaranteed to be a local data URL (offlineStorage.js
+// resolves it at download time) rather than a remote URL — but imgFailed
+// is kept as a defensive fallback in case a stored entry is ever missing
+// or corrupted, so this can NEVER render the browser's native
+// broken-image icon.
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../layout/TopAppBar'
@@ -18,6 +24,7 @@ import { listDownloads } from '../../lib/offlineStorage'
 function AppOfflineShell() {
   const navigate = useNavigate()
   const [downloads, setDownloads] = useState(null) // null = still loading
+  const [imgFailed, setImgFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -29,6 +36,7 @@ function AppOfflineShell() {
 
   const count = downloads?.length ?? 0
   const firstCover = downloads?.[0]?.thumbnail || null
+  const showCover = Boolean(firstCover) && !imgFailed
   const countLabel =
     downloads === null
       ? '' // still reading local storage, avoid a flash of "0"
@@ -43,9 +51,14 @@ function AppOfflineShell() {
       <TopAppBar title="Offline" />
 
       <main className="flex-1 flex flex-col items-center justify-center px-margin-mobile pt-[68px] pb-24 text-center gap-stack-md">
-        {firstCover ? (
+        {showCover ? (
           <div className="w-32 h-44 rounded-xl overflow-hidden border border-outline shadow-lg mb-stack-sm">
-            <img src={firstCover} alt="" className="w-full h-full object-cover" />
+            <img
+              src={firstCover}
+              alt=""
+              className="w-full h-full object-cover"
+              onError={() => setImgFailed(true)}
+            />
           </div>
         ) : (
           <span className="material-symbols-outlined text-on-surface-variant text-5xl mb-stack-sm">
