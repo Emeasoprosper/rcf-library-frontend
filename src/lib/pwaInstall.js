@@ -1,24 +1,27 @@
 // lib/pwaInstall.js
 //
-// Android's primary install path is now the real APK — not the browser's
-// beforeinstallprompt/PWA flow. The PWA prompt logic below is KEPT and
-// still used as the fallback path for iOS and desktop, where there is no
-// APK to install. Nothing about "installed" is ever inferred from a
-// localStorage flag alone — see wasEverOpenedApk() below, which is
-// explicitly a soft, best-effort signal for UI copy only, never treated
-// as proof.
+// Android's primary install path is the real APK — not the browser's
+// beforeinstallprompt/PWA flow (kept only as the iOS/desktop fallback).
+//
+// Version checking: public/version.json holds a single incrementing
+// number. Every time a new APK is deployed to public/app-release.apk,
+// bump that number by 1. This module fetches version.json and compares
+// it against the version number stored locally from the visitor's last
+// download — NOT against whether the app is actually installed (a
+// website genuinely cannot know that with certainty). This gives three
+// honest states instead of a permanent "ever installed" guess:
+//   - never downloaded any version  -> "Install App"
+//   - downloaded an older version   -> "Update Available"
+//   - downloaded the current version -> "Continue to App"
 
-const APK_DOWNLOADED_FLAG_KEY = 'rcf_apk_downloaded'
+const APK_DOWNLOADED_VERSION_KEY = 'rcf_apk_downloaded_version'
 const INSTALLED_FLAG_KEY = 'rcf_pwa_installed'
 
-// Real, existing file — copied into public/ at build time from the
-// actual signed APK PWABuilder generated. Never invent this path.
 export const APK_DOWNLOAD_PATH = '/app-release.apk'
+export const VERSION_CHECK_PATH = '/version.json'
 
 // Must match the Package ID set during APK packaging (PWABuilder →
-// Package ID field). If that ever changes, update this to match —
-// otherwise the "Continue to App" intent link silently fails to find
-// the installed app.
+// Package ID field). If that ever changes, update this to match.
 export const ANDROID_PACKAGE_ID = 'com.rcfmouaulibrary.app'
 
 export function isIos() {
@@ -39,10 +42,6 @@ export function isIosSafari() {
   return /safari/i.test(ua) && !/crios|fxios|edgios|opios|instagram|fban|fbav|line|twitter/i.test(ua)
 }
 
-// Still the only 100%-reliable "am I running inside an installed app"
-// signal — covers both the PWA-installed case (display-mode: standalone)
-// and, on Android, a TWA-wrapped APK launch (Chrome reports standalone
-// display-mode there too, since a TWA is a thin Chrome Custom Tab shell).
 export function isRunningAsInstalledApp() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -54,26 +53,18 @@ export function canPromptInstall() {
   return Boolean(window.__deferredInstallPrompt)
 }
 
-// Soft signal only — "has this browser triggered an APK download or PWA
-// install before". NEVER proof of actual installation (the user may have
-// cancelled the Android install screen, or cleared the app since). Used
-// only to decide whether to show "Install App" vs "Continue to App"
-// copy — actual download-gating still requires isRunningAsInstalledApp()
-// to be true, exactly like before.
-export function wasEverOpenedApk() {
+function getStoredApkVersion() {
   try {
-    return (
-      localStorage.getItem(APK_DOWNLOADED_FLAG_KEY) === '1' ||
-      localStorage.getItem(INSTALLED_FLAG_KEY) === '1'
-    )
+    const raw = localStorage.getItem(APK_DOWNLOADED_VERSION_KEY)
+    return raw ? Number(raw) : null
   } catch {
-    return false
+    return null
   }
 }
 
-function markApkDownloaded() {
+function setStoredApkVersion(version) {
   try {
-    localStorage.setItem(APK_DOWNLOADED_FLAG_KEY, '1')
+    localStorage.setItem(APK_DOWNLOADED_VERSION_KEY, String(version))
   } catch {
     // non-fatal
   }
@@ -90,30 +81,57 @@ function markInstalled() {
 window.addEventListener('appinstalled-app', markInstalled)
 if (isRunningAsInstalledApp()) markInstalled()
 
-// Triggers a REAL download of the actual signed APK file — not a fake
-// success message. The browser handles the actual file transfer; this
-// only marks that a download was *attempted*, not that install
-// succeeded (the user still has to open the file and confirm the
-// Android install prompt themselves).
-export function downloadApk() {
+// Fetches the live version.json — never cached by the browser (no-store),
+// so a stale cached number can't hide a real update from a visitor.
+// Returns null on any failure (offline, 404, etc.) so callers can fall
+// back gracefully instead of crashing the install flow.
+async function fetchLatestApkVersion() {
+  try {
+    const res = await fetch(VERSION_CHECK_PATH, { cache: 'no-store' })
+    if (!res.ok) return null
+    const data = await res.json()
+    return typeof data.version === 'number' ? data.version : null
+  } catch {
+    return null
+  }
+}
+
+// The real status check. Returns one of:
+//   'install' — never downloaded any version before
+//   'update'  — downloaded a version, but a newer one now exists
+//   'current' — downloaded version matches the latest available
+//   'unknown' — couldn't reach version.json (offline, etc.) — caller
+//               should treat this the same as 'current' rather than
+//               nagging the user with no way to confirm either way
+export async function getApkInstallStatus() {
+  const stored = getStoredApkVersion()
+  const latest = await fetchLatestApkVersion()
+
+  if (latest === null) return stored === null ? 'install' : 'unknown'
+  if (stored === null) return 'install'
+  if (stored < latest) return 'update'
+  return 'current'
+}
+
+// Triggers a REAL download of the actual signed APK file. Records the
+// version being downloaded (read from version.json at call time) so the
+// next status check reflects it accurately — not just "a download
+// happened at some point."
+export async function downloadApk() {
+  const latest = await fetchLatestApkVersion()
+
   const link = document.createElement('a')
   link.href = APK_DOWNLOAD_PATH
   link.setAttribute('download', 'RCF-Library.apk')
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  markApkDownloaded()
+
+  if (latest !== null) setStoredApkVersion(latest)
 }
 
 // Attempts to open the already-installed Android app via an Android
-// Intent URL — the legitimate, browser-supported mechanism for this,
-// NOT a guess. If the app with ANDROID_PACKAGE_ID is installed and its
-// Digital Asset Links (assetlinks.json) are verified, Android routes
-// this straight into the app. If it's not installed, the
-// S.browser_fallback_url param sends the browser back to this same
-// site instead of leaving the user on a dead intent:// URL. This only
-// works on Android Chrome — everywhere else this function does nothing
-// and the caller should fall back to a plain navigation.
+// Intent URL. Works only on Android Chrome; does nothing elsewhere.
 export function tryOpenInstalledAndroidApp() {
   if (!isAndroid()) return false
 
@@ -125,8 +143,8 @@ export function tryOpenInstalledAndroidApp() {
   return true
 }
 
-// Fires the browser's native PWA install prompt — kept as the iOS/desktop
-// fallback path only. Android's primary path is downloadApk() above.
+// Fires the browser's native PWA install prompt — iOS/desktop fallback
+// path only. Android's primary path is downloadApk() above.
 export async function triggerInstall() {
   const promptEvent = window.__deferredInstallPrompt
   if (!promptEvent) return null

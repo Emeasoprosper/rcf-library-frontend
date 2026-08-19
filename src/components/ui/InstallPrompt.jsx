@@ -1,58 +1,50 @@
 // components/ui/InstallPrompt.jsx
 //
 // Shown once per page load, before the user does anything else.
-// Android's primary install path is now the real signed APK. iOS and
-// desktop still use the browser's PWA install flow, since there is no
-// APK for those platforms.
+// Android status is now a real check against public/version.json — see
+// getApkInstallStatus in pwaInstall.js. No more permanent "ever
+// installed" guess: this correctly distinguishes never-installed,
+// out-of-date, and up-to-date.
 import { useEffect, useState } from 'react'
 import {
   canPromptInstall,
   triggerInstall,
   downloadApk,
   tryOpenInstalledAndroidApp,
+  getApkInstallStatus,
   isAndroid,
   isIos,
   isIosSafari,
   isRunningAsInstalledApp,
-  wasEverOpenedApk,
 } from '../../lib/pwaInstall'
 
 function InstallPrompt() {
   const [visible, setVisible] = useState(false)
   const [installing, setInstalling] = useState(false)
   const [apkDownloaded, setApkDownloaded] = useState(false)
-  const [, setPromptTick] = useState(0)
+  const [status, setStatus] = useState(null)
+  const android = isAndroid()
 
   useEffect(() => {
     if (isRunningAsInstalledApp()) return
     setVisible(true)
-
-    function handlePromptReady() {
-      setPromptTick((t) => t + 1)
-    }
-    window.addEventListener('installpromptready', handlePromptReady)
-
-    function handleInstalled() {
-      setVisible(false)
-    }
-    window.addEventListener('appinstalled-app', handleInstalled)
-
-    return () => {
-      window.removeEventListener('installpromptready', handlePromptReady)
-      window.removeEventListener('appinstalled-app', handleInstalled)
-    }
   }, [])
+
+  useEffect(() => {
+    if (!visible || !android) return
+    let cancelled = false
+    getApkInstallStatus().then((s) => { if (!cancelled) setStatus(s) })
+    return () => { cancelled = true }
+  }, [visible, android])
 
   if (!visible) return null
 
-  const android = isAndroid()
   const ios = isIos()
   const iosButNotSafari = ios && !isIosSafari()
   const canPrompt = canPromptInstall()
-  const everOpened = wasEverOpenedApk()
 
-  const handleDownloadApk = () => {
-    downloadApk()
+  const handleDownloadApk = async () => {
+    await downloadApk()
     setApkDownloaded(true)
   }
 
@@ -84,8 +76,8 @@ function InstallPrompt() {
             <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">download_done</span>
             <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">APK downloaded</h3>
             <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
-              Open the downloaded file from your notifications or Downloads folder, then tap Install to finish
-              setting up the app.
+              Open the downloaded file from your notifications or Downloads folder, then tap Install (or Update) to
+              finish setting up the app.
             </p>
             <button
               onClick={handleCancel}
@@ -95,7 +87,34 @@ function InstallPrompt() {
             </button>
           </>
         ) : android ? (
-          everOpened ? (
+          status === null ? (
+            <>
+              <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm animate-spin">progress_activity</span>
+              <p className="font-body-md text-body-md text-on-surface-variant">Checking app version…</p>
+            </>
+          ) : status === 'update' ? (
+            <>
+              <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">system_update</span>
+              <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Update Available</h3>
+              <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
+                A newer version of the app is available. Download and install it to get the latest version.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleDownloadApk}
+                  className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
+                >
+                  Download Update
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          ) : status === 'current' || status === 'unknown' ? (
             <>
               <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">check_circle</span>
               <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Continue to App</h3>

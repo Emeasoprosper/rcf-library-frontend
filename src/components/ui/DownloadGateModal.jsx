@@ -1,39 +1,45 @@
 // components/ui/DownloadGateModal.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   canPromptInstall,
   triggerInstall,
   downloadApk,
   tryOpenInstalledAndroidApp,
+  getApkInstallStatus,
   isAndroid,
   isIos,
   isIosSafari,
-  wasEverOpenedApk,
 } from '../../lib/pwaInstall'
 
 // Blocking popup shown the moment a Download action is attempted outside
 // the installed app. Nothing is fetched before or during this modal.
 //
-// Android's primary path is now the real signed APK, not the browser's
-// PWA install prompt. iOS/desktop still use the PWA path since there is
-// no APK for those platforms.
+// Android status is now a real check against public/version.json, not a
+// permanent "ever installed" localStorage guess — see getApkInstallStatus
+// in pwaInstall.js. Three real states: 'install' (never downloaded),
+// 'update' (downloaded an older version), 'current' (up to date).
 function DownloadGateModal({ open, onClose }) {
   const [installing, setInstalling] = useState(false)
   const [apkDownloaded, setApkDownloaded] = useState(false)
+  const [status, setStatus] = useState(null) // null while checking
+  const android = isAndroid()
+
+  useEffect(() => {
+    if (!open || !android) return
+    let cancelled = false
+    setStatus(null)
+    getApkInstallStatus().then((s) => { if (!cancelled) setStatus(s) })
+    return () => { cancelled = true }
+  }, [open, android])
 
   if (!open) return null
 
-  const android = isAndroid()
   const ios = isIos()
   const iosButNotSafari = ios && !isIosSafari()
   const canPrompt = canPromptInstall()
-  // Soft signal only, used for copy — actual gating still happens via
-  // isRunningAsInstalledApp() in the caller (ResourceDetail), which is
-  // the only thing that actually allows a download to proceed.
-  const everOpened = wasEverOpenedApk()
 
-  const handleDownloadApk = () => {
-    downloadApk()
+  const handleDownloadApk = async () => {
+    await downloadApk()
     setApkDownloaded(true)
   }
 
@@ -71,8 +77,8 @@ function DownloadGateModal({ open, onClose }) {
             <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">download_done</span>
             <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">APK downloaded</h3>
             <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
-              Open the downloaded file from your notifications or Downloads folder, then tap Install. Once it's
-              installed, open the app and tap Download again — downloads only work inside the installed app.
+              Open the downloaded file from your notifications or Downloads folder, then tap Install (or Update).
+              Once it's done, open the app and tap Download again — downloads only work inside the installed app.
             </p>
             <button
               onClick={handleClose}
@@ -82,7 +88,35 @@ function DownloadGateModal({ open, onClose }) {
             </button>
           </>
         ) : android ? (
-          everOpened ? (
+          status === null ? (
+            <>
+              <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm animate-spin">progress_activity</span>
+              <p className="font-body-md text-body-md text-on-surface-variant">Checking app version…</p>
+            </>
+          ) : status === 'update' ? (
+            <>
+              <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">system_update</span>
+              <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Update Available</h3>
+              <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
+                A newer version of the app is available. Download it and reinstall to get the latest version before
+                downloading this material.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleDownloadApk}
+                  className="w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
+                >
+                  Download Update
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          ) : status === 'current' || status === 'unknown' ? (
             <>
               <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">check_circle</span>
               <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Continue to App</h3>
