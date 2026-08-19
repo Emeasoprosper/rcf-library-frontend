@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.rcf_mouau_library.twa",
+        "sha256_cert_fingerprints": ["CD:F3:DF:50:FC:0C:D0:49:F2:4A:71:A0:CC:B6:2E:05:DA:C9:F1:1A:27:67:FB:69:CF:0B:C0:DC:EB:0C:43:5F"]
+      }
+    }]
