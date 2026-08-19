@@ -2,13 +2,20 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import SplashLight from '../../assets/SplahLightMode.svg'
 import SplashDark from '../../assets/SplashDarkMode.svg'
+import AppOfflineShell from './AppOfflineShell'
+import { isRunningAsInstalledApp } from '../../lib/pwaInstall'
 
 // Full-app boot gate. Sits inside AuthProvider (see App.jsx) so it can
 // read the real auth-check-in-flight signal instead of inventing its own
 // "is the app ready" heuristic. Two states block rendering the app:
 //
 //  1. Offline — navigator.onLine + the online/offline window events.
-//     Shows a dedicated "no connection" screen with a reload button.
+//     - Plain website (isRunningAsInstalledApp() false): full-page "no
+//       connection" screen with a reload button, same as before.
+//     - Installed app (TWA/PWA, isRunningAsInstalledApp() true): renders
+//       AppOfflineShell instead — keeps top/bottom nav visible, offers a
+//       real "Continue to Downloads" path backed by actual local storage,
+//       matching a native-app offline experience rather than a dead page.
 //  2. Not ready — AuthContext's `loading` (the initial authApi.me()
 //     check hasn't resolved yet). Renders a Home-shaped skeleton with a
 //     shimmer sweep instead of a bare spinner.
@@ -163,6 +170,13 @@ function AppLoader({ children }) {
   }, [])
 
   if (!isOnline) {
+    // Installed app (TWA APK or PWA) — keep the app shell alive instead
+    // of replacing the whole screen with a dead "no connection" page.
+    if (isRunningAsInstalledApp()) {
+      return <AppOfflineShell />
+    }
+
+    // Plain website in a normal browser tab — unchanged from before.
     return (
       <main className="flex flex-col min-h-screen w-full px-margin-mobile items-center justify-center gap-stack-md bg-surface-container-lowest text-on-surface text-center">
         <img src={SplashLight} alt="" className="w-40 h-40 dark:hidden opacity-60" />
