@@ -23,11 +23,17 @@ function getViewerKind(fileType = '') {
   if (fileType.startsWith('video/')) return 'video'
   if (fileType.startsWith('image/')) return 'image'
   if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx'
-  // Legacy binary .doc (pre-2007) has no reliable client-side renderer —
-  // docx-preview only understands the OOXML .docx format. Flagged as its
-  // own kind rather than lumped into 'unsupported' so the UI can say
-  // something honest instead of a generic "not available yet".
-  if (fileType === 'application/msword') return 'doc-legacy'
+  // Legacy .doc and PowerPoint (.ppt/.pptx) have no client-side renderer,
+  // but the backend now converts them to a real PDF on the fly for both
+  // /stream and /download-file (see OFFICE_TO_PDF_MIME_TYPES and
+  // convertOfficeFileToPdf in the backend). The bytes this reader
+  // receives for these types are therefore already a real PDF, so they
+  // go through the exact same 'pdf' viewer path as a native PDF upload.
+  if (
+    fileType === 'application/msword' ||
+    fileType === 'application/vnd.ms-powerpoint' ||
+    fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ) return 'pdf'
   return 'unsupported'
 }
 
