@@ -132,6 +132,9 @@ function SubmitResource() {
       for (const entry of files) {
         const formData = new FormData()
         formData.append('file', entry.file)
+        if (entry.thumbnailBlob) {
+          formData.append('thumbnail', entry.thumbnailBlob, 'thumbnail.jpg')
+        }
         formData.append('title', entry.name.trim())
         if (entry.author) formData.append('author', entry.author)
         if (entry.courseCode) formData.append('courseCode', entry.courseCode)

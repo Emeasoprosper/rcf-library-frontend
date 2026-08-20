@@ -5,6 +5,10 @@
 // more than PDFs, so treat a thrown error as "no preview for this file" —
 // but we log *why* so it's actually debuggable instead of just silently
 // falling back to the icon.
+//
+// Returns { dataUrl, blob } — dataUrl feeds the local <img> preview,
+// blob is the actual file that gets uploaded to the backend so the real
+// rendered page (not a generated placeholder) becomes the stored thumbnail.
 export async function renderDocxFirstPage(file) {
   const [{ renderAsync }, html2canvas] = await Promise.all([
     import('docx-preview'),
@@ -49,7 +53,10 @@ export async function renderDocxFirstPage(file) {
       windowWidth: 794,
     })
 
-    return canvas.toDataURL('image/jpeg', 0.82)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82)
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82))
+
+    return { dataUrl, blob }
   } catch (err) {
     console.error('[renderDocxFirstPage] failed for', file.name, err)
     throw err

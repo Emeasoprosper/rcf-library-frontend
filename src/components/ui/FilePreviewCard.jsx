@@ -48,6 +48,7 @@ function FilePreviewCard({
   onCourseCodeChange,
   onDescriptionChange,
   onCreateCategory,
+  onThumbnailChange,   // NEW — reports the real client-rendered thumbnail Blob up to MultiFileUpload.jsx
   onRemove,
 }) {
   const [thumbnail, setThumbnail] = useState(null)
@@ -75,8 +76,11 @@ function FilePreviewCard({
           const dataUrl = await renderVideoFirstFrame(file)
           if (!cancelled) setThumbnail(dataUrl)
         } else if (kind === 'docx') {
-          const dataUrl = await renderDocxFirstPage(file)
-          if (!cancelled) setThumbnail(dataUrl)
+          const { dataUrl, blob } = await renderDocxFirstPage(file)
+          if (!cancelled) {
+            setThumbnail(dataUrl)
+            onThumbnailChange?.(blob)
+          }
         } else if (kind === 'audio') {
           const coverUrl = await extractAudioCoverArt(file)
           if (!cancelled && coverUrl) setThumbnail(coverUrl)

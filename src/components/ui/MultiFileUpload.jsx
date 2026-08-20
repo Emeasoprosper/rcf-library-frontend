@@ -31,6 +31,7 @@ function MultiFileUpload({ files, onFilesChange, accept, authorLabel = 'Author',
         categoryId: '',
         courseCode: '',
         description: '',
+        thumbnailBlob: null, // NEW — filled in once FilePreviewCard finishes client-side rendering
       }
     })
     onFilesChange([...files, ...newFiles])
@@ -64,6 +65,7 @@ function MultiFileUpload({ files, onFilesChange, accept, authorLabel = 'Author',
           onCourseCodeChange={(courseCode) => updateFile(index, { courseCode })}
           onDescriptionChange={(description) => updateFile(index, { description })}
           onCreateCategory={onCreateCategory}
+          onThumbnailChange={(blob) => updateFile(index, { thumbnailBlob: blob })}
           onRemove={() => removeFile(index)}
         />
       ))}
