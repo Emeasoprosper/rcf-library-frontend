@@ -24,6 +24,7 @@ import { useState, useEffect } from 'react'
 import TopAppBar from '../layout/TopAppBar'
 import BottomNav from '../layout/BottomNav'
 import { listDownloads } from '../../lib/offlineStorage'
+import StackedPreview from './StackedPreview'
 
 function isLocalImage(value) {
   return typeof value === 'string' && value.startsWith('data:')
@@ -31,7 +32,6 @@ function isLocalImage(value) {
 
 function AppOfflineShell({ onContinue }) {
   const [downloads, setDownloads] = useState(null) // null = still loading
-  const [imgFailed, setImgFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -42,8 +42,13 @@ function AppOfflineShell({ onContinue }) {
   }, [])
 
   const count = downloads?.length ?? 0
-  const rawFirstCover = downloads?.[0]?.thumbnail || null
-  const showCover = isLocalImage(rawFirstCover) && !imgFailed
+  // First up to 3 downloads, front-most first — StackedPreview shows one
+  // real fanned card per entry (1 download = 1 card, 2 = 2, 3+ = 3, per
+  // the design you asked for). Entries without a valid local thumbnail
+  // fall back to the icon on that layer inside StackedPreview itself.
+  const previewThumbnails = (downloads || [])
+    .slice(0, 3)
+    .map((d) => (isLocalImage(d.thumbnail) ? d.thumbnail : null))
   const countLabel =
     downloads === null
       ? ''
@@ -58,20 +63,9 @@ function AppOfflineShell({ onContinue }) {
       <TopAppBar title="Offline" />
 
       <main className="flex-1 flex flex-col items-center justify-center px-margin-mobile pt-[68px] pb-24 text-center gap-stack-md">
-        {showCover ? (
-          <div className="w-32 h-44 rounded-xl overflow-hidden border border-outline shadow-lg mb-stack-sm">
-            <img
-              src={rawFirstCover}
-              alt=""
-              className="w-full h-full object-cover"
-              onError={() => setImgFailed(true)}
-            />
-          </div>
-        ) : (
-          <span className="material-symbols-outlined text-on-surface-variant text-5xl mb-stack-sm">
-            wifi_off
-          </span>
-        )}
+        <div className="mb-stack-sm">
+          <StackedPreview thumbnails={previewThumbnails} icon="wifi_off" width={128} height={176} />
+        </div>
 
         <div className="flex flex-col gap-1 max-w-xs">
           <h1 className="font-headline-md text-headline-md font-display text-on-surface">

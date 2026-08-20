@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import SplashLight from '../../assets/SplahLightMode.svg'
 import SplashDark from '../../assets/SplashDarkMode.svg'
@@ -10,27 +10,37 @@ import { isRunningAsInstalledApp } from '../../lib/pwaInstall'
 // read the real auth-check-in-flight signal instead of inventing its own
 // "is the app ready" heuristic. Two states block rendering the app:
 //
-//  1. Offline — navigator.onLine + the online/offline window events.
+//  1. Offline, AND the current route is one of the tabs that requires a
+//     live connection to be meaningful (Home, Search, Library, Contribute
+//     — see OFFLINE_BLOCKED_PATHS). Profile, Downloads, the resource
+//     reader, and everything else are NOT gated here — they already
+//     handle their own offline behavior (see ResourceReader.jsx,
+//     Downloads.jsx) and must stay reachable while offline.
+//
+//     This is now a pure function of (isOnline, location.pathname),
+//     re-evaluated on every render — no sticky "bypass" flag. That's
+//     what makes "go to Downloads, then navigate back to Home while
+//     still offline" correctly show the offline screen again instead of
+//     staying unlocked for the rest of the session.
+//
 //     - Plain website (isRunningAsInstalledApp() false): full-page "no
 //       connection" screen with a reload button, same as before.
 //     - Installed app (TWA/PWA, isRunningAsInstalledApp() true): renders
 //       AppOfflineShell instead — keeps top/bottom nav visible, offers a
 //       real "Continue to Downloads" path.
 //
-//       FIX (v2 — race condition): the previous version called
-//       navigate('/downloads') directly inside AppOfflineShell's click
-//       handler, in the SAME synchronous function as the state update
-//       that swaps AppOfflineShell out for AppRoutes. At the moment
-//       navigate() ran, AppRoutes hadn't actually mounted yet — the
-//       navigation landed on a router tree that wasn't fully swapped
-//       in, and the app ended up on whatever the default/root route
-//       resolved to (Home) instead of /downloads. Now the navigation
-//       itself lives here, in a useEffect keyed on bypassOfflineShell —
-//       guaranteeing AppRoutes has actually mounted and is listening
-//       for the location change before navigate() ever fires.
+//     "Continue to Downloads" now just calls navigate('/downloads')
+//     directly. No race condition to work around anymore: because this
+//     component re-reads location.pathname on every render, the instant
+//     the route changes to /downloads (which isn't in
+//     OFFLINE_BLOCKED_PATHS), this same render pass falls through to
+//     `return children`, and AppRoutes matches /downloads normally.
+//
 //  2. Not ready — AuthContext's `loading` (the initial authApi.me()
 //     check hasn't resolved yet). Renders a Home-shaped skeleton with a
 //     shimmer sweep instead of a bare spinner.
+
+const OFFLINE_BLOCKED_PATHS = new Set(['/home', '/search', '/shelf', '/contribute'])
 
 function ShimmerStyles() {
   return (
@@ -139,15 +149,12 @@ function HomeSkeleton() {
 function AppLoader({ children }) {
   const { loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
-  const [bypassOfflineShell, setBypassOfflineShell] = useState(false)
 
   useEffect(() => {
-    function handleOnline() {
-      setIsOnline(true)
-      setBypassOfflineShell(false)
-    }
+    function handleOnline() { setIsOnline(true) }
     function handleOffline() { setIsOnline(false) }
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
@@ -162,21 +169,11 @@ function AppLoader({ children }) {
     return () => clearTimeout(timer)
   }, [])
 
-  // Fires strictly AFTER bypassOfflineShell flips true and this
-  // component has re-rendered past the block below — meaning AppRoutes
-  // is already mounted and its own useNavigate() context is live by the
-  // time this runs. This is what actually fixes the "lands on Home
-  // instead of Downloads" bug.
-  useEffect(() => {
-    if (bypassOfflineShell) {
-      navigate('/downloads')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bypassOfflineShell])
+  const isBlockedRoute = OFFLINE_BLOCKED_PATHS.has(location.pathname)
 
-  if (!isOnline && !bypassOfflineShell) {
+  if (!isOnline && isBlockedRoute) {
     if (isRunningAsInstalledApp()) {
-      return <AppOfflineShell onContinue={() => setBypassOfflineShell(true)} />
+      return <AppOfflineShell onContinue={() => navigate('/downloads')} />
     }
 
     return (
