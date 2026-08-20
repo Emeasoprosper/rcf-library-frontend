@@ -21,6 +21,13 @@ function getViewerKind(fileType = '') {
   if (fileType === 'application/pdf') return 'pdf'
   if (fileType.startsWith('audio/')) return 'audio'
   if (fileType.startsWith('video/')) return 'video'
+  if (fileType.startsWith('image/')) return 'image'
+  if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx'
+  // Legacy binary .doc (pre-2007) has no reliable client-side renderer —
+  // docx-preview only understands the OOXML .docx format. Flagged as its
+  // own kind rather than lumped into 'unsupported' so the UI can say
+  // something honest instead of a generic "not available yet".
+  if (fileType === 'application/msword') return 'doc-legacy'
   return 'unsupported'
 }
 
@@ -55,6 +62,9 @@ const VIDEO_SUBTYPE_LABEL = {
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2]
 const SLEEP_OPTIONS = [null, 15, 30, 45, 60]
 
+// Small fixed banner shown when the user is offline (playing from a
+// downloaded copy if one exists) or when a network fetch is taking
+// unusually long. Purely informational — never blocks interaction.
 function NetworkBanner({ isOnline, isSlow, hasOfflineCopy }) {
   if (isOnline && !isSlow) return null
 
@@ -88,6 +98,10 @@ function ResourceReader() {
   const renderedThumbSet = useRef(new Set())
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
+  const docxContainerRef = useRef(null)
+  const docxSourceRef = useRef(null) // holds the raw ArrayBuffer between load() and the render effect
+  const [docxLoaded, setDocxLoaded] = useState(false)
+  const [docxRendering, setDocxRendering] = useState(true)
   const [pageJumpValue, setPageJumpValue] = useState('')
   const [renderedThumbs, setRenderedThumbs] = useState({})
   const [filmstripOpen, setFilmstripOpen] = useState(true)
@@ -111,6 +125,11 @@ function ResourceReader() {
   const waveformRef = useRef(null)
   const [isDraggingWaveform, setIsDraggingWaveform] = useState(false)
 
+  // True once the browser has buffered enough of the video/audio to
+  // actually start playback. Before this, the center play button did
+  // nothing when tapped — there was nothing ready to play yet, which is
+  // exactly what looked like a broken button. Now a spinner ring shows
+  // instead until this flips true.
   const [mediaReady, setMediaReady] = useState(false)
 
   const [resource, setResource] = useState(null)
@@ -120,6 +139,11 @@ function ResourceReader() {
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  // Set when the device is offline and no downloaded copy of this
+  // resource exists — distinct from a hard `error`, since the fix here
+  // is "connect to the internet or download it earlier", not "something
+  // broke". Locks the viewer to a dedicated screen instead of trying
+  // (and failing) to hit the stream endpoint.
   const [offlineNoCopy, setOfflineNoCopy] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
@@ -138,7 +162,9 @@ function ResourceReader() {
         .then((gradient) => {
           if (!cancelled) setBgGradient(gradient)
         })
-        .catch(() => {})
+        .catch(() => {
+          // Non-essential — background stays the default gradient.
+        })
     }
     return () => { cancelled = true }
   }, [resource?.thumbnail_url])
@@ -148,6 +174,15 @@ function ResourceReader() {
 
     async function load() {
       try {
+        // FIX (root cause of "Continue Reading" failing on a fully
+        // offline reopen): this used to call resourcesApi.get(id) — a
+        // network request — unconditionally FIRST, before ever checking
+        // whether a local copy existed. With zero connectivity that
+        // fetch throws, execution jumps straight to the catch block
+        // below, and the user sees a hard "couldn't be opened" error —
+        // even for a resource that was successfully downloaded. The
+        // local copy is now checked first; metadata is fetched
+        // opportunistically and never blocks the offline path.
         const offlineEntry = await getOffline(id)
         const offlineMeta = offlineEntry ? await getOfflineMeta(id) : null
         if (cancelled) return
@@ -157,7 +192,13 @@ function ResourceReader() {
           const metaRes = await resourcesApi.get(id)
           resourceData = metaRes.resource
         } catch (metaErr) {
+          // No network reachable for metadata. If there's no local copy
+          // either, there's genuinely nothing to show — surface the
+          // real error via the outer catch.
           if (!offlineEntry) throw metaErr
+          // Otherwise, build enough of a resource object from what was
+          // captured at download time so the local file can still open
+          // with zero network involved.
           resourceData = {
             id,
             title: offlineMeta?.title || 'Downloaded Resource',
@@ -176,6 +217,11 @@ function ResourceReader() {
         setViewerKind(kind)
         setHasOfflineCopy(Boolean(offlineEntry))
 
+        // App-only viewing lock: if there's no downloaded copy and the
+        // device has no connectivity, don't attempt the stream/download
+        // endpoints at all — those only serve authenticated, in-app
+        // requests and will just fail. Show a dedicated "go online or
+        // download this first" screen instead.
         if (!offlineEntry && !navigator.onLine) {
           setOfflineNoCopy(true)
           setLoading(false)
@@ -212,6 +258,13 @@ function ResourceReader() {
             setMediaUrl(resourcesApi.streamUrl(id))
           }
 
+          // FIX: this used to run unconditionally, with no try/catch of
+          // its own. Offline (or backend unreachable), the fetch threw,
+          // which propagated to the OUTER catch and wiped out a video
+          // that had already loaded successfully from the local blob
+          // above. Related items are supplementary — gated on
+          // navigator.onLine and now fully isolated so a failure here
+          // can never take down actual playback.
           if (kind === 'video' && navigator.onLine) {
             try {
               const relatedRes = await resourcesApi.list({ sort: 'popular', pageSize: 30 })
@@ -236,8 +289,37 @@ function ResourceReader() {
                   onClick: () => navigate(`/resources/${r.id}/read`),
                 }))
               setRelated(ranked)
-            } catch {}
+            } catch {
+              // Non-essential — reader still works with no related rail.
+            }
           }
+        } else if (kind === 'image') {
+          // Same offline-first pattern as audio/video: prefer the local
+          // blob, only fall back to the authenticated stream URL when
+          // there's no downloaded copy.
+          if (offlineEntry) {
+            setMediaUrl(URL.createObjectURL(offlineEntry.blob))
+          } else {
+            setMediaUrl(resourcesApi.streamUrl(id))
+          }
+        } else if (kind === 'docx') {
+          let arrayBuffer
+          if (offlineEntry) {
+            arrayBuffer = await offlineEntry.blob.arrayBuffer()
+          } else {
+            startSlowWatch()
+            let streamRes
+            try {
+              streamRes = await fetch(resourcesApi.streamUrl(id), { credentials: 'include' })
+            } finally {
+              stopSlowWatch()
+            }
+            if (!streamRes.ok) throw new Error('Failed to load file')
+            arrayBuffer = await streamRes.arrayBuffer()
+          }
+          if (cancelled) return
+          docxSourceRef.current = arrayBuffer
+          setDocxLoaded(true)
         }
 
         if (!cancelled) setLoading(false)
@@ -263,6 +345,10 @@ function ResourceReader() {
   }, [id])
 
   const handleDownload = async () => {
+    // Strict install gate — checked before anything else. If this tab
+    // isn't currently running inside the installed PWA, block here and
+    // show the gate popup. No fetch, no blob, no IndexedDB write happens
+    // below this point until the check passes.
     if (!isRunningAsInstalledApp()) {
       setShowGate(true)
       return
@@ -282,6 +368,11 @@ function ResourceReader() {
         category: resource?.category,
         department: resource?.department,
         level: resource?.level,
+        // FIX: same bug as ResourceDetail.jsx's handleDownload (this is a
+        // separate, duplicated download entry point) — was storing the
+        // remote resource.thumbnail_url, which can't load with zero
+        // network. Points at our own backend's thumbnail proxy instead;
+        // offlineStorage.js fetches and embeds the bytes locally.
         thumbnailUrl: resourcesApi.thumbnailUrl(id),
       })
       setDownloaded(true)
@@ -339,6 +430,44 @@ function ResourceReader() {
       window.removeEventListener('resize', handleResize)
     }
   }, [numPages, viewerKind, zoom, rotation, readingMode])
+
+  // Mirrors the PDF render effect above, but docx-preview produces real
+  // styled HTML/CSS (not a canvas), so there's nothing to re-render on
+  // zoom — the container is rendered once and scaled with a CSS
+  // transform instead (see the docx JSX branch below), which is cheaper
+  // and avoids a flash of empty content on every zoom click.
+  useEffect(() => {
+    if (viewerKind !== 'docx' || !docxLoaded || !docxSourceRef.current || !docxContainerRef.current) return
+    let cancelled = false
+
+    async function renderDocx() {
+      setDocxRendering(true)
+      const container = docxContainerRef.current
+      container.innerHTML = ''
+      try {
+        const { renderAsync } = await import('docx-preview')
+        await renderAsync(docxSourceRef.current, container, undefined, {
+          inWrapper: true,
+          ignoreLastRenderedPageBreak: false,
+          // Same reliability fix as the upload-time thumbnail generator —
+          // base64-embedded images avoid docx-preview's async blob-URL
+          // load race, which is what was producing incomplete-looking
+          // previews.
+          useBase64URL: true,
+        })
+        if (!cancelled) setDocxRendering(false)
+      } catch (err) {
+        console.error('[ResourceReader] docx render failed:', err)
+        if (!cancelled) {
+          setDocxRendering(false)
+          setError(true)
+        }
+      }
+    }
+
+    renderDocx()
+    return () => { cancelled = true }
+  }, [viewerKind, docxLoaded])
 
   const pageRefCallback = useCallback((node, index) => {
     pageContainerRefs.current[index] = node
@@ -421,6 +550,8 @@ function ResourceReader() {
   useEffect(() => {
     if (viewerKind !== 'pdf' || !numPages) return
     resourcesApi.updateProgress(id, Math.round((currentPage / numPages) * 100)).catch(() => {})
+    // Local copy — works even with no connection, and is what lets a
+    // downloaded book resume from the last page when reopened offline.
     saveReadingProgress(id, currentPage).catch(() => {})
   }, [currentPage, numPages, id, viewerKind])
 
@@ -988,6 +1119,134 @@ function ResourceReader() {
 
         {mediaUrl && <audio ref={mediaRef} src={mediaUrl} className="hidden" />}
 
+        <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
+      </div>
+    )
+  }
+
+  if (viewerKind === 'image') {
+    return (
+      <div className="h-screen overflow-hidden bg-background flex flex-col">
+        <NetworkBanner isOnline={isOnline} isSlow={isSlow} hasOfflineCopy={hasOfflineCopy} />
+        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b border-outline bg-background">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex-shrink-0 flex items-center justify-center" aria-label="Close">
+            <span className="material-symbols-outlined text-on-surface">close</span>
+          </button>
+          <p className="font-label-md text-label-md font-semibold text-on-surface truncate flex-1">
+            {resource?.title || 'Loading…'}
+          </p>
+          <button
+            onClick={handleDownload}
+            disabled={downloading || downloaded || !isOnline}
+            className="w-10 h-10 flex-shrink-0 flex items-center justify-center disabled:opacity-60"
+            aria-label="Download for offline"
+          >
+            <span className="material-symbols-outlined text-on-surface">
+              {downloading ? 'progress_activity' : downloaded ? 'download_done' : 'download'}
+            </span>
+          </button>
+        </div>
+
+        <div className="flex-grow overflow-auto flex items-center justify-center bg-black/5 relative">
+          <div className="fixed right-3 top-1/3 z-20 flex flex-col bg-surface-container border border-outline rounded-xl overflow-hidden shadow-lg">
+            <button onClick={zoomIn} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom in">
+              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_in</span>
+            </button>
+            <div className="h-px bg-outline" />
+            <button onClick={zoomOut} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom out">
+              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_out</span>
+            </button>
+          </div>
+
+          {mediaUrl && (
+            <img
+              src={mediaUrl}
+              alt={resource?.title || ''}
+              className="max-w-full max-h-full object-contain transition-transform duration-150"
+              style={{ transform: `scale(${zoom})` }}
+            />
+          )}
+        </div>
+
+        <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
+      </div>
+    )
+  }
+
+  if (viewerKind === 'docx') {
+    return (
+      <div className="h-screen overflow-hidden bg-background flex flex-col">
+        <NetworkBanner isOnline={isOnline} isSlow={isSlow} hasOfflineCopy={hasOfflineCopy} />
+        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b border-outline bg-background">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex-shrink-0 flex items-center justify-center" aria-label="Close">
+            <span className="material-symbols-outlined text-on-surface">close</span>
+          </button>
+          <p className="font-label-md text-label-md font-semibold text-on-surface truncate flex-1">
+            {resource?.title || 'Loading…'}
+          </p>
+          <button
+            onClick={handleDownload}
+            disabled={downloading || downloaded || !isOnline}
+            className="w-10 h-10 flex-shrink-0 flex items-center justify-center disabled:opacity-60"
+            aria-label="Download for offline"
+          >
+            <span className="material-symbols-outlined text-on-surface">
+              {downloading ? 'progress_activity' : downloaded ? 'download_done' : 'download'}
+            </span>
+          </button>
+        </div>
+
+        <div className="flex-grow overflow-auto relative bg-surface-container-low">
+          <div className="fixed right-3 top-1/3 z-20 flex flex-col bg-surface-container border border-outline rounded-xl overflow-hidden shadow-lg">
+            <button onClick={zoomIn} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom in">
+              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_in</span>
+            </button>
+            <div className="h-px bg-outline" />
+            <button onClick={zoomOut} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom out">
+              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_out</span>
+            </button>
+          </div>
+
+          {docxRendering && (
+            <div className="absolute inset-0 flex items-center justify-center bg-surface-container-low">
+              <span className="material-symbols-outlined text-on-surface-variant text-3xl animate-spin">progress_activity</span>
+            </div>
+          )}
+
+          <div className="flex justify-center py-6" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
+            {/* docx-preview renders real HTML/CSS pages into this container — set by the render effect above, not by React children. */}
+            <div ref={docxContainerRef} className="docx-reader-container" />
+          </div>
+        </div>
+
+        <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
+      </div>
+    )
+  }
+
+  if (viewerKind === 'doc-legacy') {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 border-b border-outline bg-background">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex-shrink-0 flex items-center justify-center" aria-label="Close">
+            <span className="material-symbols-outlined text-on-surface">close</span>
+          </button>
+          <p className="font-label-md text-label-md font-semibold text-on-surface truncate">{resource?.title}</p>
+        </div>
+        <div className="flex-grow flex flex-col items-center justify-center gap-3 px-6 text-center py-16">
+          <span className="material-symbols-outlined text-on-surface-variant text-4xl">description</span>
+          <p className="text-on-surface font-body-md font-semibold">No in-app preview for this format</p>
+          <p className="text-on-surface-variant font-body-sm max-w-xs">
+            This is an older .doc file — there's no reliable way to preview it in-browser. Download it to open in Word instead.
+          </p>
+          <button
+            onClick={handleDownload}
+            disabled={downloading || downloaded || !isOnline}
+            className="mt-2 px-6 h-11 rounded-full bg-primary text-on-primary font-label-md text-label-md disabled:opacity-60"
+          >
+            {downloading ? 'Downloading…' : downloaded ? 'Downloaded' : 'Download'}
+          </button>
+        </div>
         <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
       </div>
     )
