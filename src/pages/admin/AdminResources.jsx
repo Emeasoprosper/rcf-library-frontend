@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import TopAppBar from '../../components/layout/TopAppBar'
 import AdminNav from '../../components/layout/AdminNav'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import { adminApi } from '../../services/api'
+import { useThumbnailPolling } from '../../hooks/useThumbnailPolling'
 
 function AdminResources() {
   const [items, setItems] = useState([])
@@ -13,7 +14,12 @@ function AdminResources() {
   const [pendingDelete, setPendingDelete] = useState(null) // { id, title } | null
   const [warning, setWarning] = useState(null) // { message, driveErrors } | null
 
-  async function load() {
+  // FIX (thumbnail never appearing after upload): same root cause as
+  // MyContributions.jsx — the backend's real preview generation is a
+  // background job that finishes after this page's fetch already
+  // resolved. Wrapped in useCallback so it's safe to pass into
+  // useThumbnailPolling below.
+  const load = useCallback(async () => {
     setLoading(true)
     setLoadError(false)
     try {
@@ -25,12 +31,17 @@ function AdminResources() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [search])
 
   useEffect(() => {
     const timeout = setTimeout(load, 300) // debounce search
     return () => clearTimeout(timeout)
-  }, [search])
+  }, [load])
+
+  // Silently re-polls every few seconds ONLY while at least one item is
+  // still thumbnail_status 'pending'/'processing' — stops automatically
+  // once every visible item has settled.
+  useThumbnailPolling(items, load)
 
   async function confirmDelete() {
     if (!pendingDelete) return
@@ -91,6 +102,12 @@ function AdminResources() {
               <div className="w-12 h-16 flex-none bg-surface-container-highest rounded overflow-hidden border border-outline/50">
                 {item.thumbnail_url ? (
                   <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                ) : item.thumbnail_status === 'pending' || item.thumbnail_status === 'processing' ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="material-symbols-outlined text-on-surface-variant text-xl animate-spin">
+                      progress_activity
+                    </span>
+                  </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <span className="material-symbols-outlined text-on-surface-variant text-xl">description</span>
