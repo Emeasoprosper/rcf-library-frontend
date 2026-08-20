@@ -34,6 +34,7 @@ import RequestMaterial from '../pages/RequestMaterial'
 import CompleteProfile from '../pages/CompleteProfile'
 import ResourceDetail from '../pages/ResourceDetail'
 import ResourceReader from '../pages/ResourceReader'
+import ShareRedirect from '../pages/ShareRedirect'
 import AdminResources from '../pages/admin/AdminResources'
 
 function RootRedirect() {
@@ -79,6 +80,7 @@ function AppRoutes() {
       <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
       <Route path="/resources/:id" element={<ResourceDetail />} />
       <Route path="/resources/:id/read" element={<ResourceReader />} />
+      <Route path="/s/:token" element={<ProtectedRoute><ShareRedirect /></ProtectedRoute>} />
       <Route path="/admin/resources" element={<AdminRoute><AdminResources /></AdminRoute>} />
     </Routes>
   )

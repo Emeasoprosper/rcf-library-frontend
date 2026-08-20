@@ -93,6 +93,7 @@ function ResourceDetail() {
   const [saved, setSaved] = useState(false)
   const [savingBookmark, setSavingBookmark] = useState(false)
   const [showGate, setShowGate] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -194,6 +195,23 @@ function ResourceDetail() {
     }
   }
 
+  const handleShare = async () => {
+    setSharing(true)
+    try {
+      const { shareUrl } = await resourcesApi.createShareLink(id)
+      if (navigator.share) {
+        await navigator.share({ title: resource?.title, url: shareUrl })
+      } else {
+        await navigator.clipboard.writeText(shareUrl)
+        alert('Link copied!')
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError') alert('Could not create share link — please try again.')
+    } finally {
+      setSharing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -247,16 +265,28 @@ function ResourceDetail() {
           <span className="material-symbols-outlined text-white">arrow_back</span>
         </button>
 
-        <button
-          onClick={handleToggleSave}
-          disabled={savingBookmark}
-          className="absolute top-6 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center disabled:opacity-60"
-          aria-label={saved ? 'Remove from saved' : 'Save for later'}
-        >
-          <span className="material-symbols-outlined text-white">
-            {savingBookmark ? 'progress_activity' : saved ? 'bookmark' : 'bookmark_border'}
-          </span>
-        </button>
+        <div className="absolute top-6 right-4 flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            disabled={sharing}
+            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center disabled:opacity-60"
+            aria-label="Share"
+          >
+            <span className="material-symbols-outlined text-white">
+              {sharing ? 'progress_activity' : 'share'}
+            </span>
+          </button>
+          <button
+            onClick={handleToggleSave}
+            disabled={savingBookmark}
+            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center disabled:opacity-60"
+            aria-label={saved ? 'Remove from saved' : 'Save for later'}
+          >
+            <span className="material-symbols-outlined text-white">
+              {savingBookmark ? 'progress_activity' : saved ? 'bookmark' : 'bookmark_border'}
+            </span>
+          </button>
+        </div>
       </div>
 
       <div className="px-margin-mobile -mt-16 relative z-10">

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { getMediaKind, MEDIA_KIND_STYLE } from '../../lib/mediaKind'
 import { getFileGradient } from '../../lib/fileGradient'
 import MediaTypeIcon from '../icons/MediaTypeIcon'
+import { resourcesApi } from '../../services/api'
 
 const KIND_LABEL = { book: 'Book', audio: 'Audio', video: 'Video' }
 
@@ -12,8 +13,9 @@ function splitMeta(meta) {
   return { author: parts[0] || null, year: parts[1] || null }
 }
 
-function ResourceCard({ title, meta, tags, thumbnailUrl, thumbnailStatus, fileType, onClick }) {
+function ResourceCard({ id, title, meta, tags, thumbnailUrl, thumbnailStatus, fileType, onClick }) {
   const [imgFailed, setImgFailed] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   const kind = getMediaKind(fileType)
   const showImage = Boolean(thumbnailUrl) && !imgFailed
@@ -22,6 +24,28 @@ function ResourceCard({ title, meta, tags, thumbnailUrl, thumbnailStatus, fileTy
   const { author, year } = splitMeta(meta)
 
   const [, sizeTag] = tags
+
+  // Only rendered when the caller passes an `id` — grids that haven't
+  // been updated to pass one simply don't show the button, nothing else
+  // about the card changes.
+  const handleShare = async (e) => {
+    e.stopPropagation()
+    if (!id) return
+    setSharing(true)
+    try {
+      const { shareUrl } = await resourcesApi.createShareLink(id)
+      if (navigator.share) {
+        await navigator.share({ title, url: shareUrl })
+      } else {
+        await navigator.clipboard.writeText(shareUrl)
+        alert('Link copied!')
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError') alert('Could not create share link — please try again.')
+    } finally {
+      setSharing(false)
+    }
+  }
 
   return (
     <div
@@ -50,18 +74,25 @@ function ResourceCard({ title, meta, tags, thumbnailUrl, thumbnailStatus, fileTy
           </span>
         )}
 
-        {/*
-          Restored: the small always-visible play badge on video
-          thumbnails (was present before, got dropped when the hover-only
-          overlay was added). This one shows any time there's a real
-          thumbnail image, not just on hover.
-        */}
         {kind === 'video' && showImage && (
           <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className="w-9 h-9 rounded-full bg-black/50 flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-lg">play_arrow</span>
             </span>
           </span>
+        )}
+
+        {id && (
+          <button
+            onClick={handleShare}
+            disabled={sharing}
+            aria-label="Share"
+            className="absolute top-1.5 right-1.5 w-8 h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 disabled:opacity-60"
+          >
+            <span className="material-symbols-outlined text-white text-[18px]">
+              {sharing ? 'progress_activity' : 'share'}
+            </span>
+          </button>
         )}
 
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -82,12 +113,6 @@ function ResourceCard({ title, meta, tags, thumbnailUrl, thumbnailStatus, fileTy
         )}
       </div>
 
-      {/*
-        Back to one row: type + size side by side. flex-1/min-w-0/truncate
-        on each half stops "Video" (or the size badge) from ever
-        wrapping — each half claims exactly its share of the row and
-        clips instead of breaking to a second line.
-      */}
       <div className="mt-2 flex items-center gap-2 text-xs text-on-surface-variant">
         <span className="flex items-center gap-1.5 min-w-0 flex-1">
           <MediaTypeIcon kind={kind} className="w-4 h-4 flex-none" />

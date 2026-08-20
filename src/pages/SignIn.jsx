@@ -1,6 +1,6 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/pages/SignIn.jsx
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import SplashLight from '../assets/SplahLightMode.svg'
 import SplashDark from '../assets/SplashDarkMode.svg'
 import { useAuth } from '../contexts/AuthContext'
@@ -19,7 +19,11 @@ const ERROR_MESSAGES = {
 function SignIn() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const { loginWithEmail, signupWithEmail } = useAuth()
+  // Where ProtectedRoute sent the user here FROM (e.g. /s/abc123 from a
+  // share link) — falls back to /home for a normal, direct sign-in visit.
+  const returnTo = location.state?.from || '/home'
   const buttonRef = useRef(null)
   const [error, setError] = useState('')
   const [checking, setChecking] = useState(true)
@@ -35,6 +39,13 @@ function SignIn() {
   const [emailChecking, setEmailChecking] = useState(false)
   const [googleOnly, setGoogleOnly] = useState(false)
   const debounceRef = useRef(null)
+  // True only when a signup attempt was actually rejected by the backend
+  // because the account already exists (409) — a real fallback for when
+  // the live checkEmail debounce hasn't resolved yet (fast typing, slow
+  // network) and the form was still showing "Create account". Distinct
+  // from the normal `error` string so it can render its own "Sign in
+  // instead" button rather than a dead-end error line.
+  const [accountExistsConflict, setAccountExistsConflict] = useState(false)
 
   // Surface any error Google's redirect flow bounced back with
   // (?error=... appended by the backend's redirect-callback route).
@@ -57,10 +68,17 @@ function SignIn() {
     function tryRender() {
       if (cancelled) return
       if (window.google?.accounts?.id && buttonRef.current) {
+        // Carries returnTo through Google's full-page redirect as a URL
+        // param, since router state doesn't survive navigating away to
+        // accounts.google.com and back. The backend's
+        // /auth/google/redirect-callback route must read this same
+        // param and redirect there after setting session cookies —
+        // see the note below, that route isn't wired up for this yet.
+        const loginUriWithReturn = `${GOOGLE_REDIRECT_LOGIN_URI}?returnTo=${encodeURIComponent(returnTo)}`
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           ux_mode: 'redirect',
-          login_uri: GOOGLE_REDIRECT_LOGIN_URI,
+          login_uri: loginUriWithReturn,
         })
         window.google.accounts.id.renderButton(buttonRef.current, {
           theme: 'filled_black',
@@ -128,15 +146,25 @@ function SignIn() {
 
     try {
       setError('')
+      setAccountExistsConflict(false)
       setEmailLoading(true)
       if (accountExists === true) {
         await loginWithEmail(email, password)
       } else {
         await signupWithEmail(email, password, name)
       }
-      navigate('/home')
+      navigate(returnTo, { replace: true })
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      const msg = err.message || 'Something went wrong. Please try again.'
+      // Backend sends this exact message on a 409 duplicate-signup — see
+      // auth.js's /signup route. String match rather than a status code
+      // because apiFetch (services/api.js) only throws Error(message),
+      // it doesn't preserve the HTTP status on the thrown error.
+      if (msg.toLowerCase().includes('already exists')) {
+        setAccountExistsConflict(true)
+      } else {
+        setError(msg)
+      }
     } finally {
       setEmailLoading(false)
     }
@@ -208,12 +236,35 @@ function SignIn() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                setAccountExistsConflict(false)
+              }}
               placeholder="Email address"
               autoComplete="email"
               autoFocus
               className="w-full h-12 rounded-md bg-white/5 border border-white/20 px-4 text-white font-body-md placeholder:text-white/40 focus:outline-none focus:border-white/50"
             />
+
+            {accountExistsConflict && (
+              <div className="w-full rounded-md bg-white/5 border border-white/20 px-4 py-3 flex flex-col gap-2">
+                <p className="font-label-sm text-label-sm text-white/70">
+                  An account with this email already exists.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountExistsConflict(false)
+                    setAccountExists(true)
+                    setName('')
+                    setError('')
+                  }}
+                  className="self-start font-label-sm text-label-sm text-white font-semibold underline underline-offset-2"
+                >
+                  Sign in instead
+                </button>
+              </div>
+            )}
 
             {googleOnly && (
               <p className="font-label-sm text-label-sm text-white/50">
@@ -288,6 +339,7 @@ function SignIn() {
                 setName('')
                 setAccountExists(null)
                 setGoogleOnly(false)
+                setAccountExistsConflict(false)
               }}
               className="font-label-sm text-label-sm text-white/50 hover:text-white/80"
             >

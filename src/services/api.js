@@ -169,6 +169,8 @@ export const resourcesApi = {
   // embedding a thumbnail for offline storage, since it's reliably
   // same-origin/CORS-safe in a way a raw Drive link is not.
   thumbnailUrl: (id) => `${API_BASE}/resources/${id}/thumbnail`,
+  createShareLink: (id) => apiFetch(`/resources/${id}/share`, { method: 'POST' }),
+  resolveShareToken: (token) => apiFetch(`/resources/share/${token}/resolve`),
   downloadFileForOffline: async (id) => {
     const res = await fetch(`${API_BASE}/resources/${id}/download-file`, { credentials: 'include' })
     if (!res.ok) throw new Error('Failed to download file')
