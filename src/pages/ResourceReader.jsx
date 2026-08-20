@@ -79,7 +79,7 @@ function NetworkBanner({ isOnline, isSlow, hasOfflineCopy }) {
     : 'Slow connection — this may take a moment'
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-2 bg-surface-container-highest/95 backdrop-blur border-b border-outline px-4 py-2 text-on-surface text-xs font-label-sm">
+    <div className="relative flex-none flex items-center justify-center gap-2 bg-surface-container-highest/95 backdrop-blur border-b border-outline px-4 py-2 text-on-surface text-xs font-label-sm">
       <span className="material-symbols-outlined text-[16px]">
         {!isOnline ? 'cloud_off' : 'hourglass_top'}
       </span>
@@ -213,7 +213,13 @@ function ResourceReader() {
             department: offlineMeta?.department || '',
             level: offlineMeta?.level || '',
             file_type: offlineMeta?.fileType,
-            thumbnail_url: null,
+            // FIX: offlineMeta.thumbnail is already a local data: URL
+            // (embedded at download time by offlineStorage.js's
+            // resolveThumbnailToDataUrl) — safe to use with zero network.
+            // This was hardcoded null, which is why the audio cover art
+            // and video poster went blank offline even when a thumbnail
+            // had been successfully downloaded.
+            thumbnail_url: offlineMeta?.thumbnail || null,
           }
         }
         if (cancelled) return
