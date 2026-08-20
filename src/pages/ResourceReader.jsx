@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
 import { resourcesApi } from '../services/api'
-import { getOffline, saveOffline, saveReadingProgress } from '../lib/offlineStorage'
+import { getOffline, getOfflineMeta, saveOffline, saveReadingProgress } from '../lib/offlineStorage'
 import { getFileGradient } from '../lib/fileGradient'
 import { getMediaKind } from '../lib/mediaKind'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
@@ -55,9 +55,6 @@ const VIDEO_SUBTYPE_LABEL = {
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2]
 const SLEEP_OPTIONS = [null, 15, 30, 45, 60]
 
-// Small fixed banner shown when the user is offline (playing from a
-// downloaded copy if one exists) or when a network fetch is taking
-// unusually long. Purely informational — never blocks interaction.
 function NetworkBanner({ isOnline, isSlow, hasOfflineCopy }) {
   if (isOnline && !isSlow) return null
 
@@ -114,11 +111,6 @@ function ResourceReader() {
   const waveformRef = useRef(null)
   const [isDraggingWaveform, setIsDraggingWaveform] = useState(false)
 
-  // True once the browser has buffered enough of the video/audio to
-  // actually start playback. Before this, the center play button did
-  // nothing when tapped — there was nothing ready to play yet, which is
-  // exactly what looked like a broken button. Now a spinner ring shows
-  // instead until this flips true.
   const [mediaReady, setMediaReady] = useState(false)
 
   const [resource, setResource] = useState(null)
@@ -128,11 +120,6 @@ function ResourceReader() {
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  // Set when the device is offline and no downloaded copy of this
-  // resource exists — distinct from a hard `error`, since the fix here
-  // is "connect to the internet or download it earlier", not "something
-  // broke". Locks the viewer to a dedicated screen instead of trying
-  // (and failing) to hit the stream endpoint.
   const [offlineNoCopy, setOfflineNoCopy] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
@@ -151,9 +138,7 @@ function ResourceReader() {
         .then((gradient) => {
           if (!cancelled) setBgGradient(gradient)
         })
-        .catch(() => {
-          // Non-essential — background stays the default gradient.
-        })
+        .catch(() => {})
     }
     return () => { cancelled = true }
   }, [resource?.thumbnail_url])
@@ -163,15 +148,6 @@ function ResourceReader() {
 
     async function load() {
       try {
-        // FIX (root cause of "Continue Reading" failing on a fully
-        // offline reopen): this used to call resourcesApi.get(id) — a
-        // network request — unconditionally FIRST, before ever checking
-        // whether a local copy existed. With zero connectivity that
-        // fetch throws, execution jumps straight to the catch block
-        // below, and the user sees a hard "couldn't be opened" error —
-        // even for a resource that was successfully downloaded. The
-        // local copy is now checked first; metadata is fetched
-        // opportunistically and never blocks the offline path.
         const offlineEntry = await getOffline(id)
         const offlineMeta = offlineEntry ? await getOfflineMeta(id) : null
         if (cancelled) return
@@ -181,13 +157,7 @@ function ResourceReader() {
           const metaRes = await resourcesApi.get(id)
           resourceData = metaRes.resource
         } catch (metaErr) {
-          // No network reachable for metadata. If there's no local copy
-          // either, there's genuinely nothing to show — surface the
-          // real error via the outer catch.
           if (!offlineEntry) throw metaErr
-          // Otherwise, build enough of a resource object from what was
-          // captured at download time so the local file can still open
-          // with zero network involved.
           resourceData = {
             id,
             title: offlineMeta?.title || 'Downloaded Resource',
@@ -206,11 +176,6 @@ function ResourceReader() {
         setViewerKind(kind)
         setHasOfflineCopy(Boolean(offlineEntry))
 
-        // App-only viewing lock: if there's no downloaded copy and the
-        // device has no connectivity, don't attempt the stream/download
-        // endpoints at all — those only serve authenticated, in-app
-        // requests and will just fail. Show a dedicated "go online or
-        // download this first" screen instead.
         if (!offlineEntry && !navigator.onLine) {
           setOfflineNoCopy(true)
           setLoading(false)
@@ -247,13 +212,6 @@ function ResourceReader() {
             setMediaUrl(resourcesApi.streamUrl(id))
           }
 
-          // FIX: this used to run unconditionally, with no try/catch of
-          // its own. Offline (or backend unreachable), the fetch threw,
-          // which propagated to the OUTER catch and wiped out a video
-          // that had already loaded successfully from the local blob
-          // above. Related items are supplementary — gated on
-          // navigator.onLine and now fully isolated so a failure here
-          // can never take down actual playback.
           if (kind === 'video' && navigator.onLine) {
             try {
               const relatedRes = await resourcesApi.list({ sort: 'popular', pageSize: 30 })
@@ -278,9 +236,7 @@ function ResourceReader() {
                   onClick: () => navigate(`/resources/${r.id}/read`),
                 }))
               setRelated(ranked)
-            } catch {
-              // Non-essential — reader still works with no related rail.
-            }
+            } catch {}
           }
         }
 
@@ -307,10 +263,6 @@ function ResourceReader() {
   }, [id])
 
   const handleDownload = async () => {
-    // Strict install gate — checked before anything else. If this tab
-    // isn't currently running inside the installed PWA, block here and
-    // show the gate popup. No fetch, no blob, no IndexedDB write happens
-    // below this point until the check passes.
     if (!isRunningAsInstalledApp()) {
       setShowGate(true)
       return
@@ -330,11 +282,6 @@ function ResourceReader() {
         category: resource?.category,
         department: resource?.department,
         level: resource?.level,
-        // FIX: same bug as ResourceDetail.jsx's handleDownload (this is a
-        // separate, duplicated download entry point) — was storing the
-        // remote resource.thumbnail_url, which can't load with zero
-        // network. Points at our own backend's thumbnail proxy instead;
-        // offlineStorage.js fetches and embeds the bytes locally.
         thumbnailUrl: resourcesApi.thumbnailUrl(id),
       })
       setDownloaded(true)
@@ -474,8 +421,6 @@ function ResourceReader() {
   useEffect(() => {
     if (viewerKind !== 'pdf' || !numPages) return
     resourcesApi.updateProgress(id, Math.round((currentPage / numPages) * 100)).catch(() => {})
-    // Local copy — works even with no connection, and is what lets a
-    // downloaded book resume from the last page when reopened offline.
     saveReadingProgress(id, currentPage).catch(() => {})
   }, [currentPage, numPages, id, viewerKind])
 
