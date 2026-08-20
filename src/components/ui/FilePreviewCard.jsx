@@ -155,7 +155,7 @@ function FilePreviewCard({
           </p>
           {thumbnailFailed && (
             <p className="font-label-sm text-label-sm text-white/50 italic">
-              {kind === 'doc-legacy' ? 'Old .doc format — no preview available' : 'Preview unavailable'}
+              {kind === 'doc-legacy' ? 'Old .doc format — preview generated after upload' : 'Preview unavailable'}
             </p>
           )}
           {kind === 'audio' && audioUrl && (
