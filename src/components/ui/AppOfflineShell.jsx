@@ -7,26 +7,20 @@
 // first cover straight from IndexedDB via offlineStorage.js — no
 // network request, no fake numbers.
 //
-// FIX 1 (broken thumbnail icon): resources downloaded BEFORE the
-// thumbnail-embedding fix in offlineStorage.js still have their old
-// metadata sitting in IndexedDB with `thumbnail` set to a raw remote
-// URL, not a local data URL. With zero network that remote URL can't
-// load, producing the browser's native broken-image icon — and
-// onError doesn't reliably catch every failure mode across browsers.
-// isLocalImage() below only trusts values that are actually data: URLs
-// (the only kind offlineStorage.js produces going forward) and treats
-// anything else as "no thumbnail" up front, so old stale entries fall
-// back to the wifi_off icon instead of ever attempting to load a dead
-// remote URL. Existing downloads made before this fix will show the
-// fallback icon until the person re-downloads them — there's no way to
-// retroactively fix already-stored bad data without a migration, which
-// is out of scope here.
+// FIX 1 (broken thumbnail icon): only trusts actual data: URLs as
+// thumbnails — see isLocalImage() below. Resources downloaded before
+// the thumbnail-embedding fix in offlineStorage.js still have a stale
+// remote URL stored; those fall back to the wifi_off icon instead of
+// attempting a dead network request.
 //
-// FIX 2 (Continue to Downloads not working): this component now takes
-// an onContinue prop, called before navigating — see AppLoader.jsx for
-// why this is required for the navigation to actually take effect.
+// FIX 2 (v2 — Continue to Downloads landing on Home instead of
+// Downloads): this component no longer calls navigate() itself. It
+// only calls onContinue() and lets AppLoader.jsx handle the actual
+// navigation, from a useEffect that fires strictly after AppRoutes has
+// mounted. Calling navigate() directly from here raced against that
+// mount and landed on the wrong route — see AppLoader.jsx for the full
+// explanation.
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../layout/TopAppBar'
 import BottomNav from '../layout/BottomNav'
 import { listDownloads } from '../../lib/offlineStorage'
@@ -36,7 +30,6 @@ function isLocalImage(value) {
 }
 
 function AppOfflineShell({ onContinue }) {
-  const navigate = useNavigate()
   const [downloads, setDownloads] = useState(null) // null = still loading
   const [imgFailed, setImgFailed] = useState(false)
 
@@ -53,17 +46,12 @@ function AppOfflineShell({ onContinue }) {
   const showCover = isLocalImage(rawFirstCover) && !imgFailed
   const countLabel =
     downloads === null
-      ? '' // still reading local storage, avoid a flash of "0"
+      ? ''
       : count === 0
       ? 'No downloaded resources yet'
       : count === 1
       ? '1 resource available offline'
       : `${count} resources available offline`
-
-  const handleContinue = () => {
-    onContinue?.()
-    navigate('/downloads')
-  }
 
   return (
     <div className="min-h-screen bg-background text-on-surface flex flex-col">
@@ -101,7 +89,7 @@ function AppOfflineShell({ onContinue }) {
         )}
 
         <button
-          onClick={handleContinue}
+          onClick={() => onContinue?.()}
           className="mt-stack-sm px-6 h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg"
         >
           {count > 0 ? 'Continue to Downloads' : 'Go to Downloads'}
