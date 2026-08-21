@@ -82,6 +82,8 @@ function AppRoutes() {
       <Route path="/resources/:id/read" element={<ResourceReader />} />
       <Route path="/s/:token" element={<ProtectedRoute><ShareRedirect /></ProtectedRoute>} />
       <Route path="/admin/resources" element={<AdminRoute><AdminResources /></AdminRoute>} />
+      <Route path="/resources/:id" element={<ResourceDetail />} />
+      <Route path="/library/:id" element={<ResourceDetail />} />
     </Routes>
   )
 }
