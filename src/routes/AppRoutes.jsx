@@ -40,7 +40,18 @@ import AdminResources from '../pages/admin/AdminResources'
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth()
   if (loading) return <Splash />
-  return <Navigate to={isAuthenticated ? '/home' : '/signin'} replace />
+  if (isAuthenticated) {
+    // Set by SignIn.jsx before a Google redirect sign-in when the user
+    // was originally headed somewhere other than /home (e.g. a share
+    // link). Read once and cleared immediately.
+    const pending = sessionStorage.getItem('rcf_post_login_return_to')
+    if (pending) {
+      sessionStorage.removeItem('rcf_post_login_return_to')
+      return <Navigate to={pending} replace />
+    }
+    return <Navigate to="/home" replace />
+  }
+  return <Navigate to="/signin" replace />
 }
 
 function AppRoutes() {

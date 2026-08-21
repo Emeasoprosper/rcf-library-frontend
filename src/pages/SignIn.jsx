@@ -68,17 +68,21 @@ function SignIn() {
     function tryRender() {
       if (cancelled) return
       if (window.google?.accounts?.id && buttonRef.current) {
-        // Carries returnTo through Google's full-page redirect as a URL
-        // param, since router state doesn't survive navigating away to
-        // accounts.google.com and back. The backend's
-        // /auth/google/redirect-callback route must read this same
-        // param and redirect there after setting session cookies —
-        // see the note below, that route isn't wired up for this yet.
-        const loginUriWithReturn = `${GOOGLE_REDIRECT_LOGIN_URI}?returnTo=${encodeURIComponent(returnTo)}`
+        // login_uri must match EXACTLY an Authorized redirect URI
+        // registered in Google Cloud Console — appending ?returnTo=
+        // here broke that exact match and caused a live "Error 400:
+        // redirect_uri_mismatch", blocking ALL Google sign-in. returnTo
+        // is now stashed in sessionStorage instead, which survives the
+        // full-page trip to accounts.google.com and back since it's the
+        // same browser tab — read back out by RootRedirect in
+        // AppRoutes.jsx once the user lands back here signed in.
+        if (returnTo && returnTo !== '/home') {
+          sessionStorage.setItem('rcf_post_login_return_to', returnTo)
+        }
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           ux_mode: 'redirect',
-          login_uri: loginUriWithReturn,
+          login_uri: GOOGLE_REDIRECT_LOGIN_URI,
         })
         window.google.accounts.id.renderButton(buttonRef.current, {
           theme: 'filled_black',
