@@ -78,6 +78,12 @@ export default defineConfig({
         // now included above.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: '/index.html',
+        // /s/ tokens still fall through to index.html like everything
+        // else here (that's correct — ShareRedirect.jsx needs the SPA
+        // shell to mount) — this denylist only ever needs to exclude
+        // truly non-SPA routes like /api/. Left as-is; noting it here
+        // since /s/ came up in this debugging pass, so it's confirmed
+        // NOT excluded.
         navigateFallbackDenylist: [/^\/api\//]
       }
     })
