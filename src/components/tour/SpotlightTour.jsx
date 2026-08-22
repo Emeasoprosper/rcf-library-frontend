@@ -2,26 +2,14 @@
 import { useState, useLayoutEffect, useRef, useCallback } from 'react'
 import { useTour } from '../../contexts/TourContext'
 
-const PADDING = 10 // gap between spotlight ring and the actual element
-const RADIUS = 16
+const PADDING = 10 // gap between spotlight hole and the actual element
 const TOOLTIP_MARGIN = 16
+const TOOLTIP_MIN_GAP = TOOLTIP_MARGIN + 12 // enforced clearance between tooltip and target
 const TOOLTIP_WIDTH = 300
 const VIEWPORT_TOLERANCE = 4 // px slack before we consider an element "already visible"
 
-function buildMask(rect) {
-  if (!rect) return null
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  const x = Math.max(rect.left - PADDING, 0)
-  const y = Math.max(rect.top - PADDING, 0)
-  const w = rect.width + PADDING * 2
-  const h = rect.height + PADDING * 2
-  const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${vw}' height='${vh}'>` +
-    `<rect width='100%' height='100%' fill='white'/>` +
-    `<rect x='${x}' y='${y}' width='${w}' height='${h}' rx='${RADIUS}' fill='black'/>` +
-    `</svg>`
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), Math.max(max, min))
 }
 
 function isFullyVisible(rect) {
@@ -33,37 +21,65 @@ function isFullyVisible(rect) {
   )
 }
 
-// Computes tooltip position using the tooltip's REAL measured height, so it
-// never gets clamped/clipped based on a guess. Falls back to a reasonable
-// estimate only for the very first frame before we've measured anything.
+// Four plain (unmasked) rectangles framing the target. Each one just
+// backdrop-blurs + dims its own patch of screen — the gap between them is
+// real empty space, so whatever sits under it (icons, labels, anything)
+// shows through with zero manipulation. This avoids combining
+// backdrop-filter with mask-image, which reliably renders as a solid black
+// hole on several mobile browsers when the masked element sits above
+// another element that also uses backdrop-filter (e.g. the bottom nav).
+function computeFrameRects(rect) {
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+
+  if (!rect) {
+    return [{ top: 0, left: 0, width: vw, height: vh }]
+  }
+
+  const holeLeft = Math.max(rect.left - PADDING, 0)
+  const holeTop = Math.max(rect.top - PADDING, 0)
+  const holeRight = Math.min(rect.left + rect.width + PADDING, vw)
+  const holeBottom = Math.min(rect.top + rect.height + PADDING, vh)
+
+  return [
+    { top: 0, left: 0, width: vw, height: holeTop }, // above the hole
+    { top: holeBottom, left: 0, width: vw, height: Math.max(vh - holeBottom, 0) }, // below the hole
+    { top: holeTop, left: 0, width: holeLeft, height: holeBottom - holeTop }, // left of the hole
+    { top: holeTop, left: holeRight, width: Math.max(vw - holeRight, 0), height: holeBottom - holeTop }, // right of the hole
+  ]
+}
+
+// Computes tooltip position using the tooltip's REAL measured height. If
+// neither above nor below the target has enough clearance, falls back to a
+// fixed safe zone instead of risking an overlap with the target.
 function computeTooltipPos(rect, tooltipHeight) {
   const vw = window.innerWidth
   const vh = window.innerHeight
   const height = tooltipHeight || 200
 
   if (!rect) {
-    return { top: vh / 2, left: vw / 2 - TOOLTIP_WIDTH / 2, transform: 'translateY(-50%)' }
+    return { top: vh / 2 - height / 2, left: vw / 2 - TOOLTIP_WIDTH / 2 }
   }
-
-  const spaceBelow = vh - rect.bottom
-  const spaceAbove = rect.top
-  const placeBelow = spaceBelow >= height + TOOLTIP_MARGIN || spaceBelow >= spaceAbove
 
   let left = rect.left + rect.width / 2 - TOOLTIP_WIDTH / 2
-  left = Math.min(Math.max(left, TOOLTIP_MARGIN), Math.max(vw - TOOLTIP_WIDTH - TOOLTIP_MARGIN, TOOLTIP_MARGIN))
+  left = clamp(left, TOOLTIP_MARGIN, vw - TOOLTIP_WIDTH - TOOLTIP_MARGIN)
+
+  const spaceBelow = vh - rect.bottom - PADDING
+  const spaceAbove = rect.top - PADDING
 
   let top
-  if (placeBelow) {
+  if (spaceBelow >= height + TOOLTIP_MIN_GAP) {
     top = rect.bottom + PADDING + 12
-  } else {
+  } else if (spaceAbove >= height + TOOLTIP_MIN_GAP) {
     top = rect.top - PADDING - 12 - height
+  } else {
+    // Neither side has room (e.g. a bottom-nav item on a short viewport) —
+    // anchor to a guaranteed-safe zone instead of overlapping the target.
+    top = TOOLTIP_MARGIN + 60
   }
 
-  // Final safety clamp: whatever placement logic decided, never let the
-  // card land outside the viewport bounds.
-  top = Math.min(Math.max(top, TOOLTIP_MARGIN), Math.max(vh - height - TOOLTIP_MARGIN, TOOLTIP_MARGIN))
-
-  return { top, left, transform: 'none' }
+  top = clamp(top, TOOLTIP_MARGIN, vh - height - TOOLTIP_MARGIN)
+  return { top, left }
 }
 
 function SpotlightTour() {
@@ -107,8 +123,6 @@ function SpotlightTour() {
     if (el) {
       const currentRect = el.getBoundingClientRect()
       if (isFullyVisible(currentRect)) {
-        // Already on screen — measure directly, no scroll (avoids
-        // triggering scroll-direction listeners elsewhere in the app).
         measure()
       } else {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -121,8 +135,7 @@ function SpotlightTour() {
     return () => clearTimeout(scrollTimerRef.current)
   }, [active, step, measure])
 
-  // Re-measure the actual tooltip card size once it's rendered, so
-  // positioning uses real dimensions instead of a guess.
+  // Re-measure the actual tooltip card size once it's rendered.
   useLayoutEffect(() => {
     if (!ready || !tooltipRef.current) return
     const h = tooltipRef.current.getBoundingClientRect().height
@@ -148,17 +161,17 @@ function SpotlightTour() {
 
   if (!active || !step) return null
 
-  const mask = buildMask(rect)
+  const frameRects = computeFrameRects(rect)
   const tooltipPos = computeTooltipPos(rect, tooltipHeight)
   const isFirst = stepIndex === 0
   const isLast = stepIndex === steps.length - 1
-  // Wait until we have both the target rect (or confirmed no-target) AND a
-  // real tooltip height measurement before revealing anything — prevents
-  // any flash at a wrong/clipped position.
   const fullyPositioned = ready && tooltipHeight !== null
 
   return (
-    <div className="fixed inset-0 z-[1000]" style={{ opacity: fullyPositioned ? 1 : 0, transition: 'opacity 200ms ease' }}>
+    <div
+      className="fixed inset-0 z-[1000]"
+      style={{ opacity: fullyPositioned ? 1 : 0, transition: 'opacity 200ms ease' }}
+    >
       <style>{`
         @keyframes tourPulseRing {
           0% { box-shadow: 0 0 0 0 rgba(249,115,22,0.55); }
@@ -173,16 +186,16 @@ function SpotlightTour() {
         .tour-card { animation: tourFadeUp 320ms cubic-bezier(0.25,1,0.5,1); }
       `}</style>
 
-      {/* Dim + blur everything except the spotlight cutout */}
-      <div
-        className="absolute inset-0 backdrop-blur-sm bg-black/70 transition-all duration-500 ease-out"
-        style={
-          mask
-            ? { WebkitMaskImage: mask, maskImage: mask, WebkitMaskSize: '100% 100%', maskSize: '100% 100%' }
-            : undefined
-        }
-        onClick={(e) => e.stopPropagation()}
-      />
+      {/* Four unmasked rectangles framing the target — dims/blurs everything
+          except the real gap left open around the target itself. */}
+      {frameRects.map((r, i) => (
+        <div
+          key={i}
+          className="absolute backdrop-blur-sm bg-black/70 transition-all duration-500 ease-out pointer-events-auto"
+          style={{ top: r.top, left: r.left, width: r.width, height: r.height }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ))}
 
       {/* Attention ring around the target */}
       {rect && (
@@ -205,7 +218,6 @@ function SpotlightTour() {
           top: tooltipPos.top,
           left: tooltipPos.left,
           width: TOOLTIP_WIDTH,
-          transform: tooltipPos.transform,
         }}
       >
         <h3 className="font-headline-md text-headline-md font-bold text-on-surface mb-1">{step.title}</h3>
