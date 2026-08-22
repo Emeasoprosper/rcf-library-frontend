@@ -1,9 +1,11 @@
 {
+  "redirects": [
+    { "source": "/resources/:id", "destination": "/library/:id", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/robots.txt", "destination": "/api/robots" },
     { "source": "/library/:id", "destination": "/api/library/:id" },
-    { "source": "/resources/:id", "destination": "/api/resources/:id" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -89,11 +89,9 @@ function AppRoutes() {
       <Route path="/admin/requests" element={<AdminRoute><AdminRequests /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
       <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
-      <Route path="/resources/:id" element={<ResourceDetail />} />
       <Route path="/resources/:id/read" element={<ResourceReader />} />
       <Route path="/s/:token" element={<ProtectedRoute><ShareRedirect /></ProtectedRoute>} />
       <Route path="/admin/resources" element={<AdminRoute><AdminResources /></AdminRoute>} />
-      <Route path="/resources/:id" element={<ResourceDetail />} />
       <Route path="/library/:id" element={<ResourceDetail />} />
     </Routes>
   )

@@ -25,8 +25,8 @@ const CATEGORY_GRADIENTS = [
   'from-cyan-500 to-teal-400',
 ]
 
-// Confirmed from AppRoutes.jsx: <Route path="/resources/:id" element={<ResourceDetail />} />
-const resourceDetailPath = (id) => `/resources/${id}`
+// Canonical resource URL — see AppRoutes.jsx (<Route path="/library/:id" />)
+const resourceDetailPath = (id) => `/library/${id}`
 
 const RECENTS_KEY = 'recentSearches'
 const RECENTS_VERSION = 2 // bumped: old entries were {term, category} text-only

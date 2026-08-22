@@ -21,7 +21,7 @@ function ShareRedirect() {
     resourcesApi
       .resolveShareToken(token)
       .then(({ resourceId }) => {
-        if (!cancelled) navigate(`/resources/${resourceId}`, { replace: true })
+        if (!cancelled) navigate(`/library/${resourceId}`, { replace: true })
       })
       .catch(() => {
         if (!cancelled) setError(true)

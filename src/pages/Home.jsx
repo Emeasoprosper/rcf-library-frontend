@@ -47,7 +47,7 @@ const CONTINUE_LANE_CONFIG = {
   book: {
     title: 'Continue Reading',
     progressSuffix: 'read',
-    route: (id) => `/resources/${id}`,
+    route: (id) => `/library/${id}`,
   },
   video: {
     title: 'Continue Watching',
@@ -167,7 +167,7 @@ function Home() {
           thumbnailUrl: r.thumbnail_url,
           thumbnailStatus: r.thumbnail_status,
           fileType: r.file_type,
-          onClick: () => navigate(`/resources/${r.id}`),
+          onClick: () => navigate(`/library/${r.id}`),
         })
 
         const recentItems = recentRes.items || []
@@ -200,7 +200,7 @@ function Home() {
               subtitle,
               thumbnailUrl: h.thumbnail_url,
               fileType: h.file_type,
-              onClick: () => navigate(kind === 'book' ? `/resources/${h.resource_id}` : `/resources/${h.resource_id}/read`),
+              onClick: () => navigate(kind === 'book' ? `/library/${h.resource_id}` : `/resources/${h.resource_id}/read`),
             }
           })
         setJumpBackIn(jumpBackInItems)

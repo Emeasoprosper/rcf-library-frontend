@@ -76,7 +76,7 @@ function toRelatedItem(r, navigate) {
     contributorName: r.contributor_name,
     contributorAvatarUrl: r.contributor_avatar_url,
     isAdminUpload: r.is_admin_upload,
-    onClick: () => navigate(`/resources/${r.id}`),
+    onClick: () => navigate(`/library/${r.id}`),
   }
 }
 
