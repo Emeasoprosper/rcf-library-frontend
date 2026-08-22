@@ -87,7 +87,6 @@ function SpotlightTour() {
   const [rect, setRect] = useState(null)
   const [ready, setReady] = useState(false)
   const [tooltipHeight, setTooltipHeight] = useState(null)
-  const [hasSettled, setHasSettled] = useState(false)
   const rafRef = useRef(null)
   const scrollTimerRef = useRef(null)
   const tooltipRef = useRef(null)
@@ -117,7 +116,6 @@ function SpotlightTour() {
     if (!active || !step) return
     setReady(false)
     setTooltipHeight(null)
-    setHasSettled(false)
     clearTimeout(scrollTimerRef.current)
 
     const el = step.selector ? document.querySelector(step.selector) : null
@@ -145,14 +143,6 @@ function SpotlightTour() {
       setTooltipHeight(h)
     }
   })
-
-  // Once a step's tooltip has been revealed at its correct position, allow
-  // future position changes (e.g. a resize/rotate) to animate smoothly.
-  // Deliberately NOT enabled during the very first reveal — see hasSettled
-  // usage below for why.
-  useLayoutEffect(() => {
-    if (ready && tooltipHeight !== null) setHasSettled(true)
-  }, [ready, tooltipHeight])
 
   useLayoutEffect(() => {
     if (!active) return
@@ -197,11 +187,15 @@ function SpotlightTour() {
       `}</style>
 
       {/* Four unmasked rectangles framing the target — dims/blurs everything
-          except the real gap left open around the target itself. */}
+          except the real gap left open around the target itself. Position
+          is intentionally NOT CSS-transitioned: while the page is still
+          settling from a scrollIntoView, the live scroll/resize listener
+          re-measures every frame, and animating on top of that would make
+          the spotlight visibly lag behind a target that's still moving. */}
       {frameRects.map((r, i) => (
         <div
           key={i}
-          className="absolute backdrop-blur-sm bg-black/70 transition-all duration-500 ease-out pointer-events-auto"
+          className="absolute backdrop-blur-sm bg-black/70 pointer-events-auto"
           style={{ top: r.top, left: r.left, width: r.width, height: r.height }}
           onClick={(e) => e.stopPropagation()}
         />
@@ -210,7 +204,7 @@ function SpotlightTour() {
       {/* Attention ring around the target */}
       {rect && (
         <div
-          className="tour-ring absolute rounded-2xl border-2 border-orange-500 pointer-events-none transition-all duration-500 ease-out"
+          className="tour-ring absolute rounded-2xl border-2 border-orange-500 pointer-events-none"
           style={{
             top: rect.top - PADDING,
             left: rect.left - PADDING,
@@ -228,11 +222,6 @@ function SpotlightTour() {
           top: tooltipPos.top,
           left: tooltipPos.left,
           width: TOOLTIP_WIDTH,
-          // No position transition during the very first reveal of a step
-          // (it would animate from an invisible height-guess position to
-          // the real one, briefly overlapping the target). Only animate
-          // position changes once already settled — e.g. on resize.
-          transition: hasSettled ? 'top 400ms cubic-bezier(0.25,1,0.5,1), left 400ms cubic-bezier(0.25,1,0.5,1)' : 'none',
         }}
       >
         <h3 className="font-headline-md text-headline-md font-bold text-on-surface mb-1">{step.title}</h3>
