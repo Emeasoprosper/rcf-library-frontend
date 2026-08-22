@@ -125,12 +125,20 @@ function FilePreviewCard({
   useEffect(() => {
     if (analysisStartedRef.current) return
     if (!ANALYZABLE_KINDS.has(kind)) return
+
+    // For a PDF, wait until the client-side page-1 thumbnail has finished
+    // (successfully or not) before analyzing — if the PDF has no
+    // extractable text layer, that same rendered image is sent up as a
+    // fallback so Gemini can still read the cover page visually. Images
+    // don't need this wait: the raw file is already sent to Gemini directly.
+    if (kind === 'pdf' && thumbnail === null && !thumbnailFailed) return
+
     analysisStartedRef.current = true
 
     let cancelled = false
     setAnalyzing(true)
 
-    analyzeResource(file, resourceTypeSlug)
+    analyzeResource(file, resourceTypeSlug, kind === 'pdf' ? thumbnail : null)
       .then(({ suggestion }) => {
         if (cancelled || !suggestion) return
 
@@ -163,7 +171,7 @@ function FilePreviewCard({
 
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file, kind])
+  }, [file, kind, thumbnail, thumbnailFailed])
 
   const categoryName = categories.find((c) => String(c.id) === String(categoryId))?.name
 

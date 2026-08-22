@@ -88,45 +88,61 @@ export function uploadResourceFile(formData, onProgress) {
   })
 }
 
-export function analyzeResource(file, resourceTypeSlug) {
+export function analyzeResource(file, resourceTypeSlug, thumbnailDataUrl) {
   const formData = new FormData()
   formData.append('file', file)
   if (resourceTypeSlug) formData.append('resourceTypeSlug', resourceTypeSlug)
 
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-    xhr.open('POST', `${API_BASE}/uploads/analyze`)
-    xhr.withCredentials = true
+  const send = (fd) =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `${API_BASE}/uploads/analyze`)
+      xhr.withCredentials = true
 
-    xhr.onload = async () => {
-      if (xhr.status === 401) {
+      xhr.onload = async () => {
+        if (xhr.status === 401) {
+          try {
+            await rawFetchOk('/auth/refresh', { method: 'POST' })
+            send(fd).then(resolve).catch(reject)
+            return
+          } catch {
+            window.dispatchEvent(new Event('auth:expired'))
+            reject(new Error('Your session expired — please sign in again.'))
+            return
+          }
+        }
+
+        let body = {}
         try {
-          await rawFetchOk('/auth/refresh', { method: 'POST' })
-          analyzeResource(file, resourceTypeSlug).then(resolve).catch(reject)
-          return
+          body = JSON.parse(xhr.responseText || '{}')
         } catch {
-          window.dispatchEvent(new Event('auth:expired'))
-          reject(new Error('Your session expired — please sign in again.'))
-          return
+          // fall through to status check below
+        }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(body)
+        } else {
+          reject(new Error(body.error || `Analysis failed (${xhr.status})`))
         }
       }
 
-      let body = {}
-      try {
-        body = JSON.parse(xhr.responseText || '{}')
-      } catch {
-        // fall through to status check below
-      }
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(body)
-      } else {
-        reject(new Error(body.error || `Analysis failed (${xhr.status})`))
-      }
-    }
+      xhr.onerror = () => reject(new Error('Network error during analysis'))
+      xhr.send(fd)
+    })
 
-    xhr.onerror = () => reject(new Error('Network error during analysis'))
-    xhr.send(formData)
-  })
+  // thumbnailDataUrl is only passed for a PDF whose page-1 preview has
+  // already finished rendering client-side (see FilePreviewCard.jsx) —
+  // converted to a real Blob here so the backend can use it as a
+  // vision-model fallback when the PDF has no extractable text layer.
+  if (thumbnailDataUrl) {
+    return fetch(thumbnailDataUrl)
+      .then((r) => r.blob())
+      .then((blob) => {
+        formData.append('thumbnail', blob, 'thumbnail.jpg')
+        return send(formData)
+      })
+  }
+
+  return send(formData)
 }
 
 export function uploadAnnouncementAttachment(file) {
