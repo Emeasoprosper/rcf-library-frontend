@@ -43,38 +43,7 @@ async function rawFetchOk(path, options) {
   return text ? JSON.parse(text) : null
 }
 
-// POST /uploads/analyze — multipart, so it deliberately does NOT go
-// through apiFetch/rawFetch (those always set Content-Type:
-// application/json, which breaks a FormData body's multipart boundary).
-// Mirrors apiFetch's 401-refresh-then-retry behavior by hand instead.
-export async function analyzeResource(file, resourceTypeSlug, _isRetry = false) {
-  const formData = new FormData()
-  formData.append('file', file)
-  if (resourceTypeSlug) formData.append('resourceTypeSlug', resourceTypeSlug)
 
-  const res = await fetch(`${API_BASE}/uploads/analyze`, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  })
-
-  if (res.status === 401 && !_isRetry) {
-    try {
-      await authApi.refresh()
-      return analyzeResource(file, resourceTypeSlug, true)
-    } catch {
-      window.dispatchEvent(new Event('auth:expired'))
-      throw new Error('Your session expired — please sign in again.')
-    }
-  }
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `Analysis failed (${res.status})`)
-  }
-
-  return res.json()
-}
 
 export function uploadResourceFile(formData, onProgress) {
   return new Promise((resolve, reject) => {
