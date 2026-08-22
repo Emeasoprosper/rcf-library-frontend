@@ -6,6 +6,8 @@ import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { getMediaKind } from '../lib/mediaKind'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
+import OfflineDownloadInfoModal from '../components/ui/OfflineDownloadInfoModal'
+import { hasSeenOfflineDownloadInfo, markOfflineDownloadInfoSeen } from '../lib/offlineDownloadInfo'
 
 function formatMinutes(mins) {
   if (!mins) return null
@@ -94,6 +96,7 @@ function ResourceDetail() {
   const [savingBookmark, setSavingBookmark] = useState(false)
   const [showGate, setShowGate] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [showOfflineInfo, setShowOfflineInfo] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -171,6 +174,11 @@ function ResourceDetail() {
         thumbnailUrl: resourcesApi.thumbnailUrl(id),
       })
       setDownloaded(true)
+
+      if (!hasSeenOfflineDownloadInfo()) {
+        markOfflineDownloadInfoSeen()
+        setShowOfflineInfo(true)
+      }
     } catch {
       alert('Download failed — please try again.')
     } finally {
@@ -365,6 +373,15 @@ function ResourceDetail() {
       </div>
 
       <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
+
+      <OfflineDownloadInfoModal
+        open={showOfflineInfo}
+        onClose={() => setShowOfflineInfo(false)}
+        onViewOffline={() => {
+          setShowOfflineInfo(false)
+          navigate('/downloads')
+        }}
+      />
     </div>
   )
 }

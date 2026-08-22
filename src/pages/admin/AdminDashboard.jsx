@@ -100,6 +100,12 @@ function AdminDashboard() {
               {link.to === '/admin/uploads' && stats?.pendingReview > 0 && (
                 <span className="text-label-sm font-label-sm text-primary">{stats.pendingReview} waiting</span>
               )}
+              {link.to === '/admin/requests' && stats?.openRequests > 0 && (
+                <span className="text-label-sm font-label-sm text-primary">{stats.openRequests} waiting</span>
+              )}
+              {link.to === '/admin/requests' && stats?.openRequests > 0 && (
+                <span className="text-label-sm font-label-sm text-primary">{stats.openRequests} waiting</span>
+              )}
             </button>
           ))}
         </section>

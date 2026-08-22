@@ -385,9 +385,18 @@ function Search() {
             )}
 
             {!searching && !searchError && hasSearched && results.length === 0 && (
-              <p className="font-label-md text-label-md text-on-surface-variant mb-stack-sm">
-                No results for "{query.trim()}".
-              </p>
+              <div className="mb-stack-sm p-stack-md rounded-xl bg-surface-container border border-outline">
+                <p className="font-label-md text-label-md text-on-surface-variant mb-stack-sm">
+                  No results for "{query.trim()}".
+                </p>
+                <button
+                  onClick={() => navigate('/contribute/request', { state: { prefillTitle: query.trim() } })}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-on-primary font-label-sm text-label-sm"
+                >
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                  Request this material
+                </button>
+              </div>
             )}
 
             <div className="flex flex-col gap-stack-sm">

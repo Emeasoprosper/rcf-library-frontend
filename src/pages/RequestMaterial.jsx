@@ -1,9 +1,10 @@
 // pages/RequestMaterial.jsx
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import { communityApi } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
 const statusStyle = {
   open: { label: 'Pending', chip: 'bg-amber-500/20 text-amber-400', icon: 'schedule' },
@@ -13,7 +14,13 @@ const statusStyle = {
 
 function RequestMaterial() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ title: '', courseCode: '', notes: '' })
+  const location = useLocation()
+  const { user } = useAuth()
+  // Prefilled when arriving from Search.jsx's "Request this material"
+  // prompt, shown after a zero-result search. Empty for a normal
+  // manual visit to this page.
+  const prefillTitle = location.state?.prefillTitle || ''
+  const [form, setForm] = useState({ title: prefillTitle, courseCode: '', notes: '' })
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
@@ -37,7 +44,17 @@ function RequestMaterial() {
     setSubmitting(true)
     setError('')
     try {
-      const { request } = await communityApi.createRequest(form)
+      // department/level come from the user's own profile (Complete
+      // Profile) instead of asking them to re-type it — "user
+      // information where appropriate" captured automatically.
+      // searchQuery is only set when this page was reached from a
+      // failed search, so the admin can see exactly what was searched.
+      const details = {
+        department: user?.department || null,
+        level: user?.level || null,
+        searchQuery: prefillTitle || null,
+      }
+      const { request } = await communityApi.createRequest({ ...form, details })
       setMyRequests((prev) => [request, ...prev])
       setForm({ title: '', courseCode: '', notes: '' })
       setSent(true)
