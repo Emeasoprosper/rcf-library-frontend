@@ -328,12 +328,17 @@ function Home() {
 
       <main className="pb-24 pt-[68px]">
         <section
-          data-tour="tour-search"
           className={`sticky z-40 w-full px-margin-mobile pt-stack-md pb-stack-lg bg-background transition-[top] duration-300 ease-in-out ${
             headerHidden ? 'top-0' : 'top-[68px]'
           }`}
         >
-          <div className="relative w-full">
+          {/* data-tour lives on this inner div, not the <section> above —
+              the section carries top/bottom padding for spacing plus the
+              sticky positioning, and spotlighting it made the tour's hole
+              taller and wider than the actual search pill (which is all
+              the user should see highlighted). This div is exactly the
+              visible pill, with no padding of its own. */}
+          <div data-tour="tour-search" className="relative w-full">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
             <input
               type="text"

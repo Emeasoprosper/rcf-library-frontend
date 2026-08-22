@@ -84,13 +84,21 @@ function computeTooltipPos(rect, tooltipHeight) {
     top = rect.bottom + PADDING + 12
   } else if (spaceAbove >= height + TOOLTIP_MIN_GAP) {
     top = rect.top - PADDING - 12 - height
+  } else if (spaceBelow >= spaceAbove) {
+    // Neither side has full room (e.g. a bottom-nav item on a short
+    // viewport, or a tall target eating most of the screen) — use
+    // whichever side actually has MORE room rather than a fixed offset,
+    // so we never land the tooltip back inside the spotlight band itself.
+    top = rect.bottom + PADDING + 12
   } else {
-    // Neither side has room (e.g. a bottom-nav item on a short viewport) —
-    // anchor to a guaranteed-safe zone instead of overlapping the target.
-    top = TOOLTIP_MARGIN + 60
+    top = rect.top - PADDING - 12 - height
   }
 
-  top = clamp(top, TOOLTIP_MARGIN, vh - height - TOOLTIP_MARGIN)
+  // Clamp against the viewport only — never let the clamp pull the
+  // tooltip back toward the target when the card is taller than the
+  // available space (that would reintroduce the overlap this branch
+  // exists to avoid).
+  top = clamp(top, TOOLTIP_MARGIN, Math.max(vh - height - TOOLTIP_MARGIN, TOOLTIP_MARGIN))
   return { top, left }
 }
 
