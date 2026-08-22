@@ -140,6 +140,10 @@ function SubmitResource() {
         if (entry.courseCode) formData.append('courseCode', entry.courseCode)
         if (entry.description) formData.append('description', entry.description)
         if (entry.categoryId) formData.append('categoryId', entry.categoryId)
+        if (entry.tags) {
+          const tagList = entry.tags.split(',').map((t) => t.trim()).filter(Boolean)
+          if (tagList.length) formData.append('tags', JSON.stringify(tagList))
+        }
         formData.append('resourceTypeSlug', selectedTypeData?.slug || 'other')
 
         await uploadResourceFile(formData, (pct) => {
@@ -233,6 +237,7 @@ function SubmitResource() {
                 authorLabel={selectedTypeData?.authorLabel || 'Author'}
                 categories={categories}
                 onCreateCategory={handleCreateCategory}
+                resourceTypeSlug={selectedTypeData?.slug}
               />
 
               {uploadError && (

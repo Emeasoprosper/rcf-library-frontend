@@ -86,6 +86,47 @@ export function uploadResourceFile(formData, onProgress) {
   })
 }
 
+export function analyzeResource(file, resourceTypeSlug) {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (resourceTypeSlug) formData.append('resourceTypeSlug', resourceTypeSlug)
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${API_BASE}/uploads/analyze`)
+    xhr.withCredentials = true
+
+    xhr.onload = async () => {
+      if (xhr.status === 401) {
+        try {
+          await rawFetchOk('/auth/refresh', { method: 'POST' })
+          analyzeResource(file, resourceTypeSlug).then(resolve).catch(reject)
+          return
+        } catch {
+          window.dispatchEvent(new Event('auth:expired'))
+          reject(new Error('Your session expired — please sign in again.'))
+          return
+        }
+      }
+
+      let body = {}
+      try {
+        body = JSON.parse(xhr.responseText || '{}')
+      } catch {
+        // fall through to status check below
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(body)
+      } else {
+        reject(new Error(body.error || `Analysis failed (${xhr.status})`))
+      }
+    }
+
+    xhr.onerror = () => reject(new Error('Network error during analysis'))
+    xhr.send(formData)
+  })
+}
+
 export function uploadAnnouncementAttachment(file) {
   const formData = new FormData()
   formData.append('file', file)
