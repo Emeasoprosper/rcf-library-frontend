@@ -5,6 +5,7 @@ import BottomNav from '../components/layout/BottomNav'
 import ToggleSwitch from '../components/ui/ToggleSwitch'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
+import { TOUR_FORCE_START_KEY } from '../contexts/TourContext'
 
 const languages = ['English']
 
@@ -38,6 +39,15 @@ function Settings() {
 
   const toggleSection = (key) => {
     setOpenSection(openSection === key ? null : key)
+  }
+
+  const replayTutorial = () => {
+    try {
+      sessionStorage.setItem(TOUR_FORCE_START_KEY, '1')
+    } catch {
+      // ignore — worst case the tour just doesn't force-start
+    }
+    navigate('/home')
   }
 
   const saveProfile = async () => {
@@ -256,6 +266,15 @@ function Settings() {
             >
               <span className="material-symbols-outlined text-on-surface-variant">help</span>
               <span className="font-body-md text-body-md text-on-surface flex-grow">Help & Support</span>
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+            </button>
+
+            <button
+              onClick={replayTutorial}
+              className="flex items-center gap-4 p-stack-md rounded-xl bg-surface-container border border-outline text-left"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant">replay</span>
+              <span className="font-body-md text-body-md text-on-surface flex-grow">Replay Tutorial</span>
               <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
             </button>
 

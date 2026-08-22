@@ -15,6 +15,7 @@ import { getMediaKind } from '../lib/mediaKind'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { shuffle } from '../lib/shuffle'
 import { getDismissedNewsIds, addDismissedNewsId } from '../lib/dismissedNews'
+import { useTour } from '../contexts/TourContext'
 
 const ads = []
 
@@ -129,6 +130,7 @@ function ContinueCard({ item, kind, progressLabel, onClick }) {
 function Home() {
   const navigate = useNavigate()
   const headerHidden = useScrollDirection()
+  const { startTour, hasCompletedTour, shouldForceStart } = useTour()
 
   const [recentBooks, setRecentBooks] = useState([])
   const [recentVideos, setRecentVideos] = useState([])
@@ -233,6 +235,14 @@ function Home() {
     return () => { cancelled = true }
   }, [])
 
+  useEffect(() => {
+    if (loading) return
+    const forced = shouldForceStart()
+    if (!forced && hasCompletedTour()) return
+    const timer = setTimeout(() => startTour(), 600)
+    return () => clearTimeout(timer)
+  }, [loading, hasCompletedTour, shouldForceStart, startTour])
+
   function handleDismissPopup() {
     if (popupNews) {
       addDismissedNewsId(popupNews.id)
@@ -301,6 +311,7 @@ function Home() {
         title="Home"
         rightIcons={
           <button
+            data-tour="tour-notifications"
             onClick={() => navigate('/notifications')}
             className="relative p-2 rounded-full hover:bg-surface-container-high transition-colors"
             aria-label="Notifications"
@@ -317,6 +328,7 @@ function Home() {
 
       <main className="pb-24 pt-[68px]">
         <section
+          data-tour="tour-search"
           className={`sticky z-40 w-full px-margin-mobile pt-stack-md pb-stack-lg bg-background transition-[top] duration-300 ease-in-out ${
             headerHidden ? 'top-0' : 'top-[68px]'
           }`}

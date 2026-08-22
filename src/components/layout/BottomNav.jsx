@@ -8,6 +8,13 @@ const navItems = [
   { to: '/profile', icon: 'profile', label: 'Profile' },
 ]
 
+const TOUR_NAV_IDS = {
+  search: 'tour-nav-search',
+  library: 'tour-nav-library',
+  contribute: 'tour-nav-contribute',
+  profile: 'tour-nav-profile',
+}
+
 // Each icon's accent piece (the dot, the page fold, the head, etc.) is
 // orange only while its tab is active — currentColor (inherited from the
 // wrapping Link's text color, same white/gray as the label) the rest of
@@ -107,6 +114,7 @@ function BottomNav() {
             <Link
               key={item.to}
               to={item.to}
+              data-tour={TOUR_NAV_IDS[item.icon]}
               className={`flex flex-col items-center justify-center gap-1 transition-colors duration-150 active:scale-90 ${
                 isActive ? 'text-orange-500 font-semibold' : 'text-on-surface-variant'
               }`}
