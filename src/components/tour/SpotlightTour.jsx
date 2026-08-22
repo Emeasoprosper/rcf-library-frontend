@@ -6,6 +6,7 @@ const PADDING = 10 // gap between spotlight ring and the actual element
 const RADIUS = 16
 const TOOLTIP_MARGIN = 16
 const TOOLTIP_WIDTH = 300
+const VIEWPORT_TOLERANCE = 4 // px slack before we consider an element "already visible"
 
 function buildMask(rect) {
   if (!rect) return null
@@ -23,33 +24,56 @@ function buildMask(rect) {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
 }
 
-function computeTooltipPos(rect) {
+function isFullyVisible(rect) {
+  return (
+    rect.top >= VIEWPORT_TOLERANCE &&
+    rect.left >= VIEWPORT_TOLERANCE &&
+    rect.bottom <= window.innerHeight - VIEWPORT_TOLERANCE &&
+    rect.right <= window.innerWidth - VIEWPORT_TOLERANCE
+  )
+}
+
+// Computes tooltip position using the tooltip's REAL measured height, so it
+// never gets clamped/clipped based on a guess. Falls back to a reasonable
+// estimate only for the very first frame before we've measured anything.
+function computeTooltipPos(rect, tooltipHeight) {
   const vw = window.innerWidth
   const vh = window.innerHeight
+  const height = tooltipHeight || 200
 
   if (!rect) {
-    return { top: vh / 2, left: vw / 2, transform: 'translate(-50%, -50%)' }
+    return { top: vh / 2, left: vw / 2 - TOOLTIP_WIDTH / 2, transform: 'translateY(-50%)' }
   }
 
   const spaceBelow = vh - rect.bottom
   const spaceAbove = rect.top
-  const placeBelow = spaceBelow >= 180 || spaceBelow >= spaceAbove
+  const placeBelow = spaceBelow >= height + TOOLTIP_MARGIN || spaceBelow >= spaceAbove
 
   let left = rect.left + rect.width / 2 - TOOLTIP_WIDTH / 2
-  left = Math.min(Math.max(left, TOOLTIP_MARGIN), vw - TOOLTIP_WIDTH - TOOLTIP_MARGIN)
+  left = Math.min(Math.max(left, TOOLTIP_MARGIN), Math.max(vw - TOOLTIP_WIDTH - TOOLTIP_MARGIN, TOOLTIP_MARGIN))
 
+  let top
   if (placeBelow) {
-    return { top: rect.bottom + PADDING + 12, left, transform: 'none' }
+    top = rect.bottom + PADDING + 12
+  } else {
+    top = rect.top - PADDING - 12 - height
   }
-  return { top: rect.top - PADDING - 12, left, transform: 'translateY(-100%)' }
+
+  // Final safety clamp: whatever placement logic decided, never let the
+  // card land outside the viewport bounds.
+  top = Math.min(Math.max(top, TOOLTIP_MARGIN), Math.max(vh - height - TOOLTIP_MARGIN, TOOLTIP_MARGIN))
+
+  return { top, left, transform: 'none' }
 }
 
 function SpotlightTour() {
   const { active, stepIndex, steps, nextStep, prevStep, skipTour } = useTour()
   const [rect, setRect] = useState(null)
   const [ready, setReady] = useState(false)
+  const [tooltipHeight, setTooltipHeight] = useState(null)
   const rafRef = useRef(null)
   const scrollTimerRef = useRef(null)
+  const tooltipRef = useRef(null)
 
   const step = steps[stepIndex]
 
@@ -71,22 +95,41 @@ function SpotlightTour() {
     setReady(true)
   }, [step])
 
+  // Decide whether we need to scroll at all, then measure.
   useLayoutEffect(() => {
     if (!active || !step) return
     setReady(false)
+    setTooltipHeight(null)
+    clearTimeout(scrollTimerRef.current)
 
-    let el = null
-    if (step.selector) el = document.querySelector(step.selector)
+    const el = step.selector ? document.querySelector(step.selector) : null
 
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      scrollTimerRef.current = setTimeout(measure, 380)
+      const currentRect = el.getBoundingClientRect()
+      if (isFullyVisible(currentRect)) {
+        // Already on screen — measure directly, no scroll (avoids
+        // triggering scroll-direction listeners elsewhere in the app).
+        measure()
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        scrollTimerRef.current = setTimeout(measure, 380)
+      }
     } else {
       measure()
     }
 
     return () => clearTimeout(scrollTimerRef.current)
   }, [active, step, measure])
+
+  // Re-measure the actual tooltip card size once it's rendered, so
+  // positioning uses real dimensions instead of a guess.
+  useLayoutEffect(() => {
+    if (!ready || !tooltipRef.current) return
+    const h = tooltipRef.current.getBoundingClientRect().height
+    if (h && Math.abs(h - (tooltipHeight || 0)) > 1) {
+      setTooltipHeight(h)
+    }
+  })
 
   useLayoutEffect(() => {
     if (!active) return
@@ -106,12 +149,16 @@ function SpotlightTour() {
   if (!active || !step) return null
 
   const mask = buildMask(rect)
-  const tooltipPos = computeTooltipPos(rect)
+  const tooltipPos = computeTooltipPos(rect, tooltipHeight)
   const isFirst = stepIndex === 0
   const isLast = stepIndex === steps.length - 1
+  // Wait until we have both the target rect (or confirmed no-target) AND a
+  // real tooltip height measurement before revealing anything — prevents
+  // any flash at a wrong/clipped position.
+  const fullyPositioned = ready && tooltipHeight !== null
 
   return (
-    <div className="fixed inset-0 z-[1000]" style={{ opacity: ready ? 1 : 0, transition: 'opacity 200ms ease' }}>
+    <div className="fixed inset-0 z-[1000]" style={{ opacity: fullyPositioned ? 1 : 0, transition: 'opacity 200ms ease' }}>
       <style>{`
         @keyframes tourPulseRing {
           0% { box-shadow: 0 0 0 0 rgba(249,115,22,0.55); }
@@ -152,6 +199,7 @@ function SpotlightTour() {
 
       {/* Tooltip card */}
       <div
+        ref={tooltipRef}
         className="tour-card absolute bg-surface-container-highest border border-outline rounded-2xl shadow-2xl p-5 transition-all duration-500 ease-out"
         style={{
           top: tooltipPos.top,
