@@ -61,44 +61,54 @@ function computeFrameRects(rect) {
   ]
 }
 
-// Computes tooltip position using the tooltip's REAL measured height. If
-// neither above nor below the target has enough clearance, falls back to a
-// fixed safe zone instead of risking an overlap with the target.
+// Computes tooltip position using the tooltip's REAL measured height.
+// Every candidate top is derived directly from the target's own edges
+// (rect.bottom or rect.top) — never a fixed/unrelated screen coordinate —
+// so the tooltip can never mathematically land on top of the target,
+// no matter how short or narrow the viewport is.
 function computeTooltipPos(rect, tooltipHeight) {
   const vw = window.innerWidth
   const vh = window.innerHeight
   const height = tooltipHeight || 200
 
   if (!rect) {
-    return { top: vh / 2 - height / 2, left: vw / 2 - TOOLTIP_WIDTH / 2 }
+    return { top: Math.max((vh - height) / 2, TOOLTIP_MARGIN), left: (vw - TOOLTIP_WIDTH) / 2 }
   }
 
   let left = rect.left + rect.width / 2 - TOOLTIP_WIDTH / 2
   left = clamp(left, TOOLTIP_MARGIN, vw - TOOLTIP_WIDTH - TOOLTIP_MARGIN)
 
-  const spaceBelow = vh - rect.bottom - PADDING
-  const spaceAbove = rect.top - PADDING
+  const belowTop = rect.bottom + PADDING + 12
+  const aboveTop = rect.top - PADDING - 12 - height
+
+  const belowFits = belowTop + height <= vh - TOOLTIP_MARGIN
+  const aboveFits = aboveTop >= TOOLTIP_MARGIN
 
   let top
-  if (spaceBelow >= height + TOOLTIP_MIN_GAP) {
-    top = rect.bottom + PADDING + 12
-  } else if (spaceAbove >= height + TOOLTIP_MIN_GAP) {
-    top = rect.top - PADDING - 12 - height
-  } else if (spaceBelow >= spaceAbove) {
-    // Neither side has full room (e.g. a bottom-nav item on a short
-    // viewport, or a tall target eating most of the screen) — use
-    // whichever side actually has MORE room rather than a fixed offset,
-    // so we never land the tooltip back inside the spotlight band itself.
-    top = rect.bottom + PADDING + 12
+  if (belowFits) {
+    top = belowTop
+  } else if (aboveFits) {
+    top = aboveTop
   } else {
-    top = rect.top - PADDING - 12 - height
+    // Neither placement fully fits the viewport — pick whichever side has
+    // more room and let the card extend toward the edge of the screen
+    // rather than ever falling back to a fixed point that could coincide
+    // with the target.
+    const spaceBelow = vh - belowTop
+    const spaceAbove = rect.top - PADDING - 12
+    if (spaceBelow >= spaceAbove) {
+      top = Math.max(belowTop, TOOLTIP_MARGIN)
+    } else {
+      top = Math.max(aboveTop, TOOLTIP_MARGIN)
+      // If clamping to stay on-screen pushed the card's bottom edge back
+      // down into the target's zone, prefer "below" instead — it's the
+      // one placement that's overlap-safe by construction either way.
+      if (top + height > rect.top - PADDING) {
+        top = Math.max(belowTop, TOOLTIP_MARGIN)
+      }
+    }
   }
 
-  // Clamp against the viewport only — never let the clamp pull the
-  // tooltip back toward the target when the card is taller than the
-  // available space (that would reintroduce the overlap this branch
-  // exists to avoid).
-  top = clamp(top, TOOLTIP_MARGIN, Math.max(vh - height - TOOLTIP_MARGIN, TOOLTIP_MARGIN))
   return { top, left }
 }
 
