@@ -46,8 +46,19 @@ function MultiFileUpload({ files, onFilesChange, accept, authorLabel = 'Author',
     e.target.value = ''
   }
 
+  // Functional update form — critical when several fields get set in
+  // rapid succession from the same synchronous callback (see
+  // FilePreviewCard.jsx's AI-suggestion handler, which calls onXChange
+  // for name/author/description/tags/category one after another with no
+  // render in between). Building the new array from the CLOSURE's
+  // `files` (as this used to) meant every call in that burst computed
+  // its patch against the same stale array, so only the last call's
+  // change actually survived — every earlier one got silently
+  // overwritten. Passing a function to onFilesChange (React's setState
+  // updater form) makes each call build on the true latest state
+  // instead, so all six updates stack correctly.
   const updateFile = (index, patch) => {
-    onFilesChange(files.map((f, i) => (i === index ? { ...f, ...patch } : f)))
+    onFilesChange((prevFiles) => prevFiles.map((f, i) => (i === index ? { ...f, ...patch } : f)))
   }
 
   const removeFile = (index) => {
