@@ -6,6 +6,7 @@ import { renderDocxFirstPage } from '../../lib/docxThumbnail'
 import { extractAudioCoverArt } from '../../lib/audioThumbnail'
 import { formatBytes } from '../../lib/formatBytes'
 import { analyzeResource } from '../../services/api'
+import { enqueueAnalysis } from '../../lib/analysisQueue'
 import PreviewEditModal from './PreviewEditModal'
 import DocumentTypeIcon from './DocumentTypeIcon'
 
@@ -138,7 +139,7 @@ function FilePreviewCard({
     let cancelled = false
     setAnalyzing(true)
 
-    analyzeResource(file, resourceTypeSlug, kind === 'pdf' ? thumbnail : null)
+    enqueueAnalysis(() => analyzeResource(file, resourceTypeSlug, kind === 'pdf' ? thumbnail : null))
       .then(({ suggestion }) => {
         if (cancelled || !suggestion) return
 
