@@ -51,6 +51,12 @@ function FilePreviewCard({
   courseCode = '',
   description = '',
   tags = '',
+  chapter = '',
+  part = '',
+  volume = '',
+  edition = '',
+  collectionMatch = null,
+  collectionChoice = null,
   categories = [],
   resourceTypeSlug,
   onNameChange,
@@ -59,6 +65,12 @@ function FilePreviewCard({
   onCourseCodeChange,
   onDescriptionChange,
   onTagsChange,
+  onChapterChange,
+  onPartChange,
+  onVolumeChange,
+  onEditionChange,
+  onCollectionMatchChange,
+  onCollectionChoiceChange,
   onCreateCategory,
   onThumbnailChange,   // NEW — reports the real client-rendered thumbnail Blob up to MultiFileUpload.jsx
   onRemove,
@@ -140,26 +152,54 @@ function FilePreviewCard({
     setAnalyzing(true)
 
     enqueueAnalysis(() => analyzeResource(file, resourceTypeSlug, kind === 'pdf' ? thumbnail : null))
-      .then(({ suggestion }) => {
-        if (cancelled || !suggestion) return
+      .then(({ suggestion, detected }) => {
+        if (cancelled) return
 
-        if (!name?.trim() && suggestion.title) onNameChange(suggestion.title)
-        if (!author?.trim() && suggestion.author) onAuthorChange?.(suggestion.author)
-        if (!description?.trim() && suggestion.description) onDescriptionChange?.(suggestion.description)
-        if (!tags?.trim() && suggestion.tags?.length) onTagsChange?.(suggestion.tags.join(', '))
+        if (suggestion) {
+          if (!name?.trim() && suggestion.title) onNameChange(suggestion.title)
+          if (!author?.trim() && suggestion.author) onAuthorChange?.(suggestion.author)
+          if (!description?.trim() && suggestion.description) onDescriptionChange?.(suggestion.description)
+          if (!tags?.trim() && suggestion.tags?.length) onTagsChange?.(suggestion.tags.join(', '))
 
-        if (!courseCode?.trim() && suggestion.course?.code) {
-          onCourseCodeChange?.(suggestion.course.code)
-          if (!suggestion.course.found) setCourseNotFound(suggestion.course.code)
+          if (!courseCode?.trim() && suggestion.course?.code) {
+            onCourseCodeChange?.(suggestion.course.code)
+            if (!suggestion.course.found) setCourseNotFound(suggestion.course.code)
+          }
+
+          if (!categoryId && suggestion.category?.categoryId) {
+            onCategoryIdChange(String(suggestion.category.categoryId))
+          }
+          // A suggested category with no existing match (isNew) is
+          // deliberately NOT auto-applied as free text — categoryId expects
+          // a real id. The user sees it via the "+ Write your own category"
+          // flow instead if they open the edit modal and want to use it.
         }
 
-        if (!categoryId && suggestion.category?.categoryId) {
-          onCategoryIdChange(String(suggestion.category.categoryId))
+        // detected is filename/DB-lookup based — runs even when Gemini is
+        // unavailable or suggestion came back null, so it's handled
+        // separately from the suggestion block above rather than being
+        // skipped by the same early return.
+        if (detected) {
+          if (!chapter?.trim() && detected.chapter) onChapterChange?.(detected.chapter)
+          if (!part?.trim() && detected.part) onPartChange?.(detected.part)
+          if (!volume?.trim() && detected.volume) onVolumeChange?.(detected.volume)
+          if (!edition?.trim() && detected.edition) onEditionChange?.(detected.edition)
+
+          // Only fall back to the filename-scanned course code if the AI/
+          // course lookup above didn't already supply one this same pass.
+          if (!courseCode?.trim() && !suggestion?.course?.code && detected.courseCode) {
+            onCourseCodeChange?.(detected.courseCode)
+          }
+
+          if (detected.collectionMatch) {
+            onCollectionMatchChange?.(detected.collectionMatch)
+            // High confidence pre-fills silently; low confidence leaves
+            // collectionChoice null so the confirm prompt renders below.
+            if (detected.collectionMatch.confidence === 'high' && !collectionChoice) {
+              onCollectionChoiceChange?.('use')
+            }
+          }
         }
-        // A suggested category with no existing match (isNew) is
-        // deliberately NOT auto-applied as free text — categoryId expects
-        // a real id. The user sees it via the "+ Write your own category"
-        // flow instead if they open the edit modal and want to use it.
       })
       .catch((err) => {
         // AI being unavailable is never an error state for the uploader —
@@ -190,6 +230,10 @@ function FilePreviewCard({
     { key: 'courseCode', label: 'Course Code', value: courseCode, type: 'text' },
     { key: 'description', label: 'Description', value: description, type: 'textarea' },
     { key: 'tags', label: 'Tags (comma separated)', value: tags, type: 'text' },
+    { key: 'chapter', label: 'Chapter', value: chapter, type: 'text' },
+    { key: 'part', label: 'Part', value: part, type: 'text' },
+    { key: 'volume', label: 'Volume', value: volume, type: 'text' },
+    { key: 'edition', label: 'Edition', value: edition, type: 'text' },
   ]
 
   const handleFieldSave = (key, value) => {
@@ -202,6 +246,10 @@ function FilePreviewCard({
     }
     if (key === 'description') onDescriptionChange?.(value)
     if (key === 'tags') onTagsChange?.(value)
+    if (key === 'chapter') onChapterChange?.(value)
+    if (key === 'part') onPartChange?.(value)
+    if (key === 'volume') onVolumeChange?.(value)
+    if (key === 'edition') onEditionChange?.(value)
   }
 
   return (
@@ -246,6 +294,47 @@ function FilePreviewCard({
             <p className="font-label-sm text-label-sm text-amber-300 italic truncate">
               New course ({courseNotFound}) — admin will review
             </p>
+          )}
+          {!analyzing && collectionMatch && collectionChoice === 'use' && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="material-symbols-outlined text-emerald-300 text-[14px]">library_books</span>
+              <p className="font-label-sm text-label-sm text-emerald-300 truncate">
+                Added to "{collectionMatch.title}"
+              </p>
+              <button
+                onClick={(e) => { e.stopPropagation(); onCollectionChoiceChange?.(null) }}
+                className="font-label-sm text-label-sm text-white/50 underline flex-none"
+              >
+                Change
+              </button>
+            </div>
+          )}
+          {!analyzing && collectionMatch && !collectionChoice && (
+            <div className="mt-1 p-2 rounded-lg bg-black/30 border border-white/10">
+              <p className="font-label-sm text-label-sm text-white/80 truncate">
+                Possible collection: <span className="font-semibold">{collectionMatch.title}</span>
+              </p>
+              <div className="flex gap-2 mt-1.5">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onCollectionChoiceChange?.('use') }}
+                  className="font-label-sm text-label-sm px-2 py-1 rounded-md bg-primary text-on-primary"
+                >
+                  Use Collection
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onCollectionChoiceChange?.('other') }}
+                  className="font-label-sm text-label-sm px-2 py-1 rounded-md bg-white/10 text-white"
+                >
+                  Choose Another
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onCollectionChoiceChange?.('none') }}
+                  className="font-label-sm text-label-sm px-2 py-1 rounded-md bg-white/10 text-white"
+                >
+                  No Collection
+                </button>
+              </div>
+            </div>
           )}
           {kind === 'audio' && audioUrl && (
             <audio

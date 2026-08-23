@@ -203,6 +203,10 @@ export const authApi = {
     apiFetch('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),
 }
 
+export const resourceCollectionsApi = {
+  get: (id) => apiFetch(`/resource-collections/${id}`),
+}
+
 export const resourcesApi = {
   list: (params = {}, { signal } = {}) => {
     const query = new URLSearchParams(params).toString()

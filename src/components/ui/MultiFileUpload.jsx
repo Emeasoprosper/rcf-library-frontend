@@ -40,6 +40,12 @@ function MultiFileUpload({ files, onFilesChange, accept, authorLabel = 'Author',
         description: '',
         tags: '',
         thumbnailBlob: null, // NEW — filled in once FilePreviewCard finishes client-side rendering
+        chapter: '',
+        part: '',
+        volume: '',
+        edition: '',
+        collectionMatch: null, // NEW — { collectionId, title, author, score, confidence } from /analyze's `detected`, or null
+        collectionChoice: null, // NEW — 'use' | 'other' | 'none' | null (user hasn't decided yet)
       }
     })
     onFilesChange([...files, ...newFiles])
@@ -78,6 +84,12 @@ function MultiFileUpload({ files, onFilesChange, accept, authorLabel = 'Author',
           courseCode={entry.courseCode}
           description={entry.description}
           tags={entry.tags}
+          chapter={entry.chapter}
+          part={entry.part}
+          volume={entry.volume}
+          edition={entry.edition}
+          collectionMatch={entry.collectionMatch}
+          collectionChoice={entry.collectionChoice}
           categories={categories}
           resourceTypeSlug={resourceTypeSlug}
           onNameChange={(name) => updateFile(index, { name })}
@@ -86,6 +98,12 @@ function MultiFileUpload({ files, onFilesChange, accept, authorLabel = 'Author',
           onCourseCodeChange={(courseCode) => updateFile(index, { courseCode })}
           onDescriptionChange={(description) => updateFile(index, { description })}
           onTagsChange={(tags) => updateFile(index, { tags })}
+          onChapterChange={(chapter) => updateFile(index, { chapter })}
+          onPartChange={(part) => updateFile(index, { part })}
+          onVolumeChange={(volume) => updateFile(index, { volume })}
+          onEditionChange={(edition) => updateFile(index, { edition })}
+          onCollectionMatchChange={(collectionMatch) => updateFile(index, { collectionMatch })}
+          onCollectionChoiceChange={(collectionChoice) => updateFile(index, { collectionChoice })}
           onCreateCategory={onCreateCategory}
           onThumbnailChange={(blob) => updateFile(index, { thumbnailBlob: blob })}
           onRemove={() => removeFile(index)}

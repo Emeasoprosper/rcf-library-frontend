@@ -140,6 +140,13 @@ function SubmitResource() {
         if (entry.courseCode) formData.append('courseCode', entry.courseCode)
         if (entry.description) formData.append('description', entry.description)
         if (entry.categoryId) formData.append('categoryId', entry.categoryId)
+        if (entry.chapter) formData.append('chapter', entry.chapter)
+        if (entry.part) formData.append('part', entry.part)
+        if (entry.volume) formData.append('volume', entry.volume)
+        if (entry.edition) formData.append('edition', entry.edition)
+        if (entry.collectionChoice === 'use' && entry.collectionMatch?.collectionId) {
+          formData.append('collectionId', entry.collectionMatch.collectionId)
+        }
         if (entry.tags) {
           const tagList = entry.tags.split(',').map((t) => t.trim()).filter(Boolean)
           if (tagList.length) formData.append('tags', JSON.stringify(tagList))
