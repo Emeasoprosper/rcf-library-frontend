@@ -10,7 +10,7 @@ import UpdatesList from '../components/ui/UpdatesList'
 import NewsCarousel from '../components/ui/NewsCarousel'
 import NewsPopupModal from '../components/ui/NewsPopupModal'
 import { useScrollDirection } from '../hooks/useScrollDirection'
-import { resourcesApi, communityApi, newsApi } from '../services/api'
+import { resourcesApi, communityApi, newsApi, resourceCollectionsApi } from '../services/api'
 import { getMediaKind } from '../lib/mediaKind'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { shuffle } from '../lib/shuffle'
@@ -136,6 +136,7 @@ function Home() {
   const [recentVideos, setRecentVideos] = useState([])
   const [recentAudios, setRecentAudios] = useState([])
   const [popularBooks, setPopularBooks] = useState([])
+  const [collections, setCollections] = useState([])
   const [continueItem, setContinueItem] = useState(null)
   const [continueLane, setContinueLane] = useState(null)
   const [jumpBackIn, setJumpBackIn] = useState([])
@@ -152,12 +153,13 @@ function Home() {
 
     async function load() {
       try {
-        const [recentRes, popularRes, historyRes, notificationsRes, newsRes] = await Promise.all([
+        const [recentRes, popularRes, historyRes, notificationsRes, newsRes, collectionsRes] = await Promise.all([
           resourcesApi.list({ sort: 'recent', pageSize: 12 }),
           resourcesApi.list({ sort: 'popular', pageSize: 8 }),
           communityApi.readingHistory().catch(() => ({ items: [] })),
           communityApi.notifications().catch(() => ({ items: [] })),
           newsApi.latest().catch(() => ({ adminNews: [], external: [] })),
+          resourceCollectionsApi.list().catch(() => ({ items: [] })),
         ])
         if (cancelled) return
 
@@ -179,6 +181,17 @@ function Home() {
 
         const popularItems = popularRes.items || []
         setPopularBooks(popularItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r)))
+
+        setCollections(
+          (collectionsRes.items || []).map((c) => ({
+            id: c.id,
+            title: c.title,
+            subtitle: c.author,
+            thumbnailUrl: c.cover_url,
+            fileType: undefined, // getMediaKind falls back to 'document' — book-shaped placeholder, matches Spotify-style fallback
+            onClick: () => navigate(`/collections/${c.id}`),
+          }))
+        )
 
         const inProgress = (historyRes.items || []).filter((h) => !h.completed_at)
 
@@ -384,6 +397,8 @@ function Home() {
         )}
 
         {jumpBackIn.length > 0 && <HorizontalRail title="Jump Back In" items={jumpBackIn} />}
+
+        {collections.length > 0 && <HorizontalRail title="Collections" items={collections} />}
 
         {popularBooks.length > 0 && <HorizontalRail title="Popular With Fellow Readers" items={popularBooks} />}
 

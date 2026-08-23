@@ -204,6 +204,7 @@ export const authApi = {
 }
 
 export const resourceCollectionsApi = {
+  list: () => apiFetch('/resource-collections'),
   get: (id) => apiFetch(`/resource-collections/${id}`),
 }
 
