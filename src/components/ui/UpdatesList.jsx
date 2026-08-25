@@ -28,7 +28,7 @@ function UpdatesList({ updates, onSeeAll, onDelete }) {
                 size={48}
               />
               <div className="flex-grow min-w-0">
-                <p className={`font-label-md text-label-md truncate ${update.read ? 'text-on-surface-variant' : 'text-on-surface font-bold'}`}>
+                <p className={`font-label-md text-label-md truncate break-words ${update.read ? 'text-on-surface-variant' : 'text-on-surface font-bold'}`}>
                   {update.text}
                 </p>
                 <p className="font-label-sm text-label-sm text-on-surface-variant">{update.time}</p>

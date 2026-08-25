@@ -30,7 +30,7 @@ function Notifications() {
       .then(([personal, news]) => {
         const dismissed = getDismissedNewsIds()
 
-        const newsItems = (news.adminNews || [])
+        const adminNewsItems = (news.adminNews || [])
           .filter((a) => !dismissed.includes(a.id))
           .map((a) => ({
             id: `news-${a.id}`,
@@ -44,16 +44,37 @@ function Notifications() {
             created_at: a.created_at,
           }))
 
-        const merged = [...newsItems, ...(personal.items || [])].sort(
+        // External (RSS-syndicated) articles — see Home.jsx's News
+        // carousel, which already shows these alongside adminNews. They
+        // carry no created_at or numeric id from our own database, so
+        // they can't be merged into the date-sorted list below the same
+        // way. Shown as their own block instead, opening the original
+        // source link directly rather than the in-app attachment viewer.
+        const externalItems = (news.external || []).map((e, i) => ({
+          id: `external-${i}`,
+          type: 'news',
+          title: e.title,
+          body: e.sourceName,
+          thumbnail_url: e.imageUrl,
+          is_read: true,
+          is_external: true,
+          link: e.link,
+        }))
+
+        const merged = [...adminNewsItems, ...(personal.items || [])].sort(
           (a, b) => new Date(b.created_at) - new Date(a.created_at)
         )
-        setNotifications(merged)
+        setNotifications([...externalItems, ...merged])
       })
       .catch(() => setError("Couldn't load notifications. Pull down to try again."))
       .finally(() => setLoading(false))
   }, [])
 
   const handleOpen = async (n) => {
+    if (n.is_external) {
+      window.open(n.link, '_blank', 'noopener,noreferrer')
+      return
+    }
     if (n.thumbnail_url) {
       setViewerItem({ title: n.title, url: n.thumbnail_url })
     }
@@ -70,6 +91,11 @@ function Notifications() {
     e.stopPropagation()
     const previous = notifications
     setNotifications((prev) => prev.filter((x) => x.id !== n.id))
+
+    // External items have no backend id to persist a dismissal against
+    // — they're re-fetched fresh from the RSS cache each visit, so a
+    // local-only removal for this session is the correct behavior here.
+    if (n.is_external) return
 
     if (n.is_global) {
       addDismissedNewsId(n.rawId)
@@ -126,11 +152,11 @@ function Notifications() {
                   {typeIcon[n.type] || 'notifications'}
                 </span>
                 <div className="flex-grow min-w-0">
-                  <p className={`font-body-md text-body-md text-on-surface ${n.is_read ? '' : 'font-semibold'}`}>
+                  <p className={`font-body-md text-body-md text-on-surface break-words ${n.is_read ? '' : 'font-semibold'}`}>
                     {n.title}
                   </p>
                   {n.body && (
-                    <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">{n.body}</p>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant mt-1 break-words">{n.body}</p>
                   )}
                   {n.thumbnail_url && (
                     <img
