@@ -33,10 +33,11 @@ import { useAuth } from '../contexts/AuthContext'
 import RequestMaterial from '../pages/RequestMaterial'
 import CompleteProfile from '../pages/CompleteProfile'
 import ResourceDetail from '../pages/ResourceDetail'
+import CollectionPage from '../pages/CollectionPage'
 import ResourceReader from '../pages/ResourceReader'
 import ShareRedirect from '../pages/ShareRedirect'
 import AdminResources from '../pages/admin/AdminResources'
-import CollectionPage from '../pages/CollectionPage'
+import OrganizeResources from '../pages/admin/OrganizeResources'
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth()
@@ -93,6 +94,7 @@ function AppRoutes() {
       <Route path="/resources/:id/read" element={<ResourceReader />} />
       <Route path="/s/:token" element={<ProtectedRoute><ShareRedirect /></ProtectedRoute>} />
       <Route path="/admin/resources" element={<AdminRoute><AdminResources /></AdminRoute>} />
+      <Route path="/admin/organize" element={<AdminRoute><OrganizeResources /></AdminRoute>} />
       <Route path="/library/:id" element={<ResourceDetail />} />
       <Route path="/collections/:id" element={<ProtectedRoute><CollectionPage /></ProtectedRoute>} />
     </Routes>

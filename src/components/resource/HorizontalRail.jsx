@@ -77,6 +77,11 @@ function HorizontalRail({ title, items }) {
                         </span>
                       </span>
                     )}
+                    {item.isCollection && (
+                      <span className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 backdrop-blur flex items-center justify-center pointer-events-none">
+                        <span className="material-symbols-outlined text-white text-[14px]">library_books</span>
+                      </span>
+                    )}
                   </div>
 
                   <div className="bg-surface-container-high px-2 py-1.5">

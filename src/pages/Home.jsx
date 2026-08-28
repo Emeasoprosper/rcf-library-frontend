@@ -5,6 +5,7 @@ import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import BookGrid from '../components/resource/BookGrid'
 import HorizontalRail from '../components/resource/HorizontalRail'
+import CollectionCard from '../components/resource/CollectionCard'
 import AdvertBanner from '../components/ui/AdvertBanner'
 import UpdatesList from '../components/ui/UpdatesList'
 import NewsCarousel from '../components/ui/NewsCarousel'
@@ -35,6 +36,40 @@ const notificationIcon = {
   resource_approved: 'check_circle',
   resource_rejected: 'error',
   request_resolved: 'inbox',
+}
+
+// Inserts one collection card every `every` resource items, converting
+// the raw collection row into whatever shape the target rail expects.
+// Cycles back to the start of `collectionRows` if a rail is longer than
+// the number of collections available, so a short collections list
+// still shows up throughout a long rail rather than only once.
+function mixInCollections(items, collectionRows, toRailItem, every = 4) {
+  if (!collectionRows || collectionRows.length === 0) return items
+  const result = []
+  items.forEach((item, i) => {
+    result.push(item)
+    if ((i + 1) % every === 0) {
+      result.push(toRailItem(collectionRows[Math.floor(i / every) % collectionRows.length]))
+    }
+  })
+  return result
+}
+
+// Inserts one collection card every `every` resource items, converting
+// the raw collection row into whatever shape the target rail expects.
+// Cycles back to the start of `collectionRows` if a rail is longer than
+// the number of collections available, so a short collections list
+// still shows up throughout a long rail rather than only once.
+function mixInCollections(items, collectionRows, toRailItem, every = 4) {
+  if (!collectionRows || collectionRows.length === 0) return items
+  const result = []
+  items.forEach((item, i) => {
+    result.push(item)
+    if ((i + 1) % every === 0) {
+      result.push(toRailItem(collectionRows[Math.floor(i / every) % collectionRows.length]))
+    }
+  })
+  return result
 }
 
 function laneOf(fileType) {
@@ -132,11 +167,11 @@ function Home() {
   const headerHidden = useScrollDirection()
   const { startTour, hasCompletedTour, shouldForceStart } = useTour()
 
+  const [collections, setCollections] = useState([])
   const [recentBooks, setRecentBooks] = useState([])
   const [recentVideos, setRecentVideos] = useState([])
   const [recentAudios, setRecentAudios] = useState([])
   const [popularBooks, setPopularBooks] = useState([])
-  const [collections, setCollections] = useState([])
   const [continueItem, setContinueItem] = useState(null)
   const [continueLane, setContinueLane] = useState(null)
   const [jumpBackIn, setJumpBackIn] = useState([])
@@ -175,23 +210,60 @@ function Home() {
         })
 
         const recentItems = recentRes.items || []
-        setRecentBooks(recentItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r, false)))
-        setRecentVideos(shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'video').map((r) => toCardItem(r))))
-        setRecentAudios(shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'audio').map((r) => toCardItem(r))))
+        setRecentBooks(
+          mixInCollections(
+            recentItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r, false)),
+            collectionRows,
+            toGridCollectionItem,
+            5
+          )
+        )
+        setRecentVideos(
+          mixInCollections(
+            shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'video').map((r) => toCardItem(r))),
+            collectionRows,
+            toRailCollectionItem
+          )
+        )
+        setRecentAudios(
+          mixInCollections(
+            shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'audio').map((r) => toCardItem(r))),
+            collectionRows,
+            toRailCollectionItem
+          )
+        )
 
         const popularItems = popularRes.items || []
-        setPopularBooks(popularItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r)))
-
-        setCollections(
-          (collectionsRes.items || []).map((c) => ({
-            id: c.id,
-            title: c.title,
-            subtitle: c.author,
-            thumbnailUrl: c.cover_url,
-            fileType: undefined, // getMediaKind falls back to 'document' — book-shaped placeholder, matches Spotify-style fallback
-            onClick: () => navigate(`/collections/${c.id}`),
-          }))
+        setPopularBooks(
+          mixInCollections(
+            popularItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r)),
+            collectionRows,
+            toRailCollectionItem
+          )
         )
+
+        const collectionRows = collectionsRes.items || []
+        setCollections(collectionRows)
+
+        const toRailCollectionItem = (c) => ({
+          id: `collection-${c.id}`,
+          title: c.title,
+          subtitle: c.author,
+          thumbnailUrl: c.cover_url,
+          fileType: undefined,
+          isCollection: true,
+          onClick: () => navigate(`/collections/${c.id}`),
+        })
+
+        const toGridCollectionItem = (c) => ({
+          id: `collection-${c.id}`,
+          title: c.title,
+          author: c.author,
+          thumbnailUrl: c.cover_url,
+          fileType: undefined,
+          isCollection: true,
+          onClick: () => navigate(`/collections/${c.id}`),
+        })
 
         const inProgress = (historyRes.items || []).filter((h) => !h.completed_at)
 
@@ -218,7 +290,7 @@ function Home() {
               onClick: () => navigate(kind === 'book' ? `/library/${h.resource_id}` : `/resources/${h.resource_id}/read`),
             }
           })
-        setJumpBackIn(jumpBackInItems)
+        setJumpBackIn(mixInCollections(jumpBackInItems, collectionRows, toRailCollectionItem))
 
         const allNotifications = notificationsRes.items || []
         setNotifications(allNotifications.slice(0, 3))
@@ -398,7 +470,24 @@ function Home() {
 
         {jumpBackIn.length > 0 && <HorizontalRail title="Jump Back In" items={jumpBackIn} />}
 
-        {collections.length > 0 && <HorizontalRail title="Collections" items={collections} />}
+        {collections.length > 0 && (
+          <section className="mb-stack-lg">
+            <div className="px-margin-mobile mb-stack-sm">
+              <h2 className="font-headline-lg text-headline-lg font-display text-on-surface">Collections</h2>
+            </div>
+            <div className="flex gap-gutter overflow-x-auto no-scrollbar snap-x snap-mandatory [mask-image:linear-gradient(to_right,black_90%,transparent)] px-margin-mobile">
+              {collections.map((c) => (
+                <CollectionCard
+                  key={c.id}
+                  title={c.title}
+                  author={c.author}
+                  coverUrl={c.cover_url}
+                  onClick={() => navigate(`/collections/${c.id}`)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {popularBooks.length > 0 && <HorizontalRail title="Popular With Fellow Readers" items={popularBooks} />}
 

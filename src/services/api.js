@@ -336,6 +336,10 @@ export const adminApi = {
   },
   deleteAnnouncement: (id) => apiFetch(`/admin/announcements/${id}`, { method: 'DELETE' }),
   lockStatus: (id) => apiFetch(`/admin/uploads/${id}/lock-status`),
+  needsOrganizing: () => apiFetch('/admin/resources/needs-organizing'),
+  authors: (search = '') => apiFetch(`/admin/authors?search=${encodeURIComponent(search)}`),
+  organizeResource: (id, payload) =>
+    apiFetch(`/admin/resources/${id}/organize`, { method: 'PATCH', body: JSON.stringify(payload) }),
 }
 
 export const newsApi = {

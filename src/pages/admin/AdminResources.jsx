@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../../components/layout/TopAppBar'
 import AdminNav from '../../components/layout/AdminNav'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
@@ -6,6 +7,7 @@ import { adminApi } from '../../services/api'
 import { useThumbnailPolling } from '../../hooks/useThumbnailPolling'
 
 function AdminResources() {
+  const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -69,6 +71,17 @@ function AdminResources() {
       <TopAppBar title="Manage Resources" showBack />
 
       <main className="px-margin-mobile pt-[68px] pb-32">
+        <button
+          onClick={() => navigate('/admin/organize')}
+          className="w-full mt-stack-md p-stack-md rounded-xl bg-primary/10 border border-primary/30 text-left flex items-center gap-3"
+        >
+          <span className="material-symbols-outlined text-primary text-2xl">library_books</span>
+          <div>
+            <p className="font-body-md text-body-md font-semibold text-primary">Organize Resources</p>
+            <p className="font-label-sm text-label-sm text-on-surface-variant">Assign author, category, or collection to unsorted uploads</p>
+          </div>
+        </button>
+
         <input
           type="text"
           value={search}
