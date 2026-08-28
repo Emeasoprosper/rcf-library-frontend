@@ -193,6 +193,29 @@ function Home() {
           onClick: () => navigate(`/library/${r.id}`),
         })
 
+        const collectionRows = collectionsRes.items || []
+        setCollections(collectionRows)
+
+        const toRailCollectionItem = (c) => ({
+          id: `collection-${c.id}`,
+          title: c.title,
+          subtitle: c.author,
+          thumbnailUrl: c.cover_url,
+          fileType: undefined,
+          isCollection: true,
+          onClick: () => navigate(`/collections/${c.id}`),
+        })
+
+        const toGridCollectionItem = (c) => ({
+          id: `collection-${c.id}`,
+          title: c.title,
+          author: c.author,
+          thumbnailUrl: c.cover_url,
+          fileType: undefined,
+          isCollection: true,
+          onClick: () => navigate(`/collections/${c.id}`),
+        })
+
         const recentItems = recentRes.items || []
         setRecentBooks(
           mixInCollections(
@@ -225,29 +248,6 @@ function Home() {
             toRailCollectionItem
           )
         )
-
-        const collectionRows = collectionsRes.items || []
-        setCollections(collectionRows)
-
-        const toRailCollectionItem = (c) => ({
-          id: `collection-${c.id}`,
-          title: c.title,
-          subtitle: c.author,
-          thumbnailUrl: c.cover_url,
-          fileType: undefined,
-          isCollection: true,
-          onClick: () => navigate(`/collections/${c.id}`),
-        })
-
-        const toGridCollectionItem = (c) => ({
-          id: `collection-${c.id}`,
-          title: c.title,
-          author: c.author,
-          thumbnailUrl: c.cover_url,
-          fileType: undefined,
-          isCollection: true,
-          onClick: () => navigate(`/collections/${c.id}`),
-        })
 
         const inProgress = (historyRes.items || []).filter((h) => !h.completed_at)
 
@@ -294,8 +294,8 @@ function Home() {
             setPopupNews(latest)
           }
         }
-      } catch {
-        // Home degrades gracefully — a failed section just doesn't render.
+      } catch (err) {
+        console.error('Home load failed:', err)
       } finally {
         if (!cancelled) setLoading(false)
       }
