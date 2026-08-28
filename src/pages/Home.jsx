@@ -55,22 +55,6 @@ function mixInCollections(items, collectionRows, toRailItem, every = 4) {
   return result
 }
 
-// Inserts one collection card every `every` resource items, converting
-// the raw collection row into whatever shape the target rail expects.
-// Cycles back to the start of `collectionRows` if a rail is longer than
-// the number of collections available, so a short collections list
-// still shows up throughout a long rail rather than only once.
-function mixInCollections(items, collectionRows, toRailItem, every = 4) {
-  if (!collectionRows || collectionRows.length === 0) return items
-  const result = []
-  items.forEach((item, i) => {
-    result.push(item)
-    if ((i + 1) % every === 0) {
-      result.push(toRailItem(collectionRows[Math.floor(i / every) % collectionRows.length]))
-    }
-  })
-  return result
-}
 
 function laneOf(fileType) {
   const kind = getMediaKind(fileType)
