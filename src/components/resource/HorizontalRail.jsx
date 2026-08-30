@@ -77,6 +77,13 @@ function HorizontalRail({ title, items }) {
                         </span>
                       </span>
                     )}
+                    {kind === 'document' && item.thumbnailUrl && (
+                      <span className="absolute bottom-1.5 right-1.5 pointer-events-none">
+                        <span className="w-6 h-6 rounded-full bg-black/50 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-white text-[14px]">menu_book</span>
+                        </span>
+                      </span>
+                    )}
                     {item.isCollection && (
                       <span className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 backdrop-blur flex items-center justify-center pointer-events-none">
                         <span className="material-symbols-outlined text-white text-[14px]">library_books</span>

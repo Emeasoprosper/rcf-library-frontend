@@ -8,6 +8,7 @@ import { adminApi } from '../../services/api'
 const quickLinks = [
   { to: '/admin/uploads', icon: 'upload', label: 'Review Uploads', gradient: 'from-blue-500 to-cyan-400' },
   { to: '/admin/resources', icon: 'folder_managed', label: 'Manage Resources', gradient: 'from-emerald-500 to-teal-400' },
+  { to: '/admin/organize', icon: 'library_books', label: 'Collections', gradient: 'from-violet-500 to-purple-400' },
   { to: '/admin/requests', icon: 'inbox', label: 'Open Requests', gradient: 'from-amber-500 to-orange-400' },
   { to: '/admin/users', icon: 'group', label: 'Manage Users', gradient: 'from-violet-500 to-purple-400' },
   { to: '/admin/announcements', icon: 'campaign', label: 'Announce / News', gradient: 'from-pink-500 to-rose-400' },

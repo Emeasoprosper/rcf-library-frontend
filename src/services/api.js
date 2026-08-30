@@ -340,6 +340,7 @@ export const adminApi = {
   createCollection: (payload) => apiFetch('/admin/resource-collections', { method: 'POST', body: JSON.stringify(payload) }),
   updateCollection: (id, payload) => apiFetch(`/admin/resource-collections/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   createCollectionSection: (id, name) => apiFetch(`/admin/resource-collections/${id}/sections`, { method: 'POST', body: JSON.stringify({ name }) }),
+  deleteCollection: (id) => apiFetch(`/admin/resource-collections/${id}`, { method: 'DELETE' }),
   authors: (search = '') => apiFetch(`/admin/authors?search=${encodeURIComponent(search)}`),
   organizeResource: (id, payload) =>
     apiFetch(`/admin/resources/${id}/organize`, { method: 'PATCH', body: JSON.stringify(payload) }),

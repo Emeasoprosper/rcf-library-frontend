@@ -13,6 +13,7 @@ import NewsPopupModal from '../components/ui/NewsPopupModal'
 import { useScrollDirection } from '../hooks/useScrollDirection'
 import { resourcesApi, communityApi, newsApi, resourceCollectionsApi } from '../services/api'
 import { getMediaKind } from '../lib/mediaKind'
+import { mixInCollections } from '../lib/mixInCollections'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { shuffle } from '../lib/shuffle'
 import { getDismissedNewsIds, addDismissedNewsId } from '../lib/dismissedNews'
@@ -37,24 +38,6 @@ const notificationIcon = {
   resource_rejected: 'error',
   request_resolved: 'inbox',
 }
-
-// Inserts one collection card every `every` resource items, converting
-// the raw collection row into whatever shape the target rail expects.
-// Cycles back to the start of `collectionRows` if a rail is longer than
-// the number of collections available, so a short collections list
-// still shows up throughout a long rail rather than only once.
-function mixInCollections(items, collectionRows, toRailItem, every = 4) {
-  if (!collectionRows || collectionRows.length === 0) return items
-  const result = []
-  items.forEach((item, i) => {
-    result.push(item)
-    if ((i + 1) % every === 0) {
-      result.push(toRailItem(collectionRows[Math.floor(i / every) % collectionRows.length]))
-    }
-  })
-  return result
-}
-
 
 function laneOf(fileType) {
   const kind = getMediaKind(fileType)
@@ -455,11 +438,9 @@ function Home() {
         {jumpBackIn.length > 0 && <HorizontalRail title="Jump Back In" items={jumpBackIn} />}
 
         {collections.length > 0 && (
-          <section className="mb-stack-lg">
-            <div className="px-margin-mobile mb-stack-sm">
-              <h2 className="font-headline-lg text-headline-lg font-display text-on-surface">Collections</h2>
-            </div>
-            <div className="flex gap-gutter overflow-x-auto no-scrollbar snap-x snap-mandatory [mask-image:linear-gradient(to_right,black_90%,transparent)] px-margin-mobile">
+          <section className="mb-stack-lg px-margin-mobile">
+            <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-stack-sm">Collections</h2>
+            <div className="flex flex-col gap-gutter">
               {collections.map((c) => (
                 <CollectionCard
                   key={c.id}

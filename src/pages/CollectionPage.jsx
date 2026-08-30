@@ -2,48 +2,45 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
+import HorizontalRail from '../components/resource/HorizontalRail'
 import { resourceCollectionsApi } from '../services/api'
-import { getMediaKind } from '../lib/mediaKind'
+import { mixInCollections } from '../lib/mixInCollections'
 
 const TABS = ['Sections', 'About', 'More Like This']
 
-function ResourceRow({ resource, navigate }) {
-  const kind = getMediaKind(resource.file_type)
-  const subtitle = resource.chapter || resource.part || resource.volume || resource.edition || null
-  const isReadable = kind === 'book'
-  const targetPath = isReadable ? `/library/${resource.id}` : `/resources/${resource.id}/read`
+// document -> the resource's own detail/read page; audio/video -> the
+// dedicated player route. This is the actual fix for the earlier bug:
+// getMediaKind() never returns 'book', only 'document' — checking for
+// 'book' meant every real book silently fell through to the wrong path.
+function targetPathFor(resource) {
+  if (resource.file_type?.startsWith('audio/') || resource.file_type?.startsWith('video/')) {
+    return `/resources/${resource.id}/read`
+  }
+  return `/library/${resource.id}`
+}
 
-  return (
-    <div
-      onClick={() => navigate(targetPath)}
-      className="flex items-center gap-3 py-stack-sm border-b border-outline/30 last:border-0 cursor-pointer group"
-    >
-      <div className="w-12 h-12 flex-none rounded-lg overflow-hidden bg-surface-container-high border border-outline/50">
-        {resource.thumbnail_url ? (
-          <img src={resource.thumbnail_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-surface-variant text-[18px]">
-              {resource.thumbnail_status === 'processing' ? 'hourglass_top' : 'description'}
-            </span>
-          </div>
-        )}
-      </div>
-      <div className="flex-grow min-w-0">
-        <p className="font-body-md text-body-md font-semibold text-on-surface truncate group-hover:underline">
-          {resource.title}
-        </p>
-        {subtitle && <p className="font-label-sm text-label-sm text-on-surface-variant">{subtitle}</p>}
-      </div>
-      <button
-        onClick={(e) => { e.stopPropagation(); navigate(targetPath) }}
-        className="w-9 h-9 flex-none rounded-full bg-primary text-on-primary flex items-center justify-center"
-        aria-label={isReadable ? 'Read' : 'Play'}
-      >
-        <span className="material-symbols-outlined text-[18px]">{isReadable ? 'menu_book' : 'play_arrow'}</span>
-      </button>
-    </div>
-  )
+function toRailResourceItem(resource, navigate) {
+  return {
+    id: resource.id,
+    title: resource.title,
+    fileType: resource.file_type,
+    thumbnailUrl: resource.thumbnail_url,
+    thumbnailStatus: resource.thumbnail_status,
+    subtitle: resource.chapter || resource.part || resource.volume || resource.edition || null,
+    onClick: () => navigate(targetPathFor(resource)),
+  }
+}
+
+function toRailCollectionItem(collection, navigate) {
+  return {
+    id: `collection-${collection.id}`,
+    title: collection.title,
+    subtitle: collection.author,
+    thumbnailUrl: collection.cover_url,
+    fileType: undefined,
+    isCollection: true,
+    onClick: () => navigate(`/collections/${collection.id}`),
+  }
 }
 
 function CollectionPage() {
@@ -141,73 +138,54 @@ function CollectionPage() {
           ))}
         </div>
 
-        <div className="px-margin-mobile pt-stack-md">
-          {activeTab === 'Sections' && (
-            <div className="flex flex-col gap-stack-lg">
-              {sections.map((section) => (
-                <div key={section.id || 'unsectioned'}>
-                  <h3 className="font-label-md text-label-md font-bold text-primary uppercase tracking-wide mb-1">
-                    {section.name}
-                  </h3>
-                  {section.resources.length === 0 ? (
-                    <p className="font-label-sm text-label-sm text-on-surface-variant italic py-stack-sm">
-                      No resources in this section yet.
-                    </p>
-                  ) : (
-                    section.resources.map((r) => <ResourceRow key={r.id} resource={r} navigate={navigate} />)
+        {activeTab === 'Sections' && (
+          <div className="pt-stack-md">
+            {sections.map((section) =>
+              section.resources.length === 0 ? null : (
+                <HorizontalRail
+                  key={section.id || 'unsectioned'}
+                  title={section.name}
+                  items={mixInCollections(
+                    section.resources.map((r) => toRailResourceItem(r, navigate)),
+                    allCollections,
+                    (c) => toRailCollectionItem(c, navigate)
                   )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'About' && (
-            <div className="py-stack-sm">
-              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                {collection.description || 'No description available for this collection yet.'}
+                />
+              )
+            )}
+            {sections.every((s) => s.resources.length === 0) && (
+              <p className="px-margin-mobile font-label-sm text-label-sm text-on-surface-variant italic">
+                No resources in this collection yet.
               </p>
-            </div>
-          )}
+            )}
+            {related.length > 0 && (
+              <HorizontalRail
+                title="Related Resources"
+                items={related.map((r) => toRailResourceItem(r, navigate))}
+              />
+            )}
+          </div>
+        )}
 
-          {activeTab === 'More Like This' && (
-            <div className="flex flex-col gap-gutter py-stack-sm">
-              {allCollections.length === 0 && (
-                <p className="font-label-sm text-label-sm text-on-surface-variant">No other collections yet.</p>
-              )}
-              {allCollections.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => navigate(`/collections/${c.id}`)}
-                  className="flex items-center gap-3 p-stack-sm rounded-xl bg-surface-container border border-outline cursor-pointer"
-                >
-                  <div className="w-14 h-14 flex-none rounded-lg overflow-hidden bg-surface-container-high border border-outline/50">
-                    {c.cover_url ? (
-                      <img src={c.cover_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="material-symbols-outlined text-on-surface-variant text-xl">library_books</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-body-md text-body-md font-semibold text-on-surface truncate">{c.title}</p>
-                    {c.author && <p className="font-label-sm text-label-sm text-on-surface-variant truncate">{c.author}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {activeTab === 'About' && (
+          <div className="px-margin-mobile py-stack-sm">
+            <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              {collection.description || 'No description available for this collection yet.'}
+            </p>
+          </div>
+        )}
 
-        {activeTab === 'Sections' && related.length > 0 && (
-          <section className="mt-stack-lg px-margin-mobile">
-            <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-stack-sm">
-              Related Resources
-            </h2>
-            <div className="flex flex-col">
-              {related.map((r) => <ResourceRow key={r.id} resource={r} navigate={navigate} />)}
-            </div>
-          </section>
+        {activeTab === 'More Like This' && (
+          <div className="px-margin-mobile py-stack-sm">
+            {allCollections.length > 0 ? (
+              <HorizontalRail
+                title="More Collections"
+                items={allCollections.map((c) => toRailCollectionItem(c, navigate))}
+              />
+            ) : (
+              <p className="font-label-sm text-label-sm text-on-surface-variant">No other collections yet.</p>
+            )}
+          </div>
         )}
       </main>
 
