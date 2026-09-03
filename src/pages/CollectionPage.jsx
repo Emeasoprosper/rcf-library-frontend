@@ -4,14 +4,21 @@ import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import { resourceCollectionsApi } from '../services/api'
-import { mixInCollections } from '../lib/mixInCollections'
 
 const TABS = ['Sections', 'About', 'More Like This']
 
-// document -> the resource's own detail/read page; audio/video -> the
-// dedicated player route. This is the actual fix for the earlier bug:
-// getMediaKind() never returns 'book', only 'document' — checking for
-// 'book' meant every real book silently fell through to the wrong path.
+function timeAgo(dateString) {
+  const seconds = Math.floor((Date.now() - new Date(dateString)) / 1000)
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  const weeks = Math.floor(days / 7)
+  return `${weeks} week${weeks !== 1 ? 's' : ''} ago`
+}
+
 function targetPathFor(resource) {
   if (resource.file_type?.startsWith('audio/') || resource.file_type?.startsWith('video/')) {
     return `/resources/${resource.id}/read`
@@ -19,16 +26,62 @@ function targetPathFor(resource) {
   return `/library/${resource.id}`
 }
 
-function toRailResourceItem(resource, navigate) {
-  return {
-    id: resource.id,
-    title: resource.title,
-    fileType: resource.file_type,
-    thumbnailUrl: resource.thumbnail_url,
-    thumbnailStatus: resource.thumbnail_status,
-    subtitle: resource.chapter || resource.part || resource.volume || resource.edition || null,
-    onClick: () => navigate(targetPathFor(resource)),
-  }
+function ResourceListRow({ resource, navigate }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const path = targetPathFor(resource)
+
+  return (
+    <div className="relative flex items-center gap-3 p-stack-sm rounded-xl bg-surface-container border border-outline mb-2">
+      <button onClick={() => navigate(path)} className="flex items-center gap-3 flex-grow min-w-0 text-left">
+        <div className="w-14 h-14 flex-none rounded-lg overflow-hidden bg-surface-container-high border border-outline/50">
+          {resource.thumbnail_url ? (
+            <img src={resource.thumbnail_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">
+                {resource.thumbnail_status === 'processing' ? 'hourglass_top' : (resource.type_icon || 'description')}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-grow">
+          <p className="font-body-md text-body-md font-bold text-on-surface truncate">{resource.title}</p>
+          {resource.category && (
+            <p className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant mt-0.5">
+              <span className="material-symbols-outlined text-[14px]">{resource.type_icon || 'description'}</span>
+              {resource.category.toUpperCase()}
+            </p>
+          )}
+          <p className="font-label-sm text-label-sm text-on-surface-variant/70 mt-0.5">
+            {resource.contributor_name ? `Uploaded by ${resource.contributor_name}` : 'Uploaded anonymously'}
+            {resource.created_at && ` • ${timeAgo(resource.created_at)}`}
+          </p>
+        </div>
+      </button>
+
+      <button
+        onClick={() => setMenuOpen((v) => !v)}
+        className="w-9 h-9 flex-none rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high"
+        aria-label="More options"
+      >
+        <span className="material-symbols-outlined text-[20px]">more_vert</span>
+      </button>
+
+      {menuOpen && (
+        <div
+          className="absolute top-12 right-2 z-10 bg-surface-container-high border border-outline rounded-xl shadow-lg overflow-hidden"
+          onMouseLeave={() => setMenuOpen(false)}
+        >
+          <button
+            onClick={() => { setMenuOpen(false); navigate(path) }}
+            className="block w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"
+          >
+            Open
+          </button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function toRailCollectionItem(collection, navigate) {
@@ -40,6 +93,18 @@ function toRailCollectionItem(collection, navigate) {
     fileType: undefined,
     isCollection: true,
     onClick: () => navigate(`/collections/${collection.id}`),
+  }
+}
+
+function toRailResourceItem(resource, navigate) {
+  return {
+    id: resource.id,
+    title: resource.title,
+    fileType: resource.file_type,
+    thumbnailUrl: resource.thumbnail_url,
+    thumbnailStatus: resource.thumbnail_status,
+    subtitle: resource.chapter || resource.part || resource.volume || resource.edition || null,
+    onClick: () => navigate(targetPathFor(resource)),
   }
 }
 
@@ -139,30 +204,31 @@ function CollectionPage() {
         </div>
 
         {activeTab === 'Sections' && (
-          <div className="pt-stack-md">
+          <div className="px-margin-mobile pt-stack-md">
             {sections.map((section) =>
               section.resources.length === 0 ? null : (
-                <HorizontalRail
-                  key={section.id || 'unsectioned'}
-                  title={section.name}
-                  items={mixInCollections(
-                    section.resources.map((r) => toRailResourceItem(r, navigate)),
-                    allCollections,
-                    (c) => toRailCollectionItem(c, navigate)
-                  )}
-                />
+                <div key={section.id || 'unsectioned'} className="mb-stack-lg">
+                  <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-stack-sm">
+                    {section.name}
+                  </h3>
+                  {section.resources.map((r) => (
+                    <ResourceListRow key={r.id} resource={r} navigate={navigate} />
+                  ))}
+                </div>
               )
             )}
             {sections.every((s) => s.resources.length === 0) && (
-              <p className="px-margin-mobile font-label-sm text-label-sm text-on-surface-variant italic">
+              <p className="font-label-sm text-label-sm text-on-surface-variant italic">
                 No resources in this collection yet.
               </p>
             )}
             {related.length > 0 && (
-              <HorizontalRail
-                title="Related Resources"
-                items={related.map((r) => toRailResourceItem(r, navigate))}
-              />
+              <div className="-mx-margin-mobile mt-stack-lg">
+                <HorizontalRail
+                  title="Related Resources"
+                  items={related.map((r) => toRailResourceItem(r, navigate))}
+                />
+              </div>
             )}
           </div>
         )}

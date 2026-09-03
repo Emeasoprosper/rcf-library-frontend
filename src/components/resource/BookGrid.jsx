@@ -49,11 +49,7 @@ function BookGrid({ title, items, onSeeAll, variant = 'default' }) {
                       </span>
                     </span>
                   )}
-                  {book.isCollection && (
-                    <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 backdrop-blur flex items-center justify-center pointer-events-none">
-                      <span className="material-symbols-outlined text-white text-[11px]">library_books</span>
-                    </span>
-                  )}
+
                 </div>
 
                 <div className={`bg-surface-container-high min-w-0 ${isCompact ? 'px-1.5 py-1' : 'px-2 py-1.5'}`}>

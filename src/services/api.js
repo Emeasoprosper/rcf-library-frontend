@@ -341,6 +341,23 @@ export const adminApi = {
   updateCollection: (id, payload) => apiFetch(`/admin/resource-collections/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   createCollectionSection: (id, name) => apiFetch(`/admin/resource-collections/${id}/sections`, { method: 'POST', body: JSON.stringify({ name }) }),
   deleteCollection: (id) => apiFetch(`/admin/resource-collections/${id}`, { method: 'DELETE' }),
+  uploadCollectionCover: (id, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `${API_BASE}/admin/resource-collections/${id}/cover`)
+      xhr.withCredentials = true
+      xhr.onload = () => {
+        let body = {}
+        try { body = JSON.parse(xhr.responseText || '{}') } catch { /* fall through */ }
+        if (xhr.status >= 200 && xhr.status < 300) resolve(body)
+        else reject(new Error(body.error || `Cover upload failed (${xhr.status})`))
+      }
+      xhr.onerror = () => reject(new Error('Network error during cover upload'))
+      xhr.send(formData)
+    })
+  },
   authors: (search = '') => apiFetch(`/admin/authors?search=${encodeURIComponent(search)}`),
   organizeResource: (id, payload) =>
     apiFetch(`/admin/resources/${id}/organize`, { method: 'PATCH', body: JSON.stringify(payload) }),

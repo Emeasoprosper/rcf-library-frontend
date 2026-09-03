@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import TopAppBar from '../../components/layout/TopAppBar'
-import { adminApi, resourceCollectionsApi, uploadResourceFile } from '../../services/api'
+import { adminApi, resourceCollectionsApi } from '../../services/api'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 
 // Bottom sheet: pick an existing collection (thumbnail + name + count)
@@ -39,24 +39,15 @@ function CollectionPickerSheet({ open, resource, collections, onClose, onPicked,
     setSaving(true)
     try {
       const { collection } = await adminApi.createCollection({ title: title.trim(), author: author.trim() })
-      // Cover upload reuses the same resource-file upload pipeline
-      // (Drive storage) — a collection cover is just an image, no new
-      // storage path needed.
+      let finalCollection = collection
+
       if (coverFile) {
-        const formData = new FormData()
-        formData.append('file', coverFile)
-        formData.append('resourceTypeSlug', 'other')
-        formData.append('title', `${title.trim()} cover`)
-        const uploaded = await uploadResourceFile(formData).catch(() => null)
-        if (uploaded?.resourceId) {
-          // best-effort — cover linkage happens via a direct PATCH once
-          // the resource's thumbnail is generated; for now the admin can
-          // also just re-open Edit on the collection to set a cover URL
-          // manually if this doesn't resolve immediately.
-        }
+        const { coverUrl } = await adminApi.uploadCollectionCover(collection.id, coverFile)
+        finalCollection = { ...collection, cover_url: coverUrl }
       }
-      onCreated(collection)
-      onPicked(collection.id)
+
+      onCreated(finalCollection)
+      onPicked(finalCollection.id)
     } finally {
       setSaving(false)
     }
