@@ -341,6 +341,7 @@ export const adminApi = {
   updateCollection: (id, payload) => apiFetch(`/admin/resource-collections/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   createCollectionSection: (id, name) => apiFetch(`/admin/resource-collections/${id}/sections`, { method: 'POST', body: JSON.stringify({ name }) }),
   deleteCollection: (id) => apiFetch(`/admin/resource-collections/${id}`, { method: 'DELETE' }),
+    removeFromCollection: (id) => apiFetch(`/admin/resources/${id}/remove-from-collection`, { method: 'PATCH' }),
   uploadCollectionCover: (id, file) => {
     const formData = new FormData()
     formData.append('file', file)

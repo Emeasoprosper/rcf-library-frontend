@@ -3,7 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
-import { resourceCollectionsApi } from '../services/api'
+import CollectionPickerSheet from '../components/admin/CollectionPickerSheet'
+import DownloadGateModal from '../components/ui/DownloadGateModal'
+import { resourceCollectionsApi, adminApi, resourcesApi } from '../services/api'
+import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
+import { isRunningAsInstalledApp } from '../lib/pwaInstall'
+import { useAuth } from '../contexts/AuthContext'
 
 const TABS = ['Sections', 'About', 'More Like This']
 
@@ -26,9 +31,15 @@ function targetPathFor(resource) {
   return `/library/${resource.id}`
 }
 
-function ResourceListRow({ resource, navigate }) {
+function ResourceListRow({ resource, navigate, isAdmin, onRemove, onMove, onDownload, onToggleSave }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [downloaded, setDownloaded] = useState(false)
+  const [saved, setSaved] = useState(Boolean(resource.is_bookmarked))
   const path = targetPathFor(resource)
+
+  useEffect(() => {
+    isOfflineAvailable(resource.id).then(setDownloaded)
+  }, [resource.id])
 
   return (
     <div className="relative flex items-center gap-3 p-stack-sm rounded-xl bg-surface-container border border-outline mb-2">
@@ -69,15 +80,57 @@ function ResourceListRow({ resource, navigate }) {
 
       {menuOpen && (
         <div
-          className="absolute top-12 right-2 z-10 bg-surface-container-high border border-outline rounded-xl shadow-lg overflow-hidden"
+          className="absolute top-12 right-2 z-10 bg-surface-container-high border border-outline rounded-xl shadow-lg overflow-hidden min-w-[200px]"
           onMouseLeave={() => setMenuOpen(false)}
         >
           <button
             onClick={() => { setMenuOpen(false); navigate(path) }}
-            className="block w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"
+            className="flex items-center gap-2 w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"
           >
+            <span className="material-symbols-outlined text-[18px]">open_in_new</span>
             Open
           </button>
+          <button
+            onClick={async () => {
+              setMenuOpen(false)
+              await onToggleSave(resource, saved)
+              setSaved((v) => !v)
+            }}
+            className="flex items-center gap-2 w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"
+          >
+            <span className="material-symbols-outlined text-[18px]">{saved ? 'bookmark' : 'bookmark_border'}</span>
+            {saved ? 'Remove from Saved' : 'Save'}
+          </button>
+          <button
+            onClick={async () => {
+              setMenuOpen(false)
+              const success = await onDownload(resource)
+              if (success) setDownloaded(true)
+            }}
+            disabled={downloaded}
+            className="flex items-center gap-2 w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]">{downloaded ? 'download_done' : 'download'}</span>
+            {downloaded ? 'Downloaded' : 'Download'}
+          </button>
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => { setMenuOpen(false); onMove(resource) }}
+                className="flex items-center gap-2 w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"
+              >
+                <span className="material-symbols-outlined text-[18px]">drive_file_move</span>
+                Move to another collection
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); onRemove(resource) }}
+                className="flex items-center gap-2 w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-error hover:bg-surface-container"
+              >
+                <span className="material-symbols-outlined text-[18px]">remove_circle_outline</span>
+                Remove from this collection
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -111,32 +164,79 @@ function toRailResourceItem(resource, navigate) {
 function CollectionPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
+
   const [data, setData] = useState(null)
   const [allCollections, setAllCollections] = useState([])
   const [activeTab, setActiveTab] = useState('Sections')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [movingResource, setMovingResource] = useState(null)
+  const [showGate, setShowGate] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
+  const load = () => {
     setLoading(true)
     setError('')
-    setActiveTab('Sections')
-
     Promise.all([
       resourceCollectionsApi.get(id),
       resourceCollectionsApi.list().catch(() => ({ items: [] })),
     ])
       .then(([detail, listRes]) => {
-        if (cancelled) return
         setData(detail)
         setAllCollections((listRes.items || []).filter((c) => c.id !== id))
       })
-      .catch((err) => { if (!cancelled) setError(err.message || 'Failed to load collection') })
-      .finally(() => { if (!cancelled) setLoading(false) })
+      .catch((err) => setError(err.message || 'Failed to load collection'))
+      .finally(() => setLoading(false))
+  }
 
-    return () => { cancelled = true }
+  useEffect(() => {
+    setActiveTab('Sections')
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  const handleRemove = async (resource) => {
+    await adminApi.removeFromCollection(resource.id)
+    load()
+  }
+
+  const handleMoved = async (collectionId) => {
+    const resource = movingResource
+    setMovingResource(null)
+    await adminApi.organizeResource(resource.id, { collectionId })
+    load()
+  }
+
+  const handleToggleSave = async (resource, currentlySaved) => {
+    if (currentlySaved) {
+      await resourcesApi.unbookmark(resource.id).catch(() => {})
+    } else {
+      await resourcesApi.bookmark(resource.id).catch(() => {})
+    }
+  }
+
+  // Same install-gate + offline-save flow as ResourceDetail.jsx — a
+  // resource downloaded from inside a collection ends up in the exact
+  // same offline library as one downloaded from its own detail page.
+  const handleDownload = async (resource) => {
+    if (!isRunningAsInstalledApp()) {
+      setShowGate(true)
+      return false
+    }
+    try {
+      await resourcesApi.download(resource.id)
+      const { blob, mimeType } = await resourcesApi.downloadFileForOffline(resource.id)
+      await saveOffline(resource.id, blob, mimeType, {
+        title: resource.title,
+        thumbnailUrl: resourcesApi.thumbnailUrl(resource.id),
+      })
+      return true
+    } catch {
+      alert('Download failed — please try again.')
+      return false
+    }
+  }
 
   if (loading) {
     return (
@@ -162,11 +262,18 @@ function CollectionPage() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md pb-24">
-      <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} />
+      <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} transparent />
 
-      <main className="pt-[68px]">
-        <section className="px-margin-mobile pt-stack-md pb-stack-md flex gap-4 items-end">
-          <div className="w-28 h-28 flex-none rounded-xl overflow-hidden bg-surface-container-high border border-outline shadow-lg">
+      <div className="relative -mt-[68px] pt-[68px] overflow-hidden">
+        {collection.cover_url && (
+          <div className="absolute inset-0 -z-10">
+            <img src={collection.cover_url} alt="" className="w-full h-full object-cover blur-2xl scale-110 opacity-60" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-background/80 to-background" />
+          </div>
+        )}
+
+        <section className="px-margin-mobile pt-stack-lg pb-stack-md flex gap-4 items-end">
+          <div className="w-28 h-28 flex-none rounded-xl overflow-hidden bg-surface-container-high border border-outline shadow-2xl">
             {collection.cover_url ? (
               <img src={collection.cover_url} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -187,7 +294,9 @@ function CollectionPage() {
             </p>
           </div>
         </section>
+      </div>
 
+      <main>
         <div className="sticky top-[68px] z-20 bg-background flex gap-6 border-b border-outline px-margin-mobile">
           {TABS.map((tab) => (
             <button
@@ -212,7 +321,16 @@ function CollectionPage() {
                     {section.name}
                   </h3>
                   {section.resources.map((r) => (
-                    <ResourceListRow key={r.id} resource={r} navigate={navigate} />
+                    <ResourceListRow
+                      key={r.id}
+                      resource={r}
+                      navigate={navigate}
+                      isAdmin={isAdmin}
+                      onRemove={handleRemove}
+                      onMove={setMovingResource}
+                      onDownload={handleDownload}
+                      onToggleSave={handleToggleSave}
+                    />
                   ))}
                 </div>
               )
@@ -256,6 +374,17 @@ function CollectionPage() {
       </main>
 
       <BottomNav />
+
+      <CollectionPickerSheet
+        open={!!movingResource}
+        resource={movingResource}
+        collections={allCollections}
+        onClose={() => setMovingResource(null)}
+        onPicked={handleMoved}
+        onCreated={(c) => setAllCollections((prev) => [c, ...prev])}
+      />
+
+      <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
     </div>
   )
 }
