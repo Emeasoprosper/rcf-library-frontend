@@ -13,7 +13,6 @@ import NewsPopupModal from '../components/ui/NewsPopupModal'
 import { useScrollDirection } from '../hooks/useScrollDirection'
 import { resourcesApi, communityApi, newsApi, resourceCollectionsApi } from '../services/api'
 import { getMediaKind } from '../lib/mediaKind'
-import { mixInCollections } from '../lib/mixInCollections'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { shuffle } from '../lib/shuffle'
 import { getDismissedNewsIds, addDismissedNewsId } from '../lib/dismissedNews'
@@ -179,57 +178,20 @@ function Home() {
         const collectionRows = collectionsRes.items || []
         setCollections(collectionRows)
 
-        const toRailCollectionItem = (c) => ({
-          id: `collection-${c.id}`,
-          title: c.title,
-          subtitle: c.author,
-          thumbnailUrl: c.cover_url,
-          fileType: undefined,
-          isCollection: true,
-          onClick: () => navigate(`/collections/${c.id}`),
-        })
-
-        const toGridCollectionItem = (c) => ({
-          id: `collection-${c.id}`,
-          title: c.title,
-          author: c.author,
-          thumbnailUrl: c.cover_url,
-          fileType: undefined,
-          isCollection: true,
-          onClick: () => navigate(`/collections/${c.id}`),
-        })
-
         const recentItems = recentRes.items || []
         setRecentBooks(
-          mixInCollections(
-            recentItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r, false)),
-            collectionRows,
-            toGridCollectionItem,
-            5
-          )
+          recentItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r, false))
         )
         setRecentVideos(
-          mixInCollections(
-            shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'video').map((r) => toCardItem(r))),
-            collectionRows,
-            toRailCollectionItem
-          )
+          shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'video').map((r) => toCardItem(r)))
         )
         setRecentAudios(
-          mixInCollections(
-            shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'audio').map((r) => toCardItem(r))),
-            collectionRows,
-            toRailCollectionItem
-          )
+          shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'audio').map((r) => toCardItem(r)))
         )
 
         const popularItems = popularRes.items || []
         setPopularBooks(
-          mixInCollections(
-            popularItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r)),
-            collectionRows,
-            toRailCollectionItem
-          )
+          popularItems.filter((r) => laneOf(r.file_type) === 'book').map((r) => toCardItem(r))
         )
 
         const inProgress = (historyRes.items || []).filter((h) => !h.completed_at)
@@ -257,7 +219,7 @@ function Home() {
               onClick: () => navigate(kind === 'book' ? `/library/${h.resource_id}` : `/resources/${h.resource_id}/read`),
             }
           })
-        setJumpBackIn(mixInCollections(jumpBackInItems, collectionRows, toRailCollectionItem))
+        setJumpBackIn(jumpBackInItems)
 
         const allNotifications = notificationsRes.items || []
         setNotifications(allNotifications.slice(0, 3))
@@ -356,7 +318,6 @@ function Home() {
   ]
 
   const continueConfig = continueLane ? CONTINUE_LANE_CONFIG[continueLane] : null
-
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md">
       <TopAppBar
