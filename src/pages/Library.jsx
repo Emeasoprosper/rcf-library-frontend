@@ -112,12 +112,12 @@ function Library() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-56 lg:pr-80">
       <TopAppBar title="Library" />
 
-      <main className="pb-24 pt-[68px] px-margin-mobile">
+      <main className="pb-24 pt-[68px] px-margin-mobile md:pt-24 md:pb-12">
         <section
-          className={`sticky z-40 w-full bg-background pt-stack-sm pb-stack-sm transition-[top] duration-300 ease-in-out ${
+          className={`sticky z-40 w-full bg-background pt-stack-sm pb-stack-sm transition-[top] duration-300 ease-in-out md:top-24 ${
             headerHidden ? 'top-0' : 'top-[68px]'
           }`}
         >
@@ -192,7 +192,7 @@ function Library() {
               thumbnailUrl={item.thumbnail_url}
               thumbnailStatus={item.thumbnail_status}
               fileType={item.file_type}
-              onClick={() => navigate(`/resources/${item.id}`)}
+              onClick={() => navigate(`/library/${item.id}`)}
             />
           ))}
         </div>

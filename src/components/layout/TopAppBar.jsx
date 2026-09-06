@@ -9,7 +9,7 @@ function TopAppBar({ title, rightIcons, showBack = false }) {
 
   return (
     <header
-      className={`fixed top-0 left-0 z-50 w-full px-margin-mobile py-stack-md bg-surface/80 backdrop-blur-md border-b border-outline transition-transform duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 z-50 w-full px-margin-mobile py-stack-md bg-surface/80 backdrop-blur-md border-b border-outline transition-transform duration-300 ease-in-out md:hidden ${
         hidden ? '-translate-y-full' : 'translate-y-0'
       }`}
     >

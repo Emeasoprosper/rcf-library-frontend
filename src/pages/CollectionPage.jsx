@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
-import CollectionPickerSheet from '../components/admin/CollectionPickerSheet'
+import CollectionPickerSheet from './admin/CollectionPickerSheet'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
 import { resourceCollectionsApi, adminApi, resourcesApi } from '../services/api'
 import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
@@ -261,10 +261,20 @@ function CollectionPage() {
   const resourceCount = sections.reduce((sum, s) => sum + s.resources.length, 0)
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md pb-24">
+    <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-56 lg:pr-80">
       <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} transparent />
 
-      <div className="relative -mt-[68px] pt-[68px] overflow-hidden">
+      <div className="relative -mt-[68px] pt-[68px] md:mt-0 md:pt-24 overflow-hidden">
+        {/* TopAppBar's back button is md:hidden now — this is the
+            desktop-only equivalent, satisfying Part 8's requirement for
+            a reliable back control regardless of which header is active. */}
+        <button
+          onClick={() => navigate(-1)}
+          className="hidden md:flex absolute top-28 left-6 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur items-center justify-center text-white hover:bg-black/70 transition"
+          aria-label="Go back"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
         {collection.cover_url && (
           <div className="absolute inset-0 -z-10">
             <img src={collection.cover_url} alt="" className="w-full h-full object-cover blur-2xl scale-110 opacity-60" />
@@ -297,7 +307,7 @@ function CollectionPage() {
       </div>
 
       <main>
-        <div className="sticky top-[68px] z-20 bg-background flex gap-6 border-b border-outline px-margin-mobile">
+        <div className="sticky top-[68px] md:top-24 z-20 bg-background flex gap-6 border-b border-outline px-margin-mobile">
           {TABS.map((tab) => (
             <button
               key={tab}

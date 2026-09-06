@@ -256,6 +256,12 @@ function Home() {
 
   useEffect(() => {
     if (loading) return
+    // Tour targets (BottomNav's data-tour ids, the mobile search bar
+    // below) are mobile-only UI, now hidden at md — see BottomNav.jsx
+    // and the section below. Rather than teaching SpotlightTour a
+    // second set of desktop selectors, the tour just doesn't start on
+    // desktop-width viewports.
+    if (window.innerWidth >= 768) return
     const forced = shouldForceStart()
     if (!forced && hasCompletedTour()) return
     const timer = setTimeout(() => startTour(), 600)
@@ -324,7 +330,7 @@ function Home() {
 
   const continueConfig = continueLane ? CONTINUE_LANE_CONFIG[continueLane] : null
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-56 lg:pr-80">
       <TopAppBar
         title="Home"
         rightIcons={
@@ -344,9 +350,9 @@ function Home() {
         }
       />
 
-      <main className="pb-24 pt-[68px]">
+      <main className="pb-24 pt-[68px] md:pt-24 md:pb-12">
         <section
-          className={`sticky z-40 w-full px-margin-mobile pt-stack-md pb-stack-lg bg-background transition-[top] duration-300 ease-in-out ${
+          className={`sticky z-40 w-full px-margin-mobile pt-stack-md pb-stack-lg bg-background transition-[top] duration-300 ease-in-out md:hidden ${
             headerHidden ? 'top-0' : 'top-[68px]'
           }`}
         >

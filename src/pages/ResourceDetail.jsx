@@ -249,7 +249,7 @@ function ResourceDetail() {
   const duration = readingEstimate || listeningEstimate || watchingEstimate
 
   return (
-    <div className="min-h-screen bg-background text-on-surface pb-32">
+    <div className="min-h-screen bg-background text-on-surface pb-32 md:pt-24 md:pl-56 lg:pr-80">
       <div className="relative w-full h-[52vh] min-h-[360px] overflow-hidden bg-surface-container-highest">
         {resource.thumbnail_url && (
           <img src={resource.thumbnail_url} alt={resource.title} className="w-full h-full object-cover" />
@@ -352,7 +352,7 @@ function ResourceDetail() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 px-margin-mobile py-4 bg-background border-t border-outline flex gap-3">
+      <div className="fixed bottom-0 left-0 right-0 md:left-56 lg:right-80 z-30 px-margin-mobile py-4 bg-background border-t border-outline flex gap-3">
         <button
           onClick={() => navigate(`/resources/${id}/read`)}
           className="flex-1 h-14 rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-2"

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import TopAppBar from '../../components/layout/TopAppBar'
 import { adminApi, resourceCollectionsApi } from '../../services/api'
-import CollectionPickerSheet from '../../components/admin/CollectionPickerSheet'
+import CollectionPickerSheet from './CollectionPickerSheet'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 
 function EditCollectionInline({ collection, onSaved, onCancel }) {

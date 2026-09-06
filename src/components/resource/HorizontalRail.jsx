@@ -8,6 +8,22 @@ function splitProgress(subtitle) {
   return { percent: match[1], rest: match[2] }
 }
 
+function Waveform() {
+  const bars = [18, 30, 46, 26, 58, 36, 72, 42, 64, 30, 52, 78, 38, 60, 28, 48, 68, 34, 54, 24]
+
+  return (
+    <div className="absolute inset-x-3 bottom-3 flex h-10 items-center gap-0.5 opacity-90" aria-hidden="true">
+      {bars.map((height, index) => (
+        <span
+          key={index}
+          className="flex-1 rounded-full bg-orange-300/90"
+          style={{ height: `${height}%` }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function HorizontalRail({ title, items }) {
   if (!items || items.length === 0) return null
 
@@ -44,10 +60,10 @@ function HorizontalRail({ title, items }) {
               <div
                 key={item.id || item.title}
                 onClick={item.onClick}
-                className={`flex-none ${style.railWidth} snap-start group cursor-pointer`}
+                className={`flex-none ${item.isCollection ? 'w-52' : style.railWidth} snap-start group cursor-pointer`}
               >
                 <div className="rounded-xl overflow-hidden transition-all mb-stack-sm">
-                  <div className={`relative ${style.aspect} w-full bg-surface-container`}>
+                  <div className={`relative ${item.isCollection ? 'aspect-[4/3]' : style.aspect} w-full bg-surface-container`}>
                     {item.thumbnailUrl ? (
                       <img
                         src={item.thumbnailUrl}
@@ -77,6 +93,7 @@ function HorizontalRail({ title, items }) {
                         </span>
                       </span>
                     )}
+                    {kind === 'audio' && !item.thumbnailUrl && <Waveform />}
 
                   </div>
 
