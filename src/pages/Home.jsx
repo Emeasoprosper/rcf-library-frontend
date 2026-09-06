@@ -154,9 +154,14 @@ function Home() {
 
     async function load() {
       try {
-        const [recentRes, popularRes, historyRes, notificationsRes, newsRes, collectionsRes] = await Promise.all([
+        const [recentRes, popularRes, recentAudioRes, historyRes, notificationsRes, newsRes, collectionsRes] = await Promise.all([
           resourcesApi.list({ sort: 'recent', pageSize: 12 }),
           resourcesApi.list({ sort: 'popular', pageSize: 8 }),
+          // Audio needs its own dedicated recent fetch — filtering the
+          // shared top-12-of-everything list above can starve out real
+          // recent audio if books/videos crowd it out, even though the
+          // audio itself is genuinely recent within its own type.
+          resourcesApi.list({ type: 'audio', sort: 'recent', pageSize: 12 }),
           communityApi.readingHistory().catch(() => ({ items: [] })),
           communityApi.notifications().catch(() => ({ items: [] })),
           newsApi.latest().catch(() => ({ adminNews: [], external: [] })),
@@ -186,7 +191,7 @@ function Home() {
           shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'video').map((r) => toCardItem(r)))
         )
         setRecentAudios(
-          shuffle(recentItems.filter((r) => laneOf(r.file_type) === 'audio').map((r) => toCardItem(r)))
+          shuffle((recentAudioRes.items || []).map((r) => toCardItem(r)))
         )
 
         const popularItems = popularRes.items || []
