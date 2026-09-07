@@ -9,6 +9,7 @@ import { resourceCollectionsApi, adminApi, resourcesApi } from '../services/api'
 import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import { useAuth } from '../contexts/AuthContext'
+import { useActiveResource } from '../contexts/ActiveResourceContext'
 
 const TABS = ['Sections', 'About', 'More Like This']
 
@@ -31,11 +32,10 @@ function targetPathFor(resource) {
   return `/library/${resource.id}`
 }
 
-function ResourceListRow({ resource, navigate, isAdmin, onRemove, onMove, onDownload, onToggleSave }) {
+function ResourceListRow({ resource, navigate, isAdmin, onRemove, onMove, onDownload, onToggleSave, onOpen }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
   const [saved, setSaved] = useState(Boolean(resource.is_bookmarked))
-  const path = targetPathFor(resource)
 
   useEffect(() => {
     isOfflineAvailable(resource.id).then(setDownloaded)
@@ -43,7 +43,7 @@ function ResourceListRow({ resource, navigate, isAdmin, onRemove, onMove, onDown
 
   return (
     <div className="relative flex items-center gap-3 p-stack-sm rounded-xl bg-surface-container border border-outline mb-2">
-      <button onClick={() => navigate(path)} className="flex items-center gap-3 flex-grow min-w-0 text-left">
+      <button onClick={() => onOpen(resource)} className="flex items-center gap-3 flex-grow min-w-0 text-left">
         <div className="w-14 h-14 flex-none rounded-lg overflow-hidden bg-surface-container-high border border-outline/50">
           {resource.thumbnail_url ? (
             <img src={resource.thumbnail_url} alt="" className="w-full h-full object-cover" />
@@ -84,7 +84,7 @@ function ResourceListRow({ resource, navigate, isAdmin, onRemove, onMove, onDown
           onMouseLeave={() => setMenuOpen(false)}
         >
           <button
-            onClick={() => { setMenuOpen(false); navigate(path) }}
+            onClick={() => { setMenuOpen(false); onOpen(resource) }}
             className="flex items-center gap-2 w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"
           >
             <span className="material-symbols-outlined text-[18px]">open_in_new</span>
@@ -165,6 +165,7 @@ function CollectionPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { openResource } = useActiveResource()
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
 
   const [data, setData] = useState(null)
@@ -340,6 +341,7 @@ function CollectionPage() {
                       onMove={setMovingResource}
                       onDownload={handleDownload}
                       onToggleSave={handleToggleSave}
+                      onOpen={openResource}
                     />
                   ))}
                 </div>

@@ -27,9 +27,6 @@ function DesktopHeader() {
     <header className="hidden md:flex fixed top-0 left-0 w-full h-[72px] z-40 items-center gap-6 px-6 bg-surface border-b border-outline">
       <button onClick={() => navigate('/home')} className="flex items-center gap-2.5 flex-none" aria-label="Home">
         <img src={logo} alt="" className="h-9 w-9" />
-        <span className="font-headline-sm text-headline-sm font-bold text-on-surface hidden lg:inline">
-          MOUAU Library
-        </span>
       </button>
 
       <div className="flex-1 max-w-xl mx-auto">

@@ -446,7 +446,9 @@ function Home() {
         )}
 
         {updates.length > 0 && (
-          <UpdatesList updates={updates} onSeeAll={() => navigate('/notifications')} onDelete={handleDeleteNotification} />
+          <div className="lg:hidden">
+            <UpdatesList updates={updates} onSeeAll={() => navigate('/notifications')} onDelete={handleDeleteNotification} />
+          </div>
         )}
       </main>
 

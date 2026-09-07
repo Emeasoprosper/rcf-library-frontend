@@ -2,6 +2,7 @@
 // over there). Same 5 destinations as BottomNav via shared navItems/NavIcon.
 import { Link, useLocation } from 'react-router-dom'
 import NavIcon from './NavIcon'
+import InstallSidebarCard from './InstallSidebarCard'
 import { navItems } from '../../lib/navItems'
 
 function LeftSidebarNav() {
@@ -24,6 +25,7 @@ function LeftSidebarNav() {
           </Link>
         )
       })}
+      <InstallSidebarCard />
     </aside>
   )
 }

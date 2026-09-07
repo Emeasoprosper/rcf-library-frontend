@@ -1,4 +1,5 @@
 import AppRoutes from './routes/AppRoutes'
+import { ActiveResourceProvider } from './contexts/ActiveResourceContext'
 import AppLoader from './components/ui/AppLoader'
 import InstallPrompt from './components/ui/InstallPrompt'
 import ApkUpdateBanner from './components/ui/ApkUpdateBanner'
@@ -12,6 +13,7 @@ function App() {
   return (
     <AppLoader>
       <TourProvider>
+      <ActiveResourceProvider>
         <DesktopHeader />
         <LeftSidebarNav />
         <AppRoutes />
@@ -19,6 +21,7 @@ function App() {
         <InstallPrompt />
         <ApkUpdateBanner />
         <SpotlightTour />
+      </ActiveResourceProvider>
       </TourProvider>
     </AppLoader>
   )

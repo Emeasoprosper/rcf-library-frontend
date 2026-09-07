@@ -1,11 +1,12 @@
-// Desktop-only right sidebar (hidden below lg). Phase-1 scope: Updates
-// only, no resource-detail state (that's the in-sidebar-reader
-// follow-up we scoped out). Self-fetches notifications — see the note
-// in DesktopHeader.jsx about why this is mounted globally, not per-page.
+// Desktop-only right sidebar (hidden below lg). Now has two modes:
+// default = Updates feed; when a resource is opened via
+// ActiveResourceContext, switches to SidebarReader instead.
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import UpdatesList from '../ui/UpdatesList'
+import SidebarReader from './SidebarReader'
 import { communityApi } from '../../services/api'
+import { useActiveResource } from '../../contexts/ActiveResourceContext'
 
 const notificationIcon = {
   announcement: 'campaign',
@@ -27,6 +28,7 @@ function timeAgo(dateString) {
 
 function RightSidebarPanel() {
   const navigate = useNavigate()
+  const { activeResource } = useActiveResource()
   const [notifications, setNotifications] = useState([])
 
   const load = useCallback(() => {
@@ -63,7 +65,9 @@ function RightSidebarPanel() {
 
   return (
     <aside className="hidden lg:flex flex-col fixed top-[72px] right-0 w-80 h-[calc(100vh-72px)] z-30 bg-surface border-l border-outline overflow-y-auto py-6">
-      {updates.length > 0 ? (
+      {activeResource ? (
+        <SidebarReader />
+      ) : updates.length > 0 ? (
         <UpdatesList updates={updates} onSeeAll={() => navigate('/notifications')} onDelete={handleDelete} />
       ) : (
         <p className="px-margin-mobile font-label-sm text-label-sm text-on-surface-variant">No updates yet.</p>

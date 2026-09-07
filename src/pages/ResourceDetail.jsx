@@ -8,6 +8,7 @@ import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
 import OfflineDownloadInfoModal from '../components/ui/OfflineDownloadInfoModal'
 import { hasSeenOfflineDownloadInfo, markOfflineDownloadInfoSeen } from '../lib/offlineDownloadInfo'
+import { useActiveResource } from '../contexts/ActiveResourceContext'
 
 function formatMinutes(mins) {
   if (!mins) return null
@@ -85,6 +86,7 @@ function toRelatedItem(r, navigate) {
 function ResourceDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { openResource } = useActiveResource()
 
   const [resource, setResource] = useState(null)
   const [youMayLike, setYouMayLike] = useState([])
@@ -354,7 +356,7 @@ function ResourceDetail() {
 
       <div className="fixed bottom-0 left-0 right-0 md:left-56 lg:right-80 z-30 px-margin-mobile py-4 bg-background border-t border-outline flex gap-3">
         <button
-          onClick={() => navigate(`/resources/${id}/read`)}
+          onClick={() => openResource(resource)}
           className="flex-1 h-14 rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-2"
         >
           <ActionIcon icon={action.icon} className="w-5 h-5" />
