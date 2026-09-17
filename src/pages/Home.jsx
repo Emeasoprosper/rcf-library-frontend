@@ -17,6 +17,8 @@ import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { shuffle } from '../lib/shuffle'
 import { getDismissedNewsIds, addDismissedNewsId } from '../lib/dismissedNews'
 import { useTour } from '../contexts/TourContext'
+import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
+import { useActiveResource } from '../contexts/ActiveResourceContext'
 
 const ads = []
 
@@ -36,6 +38,20 @@ const notificationIcon = {
   resource_approved: 'check_circle',
   resource_rejected: 'error',
   request_resolved: 'inbox',
+}
+
+function openReaderItem(item, kind, { isDesktop, openResource, navigate }) {
+  if (kind !== 'book' && isDesktop) {
+    openResource({
+      id: item.resource_id,
+      title: item.title,
+      thumbnail_url: item.thumbnail_url,
+      file_type: item.file_type,
+      author: item.author,
+    })
+    return
+  }
+  navigate(kind === 'book' ? `/library/${item.resource_id}` : `/resources/${item.resource_id}/read`)
 }
 
 function laneOf(fileType) {
@@ -132,6 +148,8 @@ function Home() {
   const navigate = useNavigate()
   const headerHidden = useScrollDirection()
   const { startTour, hasCompletedTour, shouldForceStart } = useTour()
+  const isDesktop = useIsDesktopViewport()
+  const { openResource } = useActiveResource()
 
   const [collections, setCollections] = useState([])
   const [recentBooks, setRecentBooks] = useState([])
@@ -221,7 +239,7 @@ function Home() {
               subtitle,
               thumbnailUrl: h.thumbnail_url,
               fileType: h.file_type,
-              onClick: () => navigate(kind === 'book' ? `/library/${h.resource_id}` : `/resources/${h.resource_id}/read`),
+              onClick: () => openReaderItem(h, kind, { isDesktop, openResource, navigate }),
             }
           })
         setJumpBackIn(jumpBackInItems)
@@ -401,7 +419,7 @@ function Home() {
                 item={continueItem}
                 kind={continueLane}
                 progressLabel={`${continueItem.progress_percent}% ${continueConfig.progressSuffix}`}
-                onClick={() => navigate(continueConfig.route(continueItem.resource_id))}
+                onClick={() => openReaderItem(continueItem, continueLane, { isDesktop, openResource, navigate })}
               />
             </div>
           </section>

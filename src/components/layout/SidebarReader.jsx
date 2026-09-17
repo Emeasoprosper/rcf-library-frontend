@@ -10,6 +10,8 @@ import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
 import { resourcesApi } from '../../services/api'
 import { getOffline, saveReadingProgress } from '../../lib/offlineStorage'
 import { useActiveResource } from '../../contexts/ActiveResourceContext'
+import { extractAccentColorMixedWithBlack } from '../../lib/extractAccentColor'
+import ReaderSettingsPanel from '../resource/ReaderSettingsPanel'
 
 GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -44,6 +46,10 @@ function PdfMiniReader({ resource }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [zoom, setZoom] = useState(1)
+
+  function zoomIn() { setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2))) }
+  function zoomOut() { setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2))) }
 
   useEffect(() => {
     let cancelled = false
@@ -84,16 +90,22 @@ function PdfMiniReader({ resource }) {
       if (cancelled) return
       const containerWidth = canvasRef.current.parentElement?.clientWidth || 280
       const unscaled = page.getViewport({ scale: 1 })
-      const scale = containerWidth / unscaled.width
+      const fitScale = containerWidth / unscaled.width
+      const scale = fitScale * zoom
       const viewport = page.getViewport({ scale })
+      const dpr = window.devicePixelRatio || 1
       const canvas = canvasRef.current
-      canvas.width = viewport.width
-      canvas.height = viewport.height
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise
+      canvas.width = Math.round(viewport.width * dpr)
+      canvas.height = Math.round(viewport.height * dpr)
+      canvas.style.width = `${viewport.width}px`
+      canvas.style.height = `${viewport.height}px`
+      const context = canvas.getContext('2d')
+      context.scale(dpr, dpr)
+      await page.render({ canvasContext: context, viewport }).promise
     }
     renderPage()
     return () => { cancelled = true }
-  }, [currentPage, numPages])
+  }, [currentPage, numPages, zoom])
 
   useEffect(() => {
     if (!numPages) return
@@ -109,7 +121,8 @@ function PdfMiniReader({ resource }) {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="relative flex flex-col flex-1 min-h-0">
+      <ReaderSettingsPanel onZoomIn={zoomIn} onZoomOut={zoomOut} />
       <div className="flex-1 overflow-auto px-3 py-2 flex justify-center">
         <canvas ref={canvasRef} className="rounded shadow" />
       </div>
@@ -133,6 +146,18 @@ function MediaMiniPlayer({ resource, kind }) {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [speed, setSpeed] = useState(1)
+  const [bgGradient, setBgGradient] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setBgGradient(null)
+    if (resource.thumbnail_url) {
+      extractAccentColorMixedWithBlack(resource.thumbnail_url)
+        .then((gradient) => { if (!cancelled) setBgGradient(gradient) })
+        .catch(() => {})
+    }
+    return () => { cancelled = true }
+  }, [resource.thumbnail_url])
 
   useEffect(() => {
     let cancelled = false
@@ -209,7 +234,7 @@ function MediaMiniPlayer({ resource, kind }) {
 
   // audio — persistent Spotify-style mini player
   return (
-    <div className="p-4 flex flex-col gap-3">
+    <div className="p-4 flex flex-col gap-3" style={{ background: bgGradient || undefined }}>
       {mediaUrl && <audio ref={mediaRef} src={mediaUrl} className="hidden" />}
       <div className="w-full aspect-square rounded-xl overflow-hidden bg-surface-container-high border border-outline">
         {resource.thumbnail_url ? (
