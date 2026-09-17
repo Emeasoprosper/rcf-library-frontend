@@ -10,6 +10,7 @@ import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import { useAuth } from '../contexts/AuthContext'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
+import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 
 const TABS = ['Sections', 'About', 'More Like This']
 
@@ -30,6 +31,14 @@ function targetPathFor(resource) {
     return `/resources/${resource.id}/read`
   }
   return `/library/${resource.id}`
+}
+
+function openReaderFor(resource, { isDesktop, openResource, navigate }) {
+  if (isDesktop) {
+    openResource(resource)
+    return
+  }
+  navigate(targetPathFor(resource))
 }
 
 function ResourceListRow({ resource, navigate, isAdmin, onRemove, onMove, onDownload, onToggleSave, onOpen }) {
@@ -166,6 +175,7 @@ function CollectionPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { openResource } = useActiveResource()
+  const isDesktop = useIsDesktopViewport()
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
 
   const [data, setData] = useState(null)
@@ -341,7 +351,7 @@ function CollectionPage() {
                       onMove={setMovingResource}
                       onDownload={handleDownload}
                       onToggleSave={handleToggleSave}
-                      onOpen={openResource}
+                      onOpen={(resource) => openReaderFor(resource, { isDesktop, openResource, navigate })}
                     />
                   ))}
                 </div>

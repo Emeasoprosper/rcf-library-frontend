@@ -299,7 +299,8 @@ function Search() {
   const openResource = (resource) => {
     addRecent(resource)
     setHistoryOpen(false)
-    navigate(resourceDetailPath(resource.id))
+    const kind = getMediaKind(resource.file_type)
+    navigate(kind === 'book' ? resourceDetailPath(resource.id) : `/resources/${resource.id}/read`)
   }
 
   const showIdleContent = query.trim().length < MIN_SEARCH_LENGTH
