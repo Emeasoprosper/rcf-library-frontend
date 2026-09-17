@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 import { resourcesApi } from '../services/api'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
@@ -87,6 +88,7 @@ function ResourceDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { openResource } = useActiveResource()
+  const isDesktop = useIsDesktopViewport()
 
   const [resource, setResource] = useState(null)
   const [youMayLike, setYouMayLike] = useState([])
@@ -245,6 +247,14 @@ function ResourceDetail() {
   const kind = getMediaKind(resource.file_type)
   const action = KIND_ACTION[kind]
 
+  function handleReadClick() {
+    if (isDesktop) {
+      openResource(resource)
+      return
+    }
+    navigate(kind === 'document' ? `/library/${id}` : `/resources/${id}/read`)
+  }
+
   const readingEstimate = formatMinutes(resource.est_reading_min)
   const listeningEstimate = formatMinutes(resource.est_listening_min)
   const watchingEstimate = formatMinutes(resource.est_watching_min)
@@ -356,7 +366,7 @@ function ResourceDetail() {
 
       <div className="fixed bottom-0 left-0 right-0 md:left-56 lg:right-80 z-30 px-margin-mobile py-4 bg-background border-t border-outline flex gap-3">
         <button
-          onClick={() => openResource(resource)}
+          onClick={handleReadClick}
           className="flex-1 h-14 rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-2"
         >
           <ActionIcon icon={action.icon} className="w-5 h-5" />

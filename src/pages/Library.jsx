@@ -35,7 +35,7 @@ function Library() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [activeTab, setActiveTab] = useState(ALL_TAB.label)
-  const [searchInput, setSearchInput] = useState('')
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || '')
   const [items, setItems] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -103,6 +103,11 @@ function Library() {
   useEffect(() => {
     fetchResources()
   }, [fetchResources])
+
+  useEffect(() => {
+    const q = searchParams.get('q') || ''
+    setSearchInput((prev) => (prev === q ? prev : q))
+  }, [searchParams])
 
   const handleTabChange = (label) => {
     setActiveTab(label)

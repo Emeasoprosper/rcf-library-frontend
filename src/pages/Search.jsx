@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
@@ -152,7 +152,8 @@ function SpotifyTile({ title, icon, gradient, onClick, height = 'h-32', imageUrl
 function Search() {
   const navigate = useNavigate()
   const { isAuthenticated, loading: authLoading } = useAuth()
-  const [query, setQuery] = useState('')
+  const [searchParams] = useSearchParams()
+  const [query, setQuery] = useState(() => searchParams.get('q') || '')
   const [recents, setRecents] = useState([])
 
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -172,6 +173,11 @@ function Search() {
   useEffect(() => {
     setRecents(loadRecents())
   }, [])
+
+  useEffect(() => {
+    const q = searchParams.get('q') || ''
+    setQuery((prev) => (prev === q ? prev : q))
+  }, [searchParams])
 
   useEffect(() => {
     function handleClickOutside(e) {

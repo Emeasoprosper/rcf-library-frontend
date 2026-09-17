@@ -2,15 +2,34 @@
 // take over there instead). Never hides on scroll, unlike TopAppBar:
 // Part 4 of the brief requires the header to stay stable.
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { communityApi } from '../../services/api'
 import logo from '../../assets/RCFmouau.svg'
 
 function DesktopHeader() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const [badgeCount, setBadgeCount] = useState(0)
+  const [searchValue, setSearchValue] = useState('')
+
+  useEffect(() => {
+    if (location.pathname !== '/search' && !location.pathname.startsWith('/library')) {
+      setSearchValue('')
+    }
+  }, [location.pathname])
+
+  function targetSearchPath() {
+    return location.pathname.startsWith('/library') ? '/library' : '/search'
+  }
+
+  function handleSearchSubmit(e) {
+    e.preventDefault()
+    const trimmed = searchValue.trim()
+    if (!trimmed) return
+    navigate(`${targetSearchPath()}?q=${encodeURIComponent(trimmed)}`)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -29,20 +48,24 @@ function DesktopHeader() {
         <img src={logo} alt="" className="h-9 w-9" />
       </button>
 
-      <div className="flex-1 max-w-xl mx-auto">
+      <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xl mx-auto">
         <div className="relative w-full">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
             search
           </span>
           <input
             type="text"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onFocus={() => {
+              const target = targetSearchPath()
+              if (location.pathname !== target) navigate(target)
+            }}
             placeholder="Search the archives..."
-            onFocus={() => navigate('/search')}
-            readOnly
-            className="w-full h-11 pl-12 pr-4 bg-surface-container-low border border-outline rounded-full text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md cursor-pointer"
+            className="w-full h-11 pl-12 pr-4 bg-surface-container-low border border-outline rounded-full text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
           />
         </div>
-      </div>
+      </form>
 
       <div className="flex items-center gap-4 flex-none">
         <button

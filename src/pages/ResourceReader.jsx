@@ -11,6 +11,7 @@ import HorizontalRail from '../components/resource/HorizontalRail'
 import { useNetworkStatus, useSlowFetchWarning } from '../hooks/useNetworkStatus'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
+import ReaderSettingsPanel from '../components/resource/ReaderSettingsPanel'
 
 GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -424,9 +425,18 @@ function ResourceReader() {
         const scale = fitScale * zoom
         const viewport = page.getViewport({ scale, rotation })
 
-        canvas.width = viewport.width
-        canvas.height = viewport.height
+        // Render the canvas's backing store at devicePixelRatio, then
+        // scale it back down to the intended CSS size — otherwise every
+        // page renders at 1 canvas pixel per CSS pixel regardless of
+        // actual screen density, which looks visibly soft/blurry on any
+        // retina/high-DPI display even before zooming in at all.
+        const dpr = window.devicePixelRatio || 1
+        canvas.width = Math.round(viewport.width * dpr)
+        canvas.height = Math.round(viewport.height * dpr)
+        canvas.style.width = `${viewport.width}px`
+        canvas.style.height = `${viewport.height}px`
         const context = canvas.getContext('2d')
+        context.scale(dpr, dpr)
         await page.render({ canvasContext: context, viewport }).promise
       }
     }
@@ -1160,15 +1170,7 @@ function ResourceReader() {
         </div>
 
         <div className="flex-grow overflow-auto flex items-center justify-center bg-black/5 relative">
-          <div className="fixed right-3 top-1/3 z-20 flex flex-col bg-surface-container border border-outline rounded-xl overflow-hidden shadow-lg">
-            <button onClick={zoomIn} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom in">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_in</span>
-            </button>
-            <div className="h-px bg-outline" />
-            <button onClick={zoomOut} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom out">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_out</span>
-            </button>
-          </div>
+          <ReaderSettingsPanel onZoomIn={zoomIn} onZoomOut={zoomOut} />
 
           {mediaUrl && (
             <img
@@ -1209,15 +1211,7 @@ function ResourceReader() {
         </div>
 
         <div className="flex-grow overflow-auto relative bg-surface-container-low">
-          <div className="fixed right-3 top-1/3 z-20 flex flex-col bg-surface-container border border-outline rounded-xl overflow-hidden shadow-lg">
-            <button onClick={zoomIn} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom in">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_in</span>
-            </button>
-            <div className="h-px bg-outline" />
-            <button onClick={zoomOut} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom out">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_out</span>
-            </button>
-          </div>
+          <ReaderSettingsPanel onZoomIn={zoomIn} onZoomOut={zoomOut} />
 
           {docxRendering && (
             <div className="absolute inset-0 flex items-center justify-center bg-surface-container-low">
@@ -1302,29 +1296,13 @@ function ResourceReader() {
               : 'flex-grow overflow-y-auto overflow-x-auto relative'
           }
         >
-          <div className="fixed right-3 top-1/3 z-20 flex flex-col bg-surface-container border border-outline rounded-xl overflow-hidden shadow-lg">
-            <button onClick={zoomIn} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom in">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_in</span>
-            </button>
-            <div className="h-px bg-outline" />
-            <button onClick={zoomOut} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Zoom out">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">zoom_out</span>
-            </button>
-            <div className="h-px bg-outline" />
-            <button onClick={rotate} className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high" aria-label="Rotate page">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">rotate_right</span>
-            </button>
-            <div className="h-px bg-outline" />
-            <button
-              onClick={() => setReadingMode((m) => (m === 'vertical' ? 'horizontal' : 'vertical'))}
-              className="w-10 h-10 flex items-center justify-center hover:bg-surface-container-high"
-              aria-label={readingMode === 'vertical' ? 'Switch to left/right scroll' : 'Switch to up/down scroll'}
-            >
-              <span className="material-symbols-outlined text-on-surface text-[20px]">
-                {readingMode === 'vertical' ? 'swap_horiz' : 'swap_vert'}
-              </span>
-            </button>
-          </div>
+          <ReaderSettingsPanel
+            onZoomIn={zoomIn}
+            onZoomOut={zoomOut}
+            onRotate={rotate}
+            readingMode={readingMode}
+            onToggleReadingMode={() => setReadingMode((m) => (m === 'vertical' ? 'horizontal' : 'vertical'))}
+          />
 
           <div className={readingMode === 'horizontal' ? 'flex flex-row items-center h-full' : 'flex flex-col items-center gap-4 py-4'}>
             {Array.from({ length: numPages }, (_, i) => (
