@@ -300,6 +300,9 @@ function MediaMiniPlayer({ resource, kind }) {
   const [duration, setDuration] = useState(0)
   const [speed, setSpeed] = useState(1)
   const [bgGradient, setBgGradient] = useState(null)
+  const [waveformPeaks, setWaveformPeaks] = useState(null)
+  const waveformRef = useRef(null)
+  const [isDraggingWaveform, setIsDraggingWaveform] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -328,10 +331,78 @@ function MediaMiniPlayer({ resource, kind }) {
   }, [mediaUrl])
 
   useEffect(() => {
+    if (kind !== 'audio' || !mediaUrl) return
+    let cancelled = false
+    async function computeWaveform() {
+      try {
+        const res = mediaUrl.startsWith('blob:')
+          ? await fetch(mediaUrl)
+          : await fetch(mediaUrl, { credentials: 'include' })
+        if (!res.ok) throw new Error('fetch failed')
+        const arrayBuffer = await res.arrayBuffer()
+        if (cancelled) return
+        const AudioCtx = window.AudioContext || window.webkitAudioContext
+        const audioCtx = new AudioCtx()
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+        if (cancelled) { audioCtx.close(); return }
+        const rawData = audioBuffer.getChannelData(0)
+        const samples = 40
+        const blockSize = Math.max(1, Math.floor(rawData.length / samples))
+        const peaks = []
+        for (let i = 0; i < samples; i++) {
+          const start = i * blockSize
+          let sum = 0
+          for (let j = 0; j < blockSize; j++) sum += Math.abs(rawData[start + j] || 0)
+          peaks.push(sum / blockSize)
+        }
+        const max = Math.max(...peaks, 0.0001)
+        if (!cancelled) setWaveformPeaks(peaks.map((p) => p / max))
+        audioCtx.close()
+      } catch {
+        if (!cancelled) setWaveformPeaks(null)
+      }
+    }
+    computeWaveform()
+    return () => { cancelled = true }
+  }, [mediaUrl, kind])
+
+  function seekFromPointerEvent(e) {
+    const rect = waveformRef.current?.getBoundingClientRect()
+    if (!rect || !duration) return
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    const fraction = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+    const newTime = fraction * duration
+    setCurrentTime(newTime)
+    if (mediaRef.current) mediaRef.current.currentTime = newTime
+  }
+
+  function handleWaveformPointerDown(e) {
+    e.preventDefault()
+    waveformRef.current?.setPointerCapture?.(e.pointerId)
+    setIsDraggingWaveform(true)
+    seekFromPointerEvent(e)
+  }
+
+  useEffect(() => {
+    if (!isDraggingWaveform) return
+    function onMove(e) { seekFromPointerEvent(e) }
+    function onUp() { setIsDraggingWaveform(false) }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDraggingWaveform, duration])
+
+  useEffect(() => {
     const el = mediaRef.current
     if (!el) return
     function onLoaded() { setDuration(el.duration || 0) }
-    function onTime() { setCurrentTime(el.currentTime || 0) }
+    function onTime() { if (!isDraggingWaveform) setCurrentTime(el.currentTime || 0) }
     function onPlay() { setIsPlaying(true) }
     function onPause() {
       setIsPlaying(false)
@@ -453,14 +524,33 @@ function MediaMiniPlayer({ resource, kind }) {
         {resource.author && <p className="font-label-sm text-label-sm text-on-surface-variant truncate">{resource.author}</p>}
       </div>
       <div className="flex-none flex flex-col gap-1">
-        <input
-          type="range"
-          min={0}
-          max={duration || 0}
-          value={currentTime}
-          onChange={(e) => { const v = Number(e.target.value); if (mediaRef.current) mediaRef.current.currentTime = v; setCurrentTime(v) }}
-          className="w-full accent-primary"
-        />
+        {waveformPeaks ? (
+          <div
+            ref={waveformRef}
+            className="flex items-end gap-[2px] h-8 cursor-pointer touch-none select-none"
+            onPointerDown={handleWaveformPointerDown}
+          >
+            {waveformPeaks.map((p, i) => {
+              const played = duration ? i / waveformPeaks.length <= currentTime / duration : false
+              return (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-full transition-colors ${played ? 'bg-primary' : 'bg-on-surface-variant/30'}`}
+                  style={{ height: `${Math.max(10, p * 100)}%` }}
+                />
+              )
+            })}
+          </div>
+        ) : (
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            value={currentTime}
+            onChange={(e) => { const v = Number(e.target.value); if (mediaRef.current) mediaRef.current.currentTime = v; setCurrentTime(v) }}
+            className="w-full accent-primary"
+          />
+        )}
         <div className="flex justify-between font-label-sm text-[11px] text-on-surface-variant">
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
