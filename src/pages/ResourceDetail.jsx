@@ -252,7 +252,7 @@ function ResourceDetail() {
       openResource(resource)
       return
     }
-    navigate(kind === 'document' ? `/library/${id}` : `/resources/${id}/read`)
+    navigate(`/resources/${id}/read`)
   }
 
   const readingEstimate = formatMinutes(resource.est_reading_min)
