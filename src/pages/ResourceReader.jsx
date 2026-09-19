@@ -1300,7 +1300,7 @@ function ResourceReader() {
           ref={containerRef}
           className={
             readingMode === 'horizontal'
-              ? 'flex-grow overflow-x-auto overflow-y-hidden relative flex flex-row snap-x snap-mandatory no-scrollbar'
+              ? `flex-grow overflow-x-auto relative flex flex-row snap-x snap-mandatory no-scrollbar ${zoom > 1 ? 'overflow-y-auto' : 'overflow-y-hidden'}`
               : 'flex-grow overflow-y-auto overflow-x-auto relative'
           }
         >
@@ -1319,7 +1319,7 @@ function ResourceReader() {
                 ref={(node) => pageRefCallback(node, i)}
                 className={
                   readingMode === 'horizontal'
-                    ? `flex-none h-full flex items-${pageAlign} justify-${pageAlign} snap-start px-2`
+                    ? `flex-none ${zoom > 1 ? 'min-h-full' : 'h-full'} flex items-${pageAlign} justify-${pageAlign} snap-start px-2`
                     : `w-full flex justify-${pageAlign}`
                 }
               >
