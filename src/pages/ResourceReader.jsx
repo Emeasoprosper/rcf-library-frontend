@@ -408,16 +408,25 @@ function ResourceReader() {
     }
   }, [mediaUrl])
 
+  const isRenderingPagesRef = useRef(false)
+  const pendingRerenderRef = useRef(false)
+
   useEffect(() => {
     if (viewerKind !== 'pdf' || !pdfRef.current || numPages === 0) return
     let cancelled = false
 
     async function renderAllPages() {
+      if (isRenderingPagesRef.current) {
+        pendingRerenderRef.current = true
+        return
+      }
+      isRenderingPagesRef.current = true
+
       const containerWidth = containerRef.current?.clientWidth || 360
       const containerHeight = containerRef.current?.clientHeight || 600
 
       for (let i = 1; i <= numPages; i++) {
-        if (cancelled) return
+        if (cancelled) break
         const canvas = canvasRefs.current[i - 1]
         if (!canvas) continue
 
@@ -442,6 +451,12 @@ function ResourceReader() {
         const context = canvas.getContext('2d')
         context.scale(dpr, dpr)
         await page.render({ canvasContext: context, viewport }).promise
+      }
+
+      isRenderingPagesRef.current = false
+      if (pendingRerenderRef.current && !cancelled) {
+        pendingRerenderRef.current = false
+        renderAllPages()
       }
     }
 
@@ -828,7 +843,7 @@ function ResourceReader() {
 
   useEffect(() => {
     if (!isDesktop || !resource) return
-    if (viewerKind !== 'audio' && viewerKind !== 'video') return
+    if (viewerKind !== 'audio' && viewerKind !== 'video' && viewerKind !== 'pdf' && viewerKind !== 'docx') return
     openResource(resource)
     navigate(-1)
   }, [isDesktop, resource, viewerKind, openResource, navigate])
@@ -876,7 +891,7 @@ function ResourceReader() {
   // this render commits, so without this guard the center player flashes
   // once before navigating away. This return happens before either the
   // 'video' or 'audio' JSX below is ever reached.
-  if (isDesktop && (viewerKind === 'audio' || viewerKind === 'video')) {
+  if (isDesktop && (viewerKind === 'audio' || viewerKind === 'video' || viewerKind === 'pdf' || viewerKind === 'docx')) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <span className="material-symbols-outlined text-on-surface-variant text-3xl animate-spin">

@@ -9,6 +9,9 @@ import BottomNav from '../components/layout/BottomNav'
 import AttachmentViewerModal from '../components/ui/AttachmentViewerModal'
 import { communityApi, newsApi } from '../services/api'
 import { getDismissedNewsIds, addDismissedNewsId } from '../lib/dismissedNews'
+import { useNavigate } from 'react-router-dom'
+import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
+import { useNotificationsModal } from '../contexts/NotificationsModalContext'
 
 const typeIcon = {
   announcement: 'campaign',
@@ -65,7 +68,14 @@ export function NotificationsContent() {
           link: e.link,
         }))
 
-        const merged = [...adminNewsItems, ...(personal.items || [])].sort(
+        // Only announcement/advert types are true notifications here —
+        // resource_approved/resource_rejected/request_resolved are
+        // submission-status items and belong to Updates (the left
+        // sidebar / mobile-doesn't-have-this concept), not here.
+        const personalNotificationItems = (personal.items || []).filter(
+          (n) => n.type === 'announcement' || n.type === 'advert'
+        )
+        const merged = [...adminNewsItems, ...personalNotificationItems].sort(
           (a, b) => new Date(b.created_at) - new Date(a.created_at)
         )
         setNotifications([...externalItems, ...merged])
@@ -199,6 +209,20 @@ export function NotificationsContent() {
 }
 
 function Notifications() {
+  const isDesktop = useIsDesktopViewport()
+  const navigate = useNavigate()
+  const { openModal } = useNotificationsModal()
+
+  // Desktop must never render this as a full centered page — same rule
+  // as the audio/video/pdf reader. Redirect straight into the popup.
+  useEffect(() => {
+    if (!isDesktop) return
+    openModal()
+    navigate(-1)
+  }, [isDesktop, openModal, navigate])
+
+  if (isDesktop) return null
+
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md">
       <TopAppBar title="Notifications" showBack />
