@@ -272,7 +272,7 @@ function CollectionPage() {
   const resourceCount = sections.reduce((sum, s) => sum + s.resources.length, 0)
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-56 lg:pr-80">
+    <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
       <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} transparent />
 
       <div className="relative -mt-[68px] pt-[68px] md:mt-0 md:pt-24 overflow-hidden">

@@ -110,18 +110,19 @@ function DesktopHeader() {
       </button>
 
       <nav className="flex items-center gap-1 flex-none">
-        {navItems.map((item) => {
+        {navItems.slice(0, Math.ceil(navItems.length / 2)).map((item) => {
           const isActive = location.pathname === item.to
           return (
             <button
               key={item.to}
               onClick={() => navigate(item.to)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors ${
-                isActive ? 'text-orange-500 font-semibold bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              aria-label={item.label}
+              title={item.label}
+              className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors ${
+                isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               }`}
             >
-              <NavIcon icon={item.icon} active={isActive} />
-              <span className="font-label-md text-label-md">{item.label}</span>
+              <NavIcon icon={item.icon} active={isActive} className="text-[26px]" />
             </button>
           )
         })}
@@ -146,6 +147,25 @@ function DesktopHeader() {
         </div>
       </form>
 
+      <nav className="flex items-center gap-1 flex-none">
+        {navItems.slice(Math.ceil(navItems.length / 2)).map((item) => {
+          const isActive = location.pathname === item.to
+          return (
+            <button
+              key={item.to}
+              onClick={() => navigate(item.to)}
+              aria-label={item.label}
+              title={item.label}
+              className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors ${
+                isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              }`}
+            >
+              <NavIcon icon={item.icon} active={isActive} className="text-[26px]" />
+            </button>
+          )
+        })}
+      </nav>
+
       <div className="flex items-center gap-4 flex-none">
         <div ref={dropdownRef} className="relative">
           <button
@@ -165,6 +185,7 @@ function DesktopHeader() {
             <div className="absolute top-[calc(100%+8px)] right-0 w-80 max-h-[70vh] overflow-y-auto bg-surface-container-low border border-outline rounded-2xl shadow-xl z-50">
               {dropdownUpdates.length > 0 ? (
                 <UpdatesList
+                  title="Notifications"
                   updates={dropdownUpdates}
                   onSeeAll={() => { setDropdownOpen(false); navigate('/notifications') }}
                   onDelete={handleDeleteNotification}

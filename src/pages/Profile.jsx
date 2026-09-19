@@ -57,7 +57,7 @@ function Profile() {
   const detail = affiliationDetail(user)
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-56 lg:pr-80">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Profile" />
 
       <main className="pb-24 pt-[68px] px-margin-mobile md:pt-24">

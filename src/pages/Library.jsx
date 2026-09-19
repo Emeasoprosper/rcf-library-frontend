@@ -117,7 +117,7 @@ function Library() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-56 lg:pr-80">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Library" />
 
       <main className="pb-24 pt-[68px] px-margin-mobile md:pt-24 md:pb-12">

@@ -1,12 +1,12 @@
 import StackedPreview from './StackedPreview'
 
-function UpdatesList({ updates, onSeeAll, onDelete }) {
+function UpdatesList({ updates, onSeeAll, onDelete, title = 'Updates' }) {
   if (!updates || updates.length === 0) return null
 
   return (
     <section className="mb-stack-lg">
       <div className="px-margin-mobile flex justify-between items-end mb-stack-sm">
-        <h2 className="font-headline-lg text-headline-lg font-display text-on-surface">Updates</h2>
+        <h2 className="font-headline-lg text-headline-lg font-display text-on-surface">{title}</h2>
         {onSeeAll && (
           <button onClick={onSeeAll} className="text-label-md font-label-md text-on-surface-variant hover:text-primary">
             View all

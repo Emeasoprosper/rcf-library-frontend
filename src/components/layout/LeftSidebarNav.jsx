@@ -65,7 +65,7 @@ function LeftSidebarNav() {
   }))
 
   return (
-    <aside className="hidden md:flex flex-col fixed top-[72px] left-0 w-56 h-[calc(100vh-72px)] z-30 bg-surface border-r border-outline overflow-y-auto py-6">
+    <aside className="hidden md:flex flex-col fixed top-[72px] left-0 w-80 h-[calc(100vh-72px)] z-30 bg-surface border-r border-outline overflow-y-auto py-6">
       {updates.length > 0 ? (
         <UpdatesList updates={updates} onSeeAll={() => navigate('/notifications')} onDelete={handleDelete} />
       ) : (

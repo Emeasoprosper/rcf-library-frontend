@@ -348,7 +348,7 @@ function Home() {
 
   const continueConfig = continueLane ? CONTINUE_LANE_CONFIG[continueLane] : null
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-56 lg:pr-80">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar
         title="Home"
         rightIcons={
