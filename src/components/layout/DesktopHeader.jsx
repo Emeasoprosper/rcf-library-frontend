@@ -44,9 +44,7 @@ function DesktopHeader() {
     ]).then(([personal, news]) => {
       const dismissed = getDismissedNewsIds()
       const adminNewsCount = (news.adminNews || []).filter((a) => !dismissed.includes(a.id)).length
-      const unreadPersonal = (personal.items || []).filter(
-        (n) => (n.type === 'announcement' || n.type === 'advert') && !n.is_read
-      ).length
+      const unreadPersonal = (personal.items || []).filter((n) => !n.is_read).length
       setBadgeCount(unreadPersonal + adminNewsCount)
     })
   }, [])

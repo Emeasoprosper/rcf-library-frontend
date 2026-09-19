@@ -133,9 +133,47 @@ function PdfMiniReader({ resource }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [zoom, setZoom] = useState(1)
+  const [renderedThumbs, setRenderedThumbs] = useState({})
+  const renderedThumbSet = useRef(new Set())
+  const thumbObserverRef = useRef(null)
 
   function zoomIn() { setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2))) }
   function zoomOut() { setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2))) }
+
+  async function renderThumb(index) {
+    if (renderedThumbSet.current.has(index) || !pdfRef.current) return
+    renderedThumbSet.current.add(index)
+    try {
+      const page = await pdfRef.current.getPage(index + 1)
+      const unscaled = page.getViewport({ scale: 1 })
+      const scale = 56 / unscaled.width
+      const viewport = page.getViewport({ scale })
+      const canvas = document.createElement('canvas')
+      canvas.width = viewport.width
+      canvas.height = viewport.height
+      const ctx = canvas.getContext('2d')
+      await page.render({ canvasContext: ctx, viewport }).promise
+      setRenderedThumbs((prev) => ({ ...prev, [index]: canvas.toDataURL() }))
+    } catch {
+      renderedThumbSet.current.delete(index)
+    }
+  }
+
+  const thumbRefCallback = useRef((node, index) => {
+    if (!node) return
+    if (!thumbObserverRef.current) {
+      thumbObserverRef.current = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) renderThumb(Number(entry.target.dataset.thumbIndex))
+          })
+        },
+        { threshold: 0.1 }
+      )
+    }
+    node.dataset.thumbIndex = index
+    thumbObserverRef.current.observe(node)
+  }).current
 
   useEffect(() => {
     let cancelled = false
@@ -212,12 +250,41 @@ function PdfMiniReader({ resource }) {
       <div className="flex-1 overflow-auto px-3 py-2 flex justify-center">
         <canvas ref={canvasRef} className="rounded shadow" />
       </div>
-      <div className="flex items-center justify-between px-4 py-2 border-t border-outline">
-        <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1} className="w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-30 hover:bg-surface-container-high">
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-outline">
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          disabled={currentPage <= 1}
+          className="w-8 h-8 flex-none rounded-full flex items-center justify-center disabled:opacity-30 hover:bg-surface-container-high border border-outline"
+          aria-label="Previous page"
+        >
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
         </button>
-        <span className="font-label-sm text-label-sm text-on-surface-variant">{currentPage} / {numPages}</span>
-        <button onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))} disabled={currentPage >= numPages} className="w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-30 hover:bg-surface-container-high">
+        <div className="flex-1 flex gap-1.5 overflow-x-auto no-scrollbar">
+          {Array.from({ length: numPages }, (_, i) => (
+            <button
+              key={i}
+              ref={(node) => thumbRefCallback(node, i)}
+              onClick={() => setCurrentPage(i + 1)}
+              className={`flex-none w-9 h-12 rounded border-2 overflow-hidden bg-surface-container-high relative ${
+                currentPage === i + 1 ? 'border-primary' : 'border-transparent'
+              }`}
+            >
+              {renderedThumbs[i] ? (
+                <img src={renderedThumbs[i]} alt={`Page ${i + 1}`} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-[9px] text-on-surface-variant">{i + 1}</span>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
+          disabled={currentPage >= numPages}
+          className="w-8 h-8 flex-none rounded-full flex items-center justify-center disabled:opacity-30 hover:bg-surface-container-high border border-outline"
+          aria-label="Next page"
+        >
           <span className="material-symbols-outlined text-[18px]">chevron_right</span>
         </button>
       </div>
@@ -429,13 +496,14 @@ function SidebarReader() {
   const kind = getViewerKind(activeResource.file_type)
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-outline">
-        <span className="font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wide">Now {kind === 'audio' ? 'Playing' : 'Reading'}</span>
-        <button onClick={closeResource} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high" aria-label="Close">
-          <span className="material-symbols-outlined text-[18px]">close</span>
-        </button>
-      </div>
+    <div className="relative flex flex-col h-full">
+      <button
+        onClick={closeResource}
+        className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-surface-container border border-outline shadow-lg hover:bg-surface-container-high text-on-surface"
+        aria-label="Close"
+      >
+        <span className="material-symbols-outlined text-[18px]">close</span>
+      </button>
 
       {kind === 'pdf' && <PdfMiniReader resource={activeResource} />}
       {kind === 'docx' && <DocxMiniReader resource={activeResource} />}

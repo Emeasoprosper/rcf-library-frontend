@@ -68,14 +68,7 @@ export function NotificationsContent() {
           link: e.link,
         }))
 
-        // Only announcement/advert types are true notifications here —
-        // resource_approved/resource_rejected/request_resolved are
-        // submission-status items and belong to Updates (the left
-        // sidebar / mobile-doesn't-have-this concept), not here.
-        const personalNotificationItems = (personal.items || []).filter(
-          (n) => n.type === 'announcement' || n.type === 'advert'
-        )
-        const merged = [...adminNewsItems, ...personalNotificationItems].sort(
+        const merged = [...adminNewsItems, ...(personal.items || [])].sort(
           (a, b) => new Date(b.created_at) - new Date(a.created_at)
         )
         setNotifications([...externalItems, ...merged])
