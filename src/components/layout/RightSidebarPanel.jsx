@@ -8,7 +8,7 @@ function NothingPlayingState() {
   const subtitle = 'Read and listen to audios here'
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
-      <img src="/nothingplaying.png" alt="" className="w-40 h-40 object-contain opacity-90" />
+      <img src="/nothingplaying.png" alt="" className="w-full max-w-none object-contain opacity-90" />
       <p className="font-headline-md text-headline-md font-display text-on-surface">Nothing playing.</p>
       <p className="flex flex-wrap justify-center font-label-md text-label-md text-on-surface-variant">
         {subtitle.split('').map((ch, i) => (

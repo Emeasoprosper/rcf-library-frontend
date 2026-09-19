@@ -4,8 +4,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { communityApi } from '../../services/api'
+import { communityApi, newsApi } from '../../services/api'
+import { getDismissedNewsIds, addDismissedNewsId } from '../../lib/dismissedNews'
 import logo from '../../assets/RCFmouau.svg'
+import NavIcon from './NavIcon'
 import { navItems } from '../../lib/navItems'
 import UpdatesList from '../ui/UpdatesList'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
@@ -40,13 +42,31 @@ function DesktopHeader() {
   const { openModal } = useNotificationsModal()
 
   const loadNotifications = useCallback(() => {
-    communityApi.notifications()
-      .then((res) => {
-        const items = res.items || []
-        setNotifications(items.slice(0, 6))
-        setBadgeCount(items.filter((n) => !n.is_read).length)
-      })
-      .catch(() => {})
+    Promise.all([
+      communityApi.notifications().catch(() => ({ items: [] })),
+      newsApi.latest().catch(() => ({ adminNews: [] })),
+    ]).then(([personal, news]) => {
+      const dismissed = getDismissedNewsIds()
+      const adminNewsItems = (news.adminNews || [])
+        .filter((a) => !dismissed.includes(a.id))
+        .map((a) => ({
+          id: `news-${a.id}`,
+          rawId: a.id,
+          type: 'news',
+          title: a.title,
+          created_at: a.created_at,
+          thumbnail_url: a.attachment_url,
+          is_read: true,
+          is_global: true,
+          link_to: `/news/${a.id}`,
+        }))
+      const personalItems = personal.items || []
+      const merged = [...adminNewsItems, ...personalItems].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      )
+      setNotifications(merged.slice(0, 6))
+      setBadgeCount(personalItems.filter((n) => !n.is_read).length + adminNewsItems.length)
+    })
   }, [])
 
   useEffect(() => {
@@ -70,6 +90,11 @@ function DesktopHeader() {
   function handleDeleteNotification(id) {
     const target = notifications.find((n) => n.id === id)
     setNotifications((prev) => prev.filter((n) => n.id !== id))
+    if (target?.is_global) {
+      addDismissedNewsId(target.rawId)
+      setBadgeCount((prev) => Math.max(prev - 1, 0))
+      return
+    }
     if (target && !target.is_read) setBadgeCount((prev) => Math.max(prev - 1, 0))
     communityApi.deleteNotification(id).catch(() => {})
   }
@@ -123,11 +148,8 @@ function DesktopHeader() {
                 isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               }`}
             >
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: '26px', fontVariationSettings: "'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24" }}
-              >
-                {item.icon}
+              <span className="inline-flex scale-125">
+                <NavIcon icon={item.icon} active={isActive} />
               </span>
             </button>
           )
@@ -166,11 +188,8 @@ function DesktopHeader() {
                 isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               }`}
             >
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: '26px', fontVariationSettings: "'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24" }}
-              >
-                {item.icon}
+              <span className="inline-flex scale-125">
+                <NavIcon icon={item.icon} active={isActive} />
               </span>
             </button>
           )
