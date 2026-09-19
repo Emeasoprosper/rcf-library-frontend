@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
-function ReaderSettingsPanel({ onZoomIn, onZoomOut, onRotate, readingMode, onToggleReadingMode }) {
+function ReaderSettingsPanel({ onZoomIn, onZoomOut, onRotate, readingMode, onToggleReadingMode, containerRef }) {
   const [collapsed, setCollapsed] = useState(false)
   const [pos, setPos] = useState({ x: null, y: null })
   const draggingRef = useRef(false)
@@ -21,10 +21,23 @@ function ReaderSettingsPanel({ onZoomIn, onZoomOut, onRotate, readingMode, onTog
       if (!draggingRef.current) return
       movedRef.current = true
       const point = e.touches ? e.touches[0] : e
+      const bounds = containerRef?.current?.getBoundingClientRect()
+      const panelW = panelRef.current?.offsetWidth || 0
+      const panelH = panelRef.current?.offsetHeight || 0
+
+      if (bounds) {
+        const x = point.clientX - bounds.left - offsetRef.current.x
+        const y = point.clientY - bounds.top - offsetRef.current.y
+        const maxX = bounds.width - panelW
+        const maxY = bounds.height - panelH
+        setPos({ x: Math.min(Math.max(0, x), maxX), y: Math.min(Math.max(0, y), maxY) })
+        return
+      }
+
       const x = point.clientX - offsetRef.current.x
       const y = point.clientY - offsetRef.current.y
-      const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0)
-      const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0)
+      const maxX = window.innerWidth - panelW
+      const maxY = window.innerHeight - panelH
       setPos({ x: Math.min(Math.max(0, x), maxX), y: Math.min(Math.max(0, y), maxY) })
     }
     function onUp() { draggingRef.current = false }
@@ -38,11 +51,12 @@ function ReaderSettingsPanel({ onZoomIn, onZoomOut, onRotate, readingMode, onTog
       window.removeEventListener('touchmove', onMove)
       window.removeEventListener('touchend', onUp)
     }
-  }, [])
+  }, [containerRef])
 
+  const position = containerRef ? 'absolute' : 'fixed'
   const style = pos.x === null
-    ? { right: '12px', top: '33%' }
-    : { left: `${pos.x}px`, top: `${pos.y}px`, right: 'auto' }
+    ? { right: '12px', top: '33%', position }
+    : { left: `${pos.x}px`, top: `${pos.y}px`, right: 'auto', position }
 
   if (collapsed) {
     return (
@@ -51,8 +65,8 @@ function ReaderSettingsPanel({ onZoomIn, onZoomOut, onRotate, readingMode, onTog
         onPointerDown={startDrag}
         onTouchStart={startDrag}
         onClick={() => { if (!movedRef.current) setCollapsed(false) }}
-        style={style}
-        className="fixed z-30 w-11 h-11 rounded-full bg-surface-container border border-outline shadow-lg flex items-center justify-center touch-none"
+      style={style}
+      className="z-30 flex flex-col bg-surface-container border border-outline rounded-xl overflow-hidden shadow-lg touch-none"
         aria-label="Show reader settings"
       >
         <span className="material-symbols-outlined text-on-surface text-[20px]">tune</span>

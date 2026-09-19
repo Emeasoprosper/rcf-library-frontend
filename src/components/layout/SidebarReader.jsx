@@ -27,7 +27,91 @@ function getViewerKind(fileType = '') {
     fileType === 'application/vnd.ms-powerpoint' ||
     fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
   ) return 'pdf' // backend converts these to PDF on stream, same as ResourceReader.jsx
-  return 'unsupported' // docx/image deferred for now
+  if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx'
+  return 'unsupported' // image deferred for now
+}
+
+function DocxMiniReader({ resource }) {
+  const containerRef = useRef(null)
+  const docxContainerRef = useRef(null)
+  const docxSourceRef = useRef(null)
+  const [loading, setLoading] = useState(true)
+  const [rendering, setRendering] = useState(true)
+  const [error, setError] = useState(false)
+  const [zoom, setZoom] = useState(1)
+
+  function zoomIn() { setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2))) }
+  function zoomOut() { setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2))) }
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(false)
+    async function load() {
+      try {
+        const offlineEntry = await getOffline(resource.id)
+        let arrayBuffer
+        if (offlineEntry) {
+          arrayBuffer = await offlineEntry.blob.arrayBuffer()
+        } else {
+          const res = await fetch(resourcesApi.streamUrl(resource.id), { credentials: 'include' })
+          if (!res.ok) throw new Error('stream failed')
+          arrayBuffer = await res.arrayBuffer()
+        }
+        if (cancelled) return
+        docxSourceRef.current = arrayBuffer
+        setLoading(false)
+      } catch {
+        if (!cancelled) { setError(true); setLoading(false) }
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [resource.id])
+
+  useEffect(() => {
+    if (loading || error || !docxSourceRef.current || !docxContainerRef.current) return
+    let cancelled = false
+    async function renderDocx() {
+      setRendering(true)
+      const container = docxContainerRef.current
+      container.innerHTML = ''
+      try {
+        const { renderAsync } = await import('docx-preview')
+        await renderAsync(docxSourceRef.current, container, undefined, {
+          inWrapper: true,
+          ignoreLastRenderedPageBreak: false,
+          useBase64URL: true,
+        })
+        if (!cancelled) setRendering(false)
+      } catch {
+        if (!cancelled) { setRendering(false); setError(true) }
+      }
+    }
+    renderDocx()
+    return () => { cancelled = true }
+  }, [loading, error])
+
+  if (loading) {
+    return <div className="flex-1 flex items-center justify-center"><span className="w-5 h-5 border-2 border-outline border-t-primary rounded-full animate-spin" /></div>
+  }
+  if (error) {
+    return <p className="px-4 py-6 text-center font-label-sm text-label-sm text-on-surface-variant">Couldn't load this document.</p>
+  }
+
+  return (
+    <div ref={containerRef} className="relative flex-1 min-h-0 overflow-auto bg-surface-container-low">
+      <ReaderSettingsPanel onZoomIn={zoomIn} onZoomOut={zoomOut} containerRef={containerRef} />
+      {rendering && (
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-container-low">
+          <span className="material-symbols-outlined text-on-surface-variant text-2xl animate-spin">progress_activity</span>
+        </div>
+      )}
+      <div className="flex justify-center py-4" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
+        <div ref={docxContainerRef} className="docx-reader-container" />
+      </div>
+    </div>
+  )
 }
 
 function formatTime(seconds) {
@@ -38,8 +122,10 @@ function formatTime(seconds) {
 }
 
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2]
+const SLEEP_OPTIONS = [null, 15, 30, 45, 60]
 
 function PdfMiniReader({ resource }) {
+  const containerRef = useRef(null)
   const canvasRef = useRef(null)
   const pdfRef = useRef(null)
   const [numPages, setNumPages] = useState(0)
@@ -121,8 +207,8 @@ function PdfMiniReader({ resource }) {
   }
 
   return (
-    <div className="relative flex flex-col flex-1 min-h-0">
-      <ReaderSettingsPanel onZoomIn={zoomIn} onZoomOut={zoomOut} />
+    <div ref={containerRef} className="relative flex flex-col flex-1 min-h-0">
+      <ReaderSettingsPanel onZoomIn={zoomIn} onZoomOut={zoomOut} containerRef={containerRef} />
       <div className="flex-1 overflow-auto px-3 py-2 flex justify-center">
         <canvas ref={canvasRef} className="rounded shadow" />
       </div>
@@ -221,12 +307,62 @@ function MediaMiniPlayer({ resource, kind }) {
     if (mediaRef.current) mediaRef.current.playbackRate = next
   }
 
+  const sleepTimeoutRef = useRef(null)
+  const [sleepMinutes, setSleepMinutes] = useState(null)
+
+  function cycleSleepTimer() {
+    const idx = SLEEP_OPTIONS.indexOf(sleepMinutes)
+    const next = SLEEP_OPTIONS[(idx + 1) % SLEEP_OPTIONS.length]
+    setSleepMinutes(next)
+    if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current)
+    if (next) {
+      sleepTimeoutRef.current = setTimeout(() => {
+        mediaRef.current?.pause()
+        setSleepMinutes(null)
+      }, next * 60 * 1000)
+    }
+  }
+
+  useEffect(() => {
+    return () => { if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current) }
+  }, [])
+
+  const videoContainerRef = useRef(null)
+  const [videoRotation, setVideoRotation] = useState(0)
+
+  function rotateVideo() {
+    setVideoRotation((r) => (r + 90) % 360)
+  }
+  function toggleFullscreen() {
+    const container = videoContainerRef.current
+    if (!container) return
+    if (document.fullscreenElement) document.exitFullscreen()
+    else container.requestFullscreen?.()
+  }
+
   if (kind === 'video') {
     return (
       <div className="p-3">
-        {mediaUrl && (
-          <video ref={mediaRef} src={mediaUrl} poster={resource.thumbnail_url} controls className="w-full rounded-lg bg-black" />
-        )}
+        <div ref={videoContainerRef} className="relative bg-black rounded-lg overflow-hidden">
+          {mediaUrl && (
+            <video
+              ref={mediaRef}
+              src={mediaUrl}
+              poster={resource.thumbnail_url}
+              controls
+              style={{ transform: `rotate(${videoRotation}deg)`, transition: 'transform 0.25s ease' }}
+              className="w-full bg-black"
+            />
+          )}
+          <div className="absolute top-2 right-2 flex items-center gap-1">
+            <button onClick={rotateVideo} aria-label="Rotate video" className="w-8 h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center">
+              <span className="material-symbols-outlined text-white text-[18px]">screen_rotation</span>
+            </button>
+            <button onClick={toggleFullscreen} aria-label="Fullscreen" className="w-8 h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center">
+              <span className="material-symbols-outlined text-white text-[18px]">fullscreen</span>
+            </button>
+          </div>
+        </div>
         <p className="mt-2 font-label-md text-label-md font-semibold text-on-surface truncate">{resource.title}</p>
       </div>
     )
@@ -274,9 +410,15 @@ function MediaMiniPlayer({ resource, kind }) {
           <span className="material-symbols-outlined">forward_10</span>
         </button>
       </div>
-      <button onClick={cycleSpeed} className="self-center px-3 py-1 rounded-full bg-surface-container-high text-label-sm font-label-sm text-on-surface-variant">
-        {speed}x
-      </button>
+      <div className="flex items-center justify-center gap-2">
+        <button onClick={cycleSleepTimer} className="flex items-center gap-1 px-3 py-1 rounded-full bg-surface-container-high text-label-sm font-label-sm text-on-surface-variant">
+          <span className="material-symbols-outlined text-[14px]">bedtime</span>
+          {sleepMinutes ? `${sleepMinutes}m` : 'Sleep'}
+        </button>
+        <button onClick={cycleSpeed} className="px-3 py-1 rounded-full bg-surface-container-high text-label-sm font-label-sm text-on-surface-variant">
+          {speed}x
+        </button>
+      </div>
     </div>
   )
 }
@@ -296,6 +438,7 @@ function SidebarReader() {
       </div>
 
       {kind === 'pdf' && <PdfMiniReader resource={activeResource} />}
+      {kind === 'docx' && <DocxMiniReader resource={activeResource} />}
       {(kind === 'audio' || kind === 'video') && <MediaMiniPlayer resource={activeResource} kind={kind} />}
       {kind === 'unsupported' && (
         <p className="px-4 py-6 text-center font-label-sm text-label-sm text-on-surface-variant">
