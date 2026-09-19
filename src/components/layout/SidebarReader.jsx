@@ -254,7 +254,7 @@ function PdfMiniReader({ resource }) {
         <button
           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
           disabled={currentPage <= 1}
-          className="w-8 h-8 flex-none rounded-full flex items-center justify-center disabled:opacity-30 hover:bg-surface-container-high border border-outline"
+          className="w-8 h-8 flex-none rounded-full flex items-center justify-center disabled:opacity-30 hover:bg-surface-container-high border border-outline bg-surface-container text-on-surface"
           aria-label="Previous page"
         >
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
@@ -282,7 +282,7 @@ function PdfMiniReader({ resource }) {
         <button
           onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
           disabled={currentPage >= numPages}
-          className="w-8 h-8 flex-none rounded-full flex items-center justify-center disabled:opacity-30 hover:bg-surface-container-high border border-outline"
+          className="w-8 h-8 flex-none rounded-full flex items-center justify-center disabled:opacity-30 hover:bg-surface-container-high border border-outline bg-surface-container text-on-surface"
           aria-label="Next page"
         >
           <span className="material-symbols-outlined text-[18px]">chevron_right</span>
@@ -435,24 +435,24 @@ function MediaMiniPlayer({ resource, kind }) {
     )
   }
 
-  // audio — persistent Spotify-style mini player
+  // audio — persistent Spotify-style mini player. Fixed to the panel's
+  // full height with no scroll: art shrinks (min-h-0 + flex-1) instead
+  // of forcing the column taller than its container.
   return (
-    <div className="p-4 flex flex-col gap-3" style={{ background: bgGradient || undefined }}>
+    <div className="h-full p-4 flex flex-col gap-2 overflow-hidden" style={{ background: bgGradient || undefined }}>
       {mediaUrl && <audio ref={mediaRef} src={mediaUrl} className="hidden" />}
-      <div className="w-full aspect-square rounded-xl overflow-hidden bg-surface-container-high border border-outline">
+      <div className="flex-1 min-h-0 rounded-xl overflow-hidden bg-surface-container-high border border-outline flex items-center justify-center">
         {resource.thumbnail_url ? (
           <img src={resource.thumbnail_url} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-surface-variant text-4xl">headphones</span>
-          </div>
+          <span className="material-symbols-outlined text-on-surface-variant text-4xl">headphones</span>
         )}
       </div>
-      <div>
+      <div className="flex-none">
         <p className="font-label-md text-label-md font-semibold text-on-surface truncate">{resource.title}</p>
         {resource.author && <p className="font-label-sm text-label-sm text-on-surface-variant truncate">{resource.author}</p>}
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex-none flex flex-col gap-1">
         <input
           type="range"
           min={0}
@@ -466,23 +466,23 @@ function MediaMiniPlayer({ resource, kind }) {
           <span>{formatTime(duration)}</span>
         </div>
       </div>
-      <div className="flex items-center justify-center gap-6">
-        <button onClick={() => skip(-10)} className="text-on-surface-variant hover:text-on-surface">
-          <span className="material-symbols-outlined">replay_10</span>
+      <div className="flex-none flex items-center justify-center gap-6">
+        <button onClick={() => skip(-10)} className="w-9 h-9 rounded-full flex items-center justify-center bg-surface-container-high border border-outline text-on-surface hover:bg-surface-container-highest">
+          <span className="material-symbols-outlined text-[20px]">replay_10</span>
         </button>
         <button onClick={togglePlay} className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center">
           <span className="material-symbols-outlined text-[28px]">{isPlaying ? 'pause' : 'play_arrow'}</span>
         </button>
-        <button onClick={() => skip(10)} className="text-on-surface-variant hover:text-on-surface">
-          <span className="material-symbols-outlined">forward_10</span>
+        <button onClick={() => skip(10)} className="w-9 h-9 rounded-full flex items-center justify-center bg-surface-container-high border border-outline text-on-surface hover:bg-surface-container-highest">
+          <span className="material-symbols-outlined text-[20px]">forward_10</span>
         </button>
       </div>
-      <div className="flex items-center justify-center gap-2">
-        <button onClick={cycleSleepTimer} className="flex items-center gap-1 px-3 py-1 rounded-full bg-surface-container-high text-label-sm font-label-sm text-on-surface-variant">
+      <div className="flex-none flex items-center justify-center gap-2">
+        <button onClick={cycleSleepTimer} className="flex items-center gap-1 px-3 py-1 rounded-full bg-surface-container-high border border-outline text-label-sm font-label-sm text-on-surface">
           <span className="material-symbols-outlined text-[14px]">bedtime</span>
           {sleepMinutes ? `${sleepMinutes}m` : 'Sleep'}
         </button>
-        <button onClick={cycleSpeed} className="px-3 py-1 rounded-full bg-surface-container-high text-label-sm font-label-sm text-on-surface-variant">
+        <button onClick={cycleSpeed} className="px-3 py-1 rounded-full bg-surface-container-high border border-outline text-label-sm font-label-sm text-on-surface">
           {speed}x
         </button>
       </div>
