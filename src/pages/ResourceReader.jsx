@@ -553,6 +553,14 @@ function ResourceReader() {
   function zoomOut() { setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2))) }
   function rotate() { setRotation((r) => (r + 90) % 360) }
 
+  // When zoomed in, the rendered canvas is wider/taller than its
+  // container. Centering it (justify-center / items-center) makes it
+  // overflow equally on both sides — but scroll position starts at 0,
+  // so the leading half becomes permanently unreachable (a scroll
+  // container can't scroll to a negative offset). Past 1x zoom, align
+  // to the start instead so the whole page is reachable by scrolling.
+  const pageAlign = zoom > 1 ? 'start' : 'center'
+
   function scrollToPage(pageNumber) {
     const clamped = Math.min(Math.max(1, pageNumber), numPages)
     pageContainerRefs.current[clamped - 1]?.scrollIntoView({
@@ -1304,15 +1312,15 @@ function ResourceReader() {
             onToggleReadingMode={() => setReadingMode((m) => (m === 'vertical' ? 'horizontal' : 'vertical'))}
           />
 
-          <div className={readingMode === 'horizontal' ? 'flex flex-row items-center h-full' : 'flex flex-col items-center gap-4 py-4'}>
+          <div className={readingMode === 'horizontal' ? `flex flex-row items-${pageAlign} h-full` : `flex flex-col items-${pageAlign} gap-4 py-4`}>
             {Array.from({ length: numPages }, (_, i) => (
               <div
                 key={i}
                 ref={(node) => pageRefCallback(node, i)}
                 className={
                   readingMode === 'horizontal'
-                    ? 'flex-none h-full flex items-center justify-center snap-start px-2'
-                    : 'w-full flex justify-center'
+                    ? `flex-none h-full flex items-${pageAlign} justify-${pageAlign} snap-start px-2`
+                    : `w-full flex justify-${pageAlign}`
                 }
               >
                 <canvas
