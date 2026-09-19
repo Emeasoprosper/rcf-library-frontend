@@ -12,6 +12,8 @@ import { useNetworkStatus, useSlowFetchWarning } from '../hooks/useNetworkStatus
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
 import ReaderSettingsPanel from '../components/resource/ReaderSettingsPanel'
+import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
+import { useActiveResource } from '../contexts/ActiveResourceContext'
 
 GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -95,6 +97,8 @@ function ResourceReader() {
 
   const isOnline = useNetworkStatus()
   const { isSlow, start: startSlowWatch, stop: stopSlowWatch } = useSlowFetchWarning()
+  const isDesktop = useIsDesktopViewport()
+  const { openResource } = useActiveResource()
 
   const containerRef = useRef(null)
   const pdfRef = useRef(null)
@@ -822,6 +826,13 @@ function ResourceReader() {
     return () => { if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current) }
   }, [])
 
+  useEffect(() => {
+    if (!isDesktop || !resource) return
+    if (viewerKind !== 'audio' && viewerKind !== 'video') return
+    openResource(resource)
+    navigate(-1)
+  }, [isDesktop, resource, viewerKind, openResource, navigate])
+
   if (offlineNoCopy) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
@@ -855,6 +866,10 @@ function ResourceReader() {
       </div>
     )
   }
+
+  // See below effect: on desktop, audio/video hand off to the sidebar
+  // player instead of rendering here.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
 
   // Desktop audio/video must NEVER paint this page's own center layout —
   // not even for one frame. The redirect effect above fires only after

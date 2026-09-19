@@ -1,4 +1,8 @@
 // pages/Notifications.jsx
+// Mobile: this renders as its own full page (TopAppBar + BottomNav).
+// Desktop: NotificationsModal.jsx renders NotificationsContent directly
+// inside a centered popup instead — desktop must never show this as a
+// full-screen page, same rule as the audio/video reader.
 import { useEffect, useState } from 'react'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
@@ -15,7 +19,7 @@ const typeIcon = {
   request_resolved: 'inbox',
 }
 
-function Notifications() {
+export function NotificationsContent() {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -113,10 +117,8 @@ function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
-      <TopAppBar title="Notifications" showBack />
-
-      <main className="pb-24 pt-[68px] px-margin-mobile">
+    <div className="w-full">
+      <div className="px-margin-mobile pt-4">
         {loading && (
           <p className="font-body-md text-body-md text-on-surface-variant text-center py-stack-lg">
             Loading…
@@ -184,9 +186,7 @@ function Notifications() {
             </div>
           ))}
         </div>
-      </main>
-
-      <BottomNav />
+      </div>
 
       <AttachmentViewerModal
         open={!!viewerItem}
@@ -194,6 +194,18 @@ function Notifications() {
         title={viewerItem?.title}
         url={viewerItem?.url}
       />
+    </div>
+  )
+}
+
+function Notifications() {
+  return (
+    <div className="min-h-screen bg-background text-on-surface font-body-md">
+      <TopAppBar title="Notifications" showBack />
+      <main className="pb-24 pt-[68px]">
+        <NotificationsContent />
+      </main>
+      <BottomNav />
     </div>
   )
 }
