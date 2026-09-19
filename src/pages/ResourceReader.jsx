@@ -856,6 +856,21 @@ function ResourceReader() {
     )
   }
 
+  // Desktop audio/video must NEVER paint this page's own center layout —
+  // not even for one frame. The redirect effect above fires only after
+  // this render commits, so without this guard the center player flashes
+  // once before navigating away. This return happens before either the
+  // 'video' or 'audio' JSX below is ever reached.
+  if (isDesktop && (viewerKind === 'audio' || viewerKind === 'video')) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <span className="material-symbols-outlined text-on-surface-variant text-3xl animate-spin">
+          progress_activity
+        </span>
+      </div>
+    )
+  }
+
   if (viewerKind === 'video') {
     const isRotatedSideways = videoRotation === 90 || videoRotation === 270
     const videoStyle = {

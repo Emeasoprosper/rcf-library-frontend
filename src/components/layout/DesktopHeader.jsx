@@ -1,11 +1,32 @@
 // Desktop-only global header (hidden below md — TopAppBar + BottomNav
 // take over there instead). Never hides on scroll, unlike TopAppBar:
 // Part 4 of the brief requires the header to stay stable.
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { communityApi } from '../../services/api'
 import logo from '../../assets/RCFmouau.svg'
+import NavIcon from './NavIcon'
+import { navItems } from '../../lib/navItems'
+import UpdatesList from '../ui/UpdatesList'
+
+const notificationIcon = {
+  announcement: 'campaign',
+  news: 'newspaper',
+  advert: 'ads_click',
+  resource_approved: 'check_circle',
+  resource_rejected: 'error',
+  request_resolved: 'inbox',
+}
+
+function timeAgo(dateString) {
+  const seconds = Math.floor((Date.now() - new Date(dateString)) / 1000)
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  return `${Math.floor(hours / 24)}d ago`
+}
 
 function DesktopHeader() {
   const navigate = useNavigate()
@@ -13,6 +34,55 @@ function DesktopHeader() {
   const { user } = useAuth()
   const [badgeCount, setBadgeCount] = useState(0)
   const [searchValue, setSearchValue] = useState('')
+  const [notifications, setNotifications] = useState([])
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  const loadNotifications = useCallback(() => {
+    communityApi.notifications()
+      .then((res) => {
+        const items = res.items || []
+        setNotifications(items.slice(0, 6))
+        setBadgeCount(items.filter((n) => !n.is_read).length)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  function handleNotificationClick(n) {
+    if (!n.is_read) {
+      communityApi.markNotificationRead(n.id).catch(() => {})
+      setNotifications((prev) => prev.map((item) => (item.id === n.id ? { ...item, is_read: true } : item)))
+      setBadgeCount((prev) => Math.max(prev - 1, 0))
+    }
+    setDropdownOpen(false)
+    navigate(n.link_to || '/notifications')
+  }
+
+  function handleDeleteNotification(id) {
+    const target = notifications.find((n) => n.id === id)
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
+    if (target && !target.is_read) setBadgeCount((prev) => Math.max(prev - 1, 0))
+    communityApi.deleteNotification(id).catch(() => {})
+  }
+
+  const dropdownUpdates = notifications.map((n) => ({
+    id: n.id,
+    previewIcon: notificationIcon[n.type] || 'notifications',
+    thumbnailUrl: n.thumbnail_url,
+    count: 1,
+    text: n.title,
+    time: timeAgo(n.created_at),
+    read: n.is_read,
+    onClick: () => handleNotificationClick(n),
+  }))
 
   useEffect(() => {
     if (location.pathname !== '/search' && !location.pathname.startsWith('/library')) {
@@ -31,22 +101,31 @@ function DesktopHeader() {
     navigate(`${targetSearchPath()}?q=${encodeURIComponent(trimmed)}`)
   }
 
-  useEffect(() => {
-    let cancelled = false
-    communityApi.notifications()
-      .then((res) => {
-        if (cancelled) return
-        setBadgeCount((res.items || []).filter((n) => !n.is_read).length)
-      })
-      .catch(() => {})
-    return () => { cancelled = true }
-  }, [])
+  useEffect(() => { loadNotifications() }, [loadNotifications])
 
   return (
     <header className="hidden md:flex fixed top-0 left-0 w-full h-[72px] z-40 items-center gap-6 px-6 bg-surface border-b border-outline">
       <button onClick={() => navigate('/home')} className="flex items-center gap-2.5 flex-none" aria-label="Home">
         <img src={logo} alt="" className="h-9 w-9" />
       </button>
+
+      <nav className="flex items-center gap-1 flex-none">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.to
+          return (
+            <button
+              key={item.to}
+              onClick={() => navigate(item.to)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors ${
+                isActive ? 'text-orange-500 font-semibold bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              }`}
+            >
+              <NavIcon icon={item.icon} active={isActive} />
+              <span className="font-label-md text-label-md">{item.label}</span>
+            </button>
+          )
+        })}
+      </nav>
 
       <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xl mx-auto">
         <div className="relative w-full">
@@ -68,18 +147,34 @@ function DesktopHeader() {
       </form>
 
       <div className="flex items-center gap-4 flex-none">
-        <button
-          onClick={() => navigate('/notifications')}
-          className="relative p-2 rounded-full hover:bg-surface-container-high transition-colors"
-          aria-label="Notifications"
-        >
-          <span className="material-symbols-outlined text-on-surface">notifications</span>
-          {badgeCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-surface">
-              {badgeCount > 9 ? '9+' : badgeCount}
-            </span>
+        <div ref={dropdownRef} className="relative">
+          <button
+            onClick={() => setDropdownOpen((v) => !v)}
+            className="relative p-2 rounded-full hover:bg-surface-container-high transition-colors"
+            aria-label="Notifications"
+          >
+            <span className="material-symbols-outlined text-on-surface">notifications</span>
+            {badgeCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-surface">
+                {badgeCount > 9 ? '9+' : badgeCount}
+              </span>
+            )}
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute top-[calc(100%+8px)] right-0 w-80 max-h-[70vh] overflow-y-auto bg-surface-container-low border border-outline rounded-2xl shadow-xl z-50">
+              {dropdownUpdates.length > 0 ? (
+                <UpdatesList
+                  updates={dropdownUpdates}
+                  onSeeAll={() => { setDropdownOpen(false); navigate('/notifications') }}
+                  onDelete={handleDeleteNotification}
+                />
+              ) : (
+                <p className="px-4 py-6 text-center font-label-sm text-label-sm text-on-surface-variant">No notifications yet.</p>
+              )}
+            </div>
           )}
-        </button>
+        </div>
         <button
           onClick={() => navigate('/profile')}
           className="w-9 h-9 rounded-full bg-surface-container-highest border border-outline overflow-hidden flex-none"

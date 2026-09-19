@@ -81,10 +81,10 @@ function MyContributions() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-56 lg:pr-80">
       <TopAppBar title="My Contributions" showBack />
 
-      <main className="pb-32 pt-[68px] px-margin-mobile">
+      <main className="pb-32 pt-[68px] px-margin-mobile md:pt-24">
         {loading && <LibraryLoader size={500} fullScreen />}
 
         {!loading && myUploads.length === 0 && (
