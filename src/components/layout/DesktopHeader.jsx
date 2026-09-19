@@ -6,9 +6,9 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { communityApi } from '../../services/api'
 import logo from '../../assets/RCFmouau.svg'
-import NavIcon from './NavIcon'
 import { navItems } from '../../lib/navItems'
 import UpdatesList from '../ui/UpdatesList'
+import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
 
 const notificationIcon = {
   announcement: 'campaign',
@@ -37,6 +37,7 @@ function DesktopHeader() {
   const [notifications, setNotifications] = useState([])
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
+  const { openModal } = useNotificationsModal()
 
   const loadNotifications = useCallback(() => {
     communityApi.notifications()
@@ -122,7 +123,12 @@ function DesktopHeader() {
                 isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               }`}
             >
-              <NavIcon icon={item.icon} active={isActive} className="text-[26px]" />
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '26px', fontVariationSettings: "'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24" }}
+              >
+                {item.icon}
+              </span>
             </button>
           )
         })}
@@ -160,7 +166,12 @@ function DesktopHeader() {
                 isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               }`}
             >
-              <NavIcon icon={item.icon} active={isActive} className="text-[26px]" />
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: '26px', fontVariationSettings: "'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24" }}
+              >
+                {item.icon}
+              </span>
             </button>
           )
         })}
@@ -187,7 +198,7 @@ function DesktopHeader() {
                 <UpdatesList
                   title="Notifications"
                   updates={dropdownUpdates}
-                  onSeeAll={() => { setDropdownOpen(false); navigate('/notifications') }}
+                  onSeeAll={() => { setDropdownOpen(false); openModal() }}
                   onDelete={handleDeleteNotification}
                 />
               ) : (

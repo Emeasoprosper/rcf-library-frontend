@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import UpdatesList from '../ui/UpdatesList'
 import InstallSidebarCard from './InstallSidebarCard'
 import { communityApi } from '../../services/api'
+import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
 
 const notificationIcon = {
   announcement: 'campaign',
@@ -30,6 +31,7 @@ function timeAgo(dateString) {
 
 function LeftSidebarNav() {
   const navigate = useNavigate()
+  const { openModal } = useNotificationsModal()
   const [notifications, setNotifications] = useState([])
 
   const load = useCallback(() => {
@@ -67,7 +69,7 @@ function LeftSidebarNav() {
   return (
     <aside className="hidden md:flex flex-col fixed top-[72px] left-0 w-80 h-[calc(100vh-72px)] z-30 bg-surface border-r border-outline overflow-y-auto py-6">
       {updates.length > 0 ? (
-        <UpdatesList updates={updates} onSeeAll={() => navigate('/notifications')} onDelete={handleDelete} />
+        <UpdatesList updates={updates} onSeeAll={openModal} onDelete={handleDelete} />
       ) : (
         <p className="px-3 font-label-sm text-label-sm text-on-surface-variant">No updates yet.</p>
       )}
