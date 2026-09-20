@@ -270,7 +270,7 @@ function SubmitResource() {
             </div>
           </main>
 
-          <footer className="fixed bottom-0 w-full bg-surface border-t border-outline z-50 px-margin-mobile py-stack-md">
+          <footer className="fixed bottom-0 md:left-80 md:w-[calc(100%-20rem)] lg:w-[calc(100%-40rem)] w-full bg-surface border-t border-outline z-50 px-margin-mobile py-stack-md">
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}

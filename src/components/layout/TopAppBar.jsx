@@ -28,7 +28,7 @@ function TopAppBar({ title, rightIcons, showBack = false, titleRef, tabs, active
 
   return (
     <header
-      className={`fixed top-0 left-0 z-[9999] w-full px-margin-mobile py-stack-md border-b transition-transform duration-300 ease-in-out md:hidden isolate ${
+      className={`fixed top-0 left-0 z-[9999] w-full px-margin-mobile py-stack-md border-b transition-transform duration-300 ease-in-out ${showBack && !ambient ? 'md:sticky md:top-[72px] md:z-20 md:translate-y-0 md:py-2 md:border-transparent' : 'md:hidden'} isolate ${
         !ambient && hidden ? '-translate-y-full' : 'translate-y-0'
       } ${ambient ? 'border-transparent' : 'border-outline'}`}
       style={ambient ? { backgroundColor: 'transparent' } : undefined}
@@ -44,14 +44,14 @@ function TopAppBar({ title, rightIcons, showBack = false, titleRef, tabs, active
           }}
         />
       ) : (
-        <div className="absolute inset-0 -z-10 bg-surface/80 backdrop-blur-md" />
+        <div className="absolute inset-0 -z-10 bg-surface/80 backdrop-blur-md md:hidden" />
       )}
       <div className={`flex justify-between items-center ${iconTone}`}>
         <div className="flex items-center gap-3">
           {showBack ? (
             <button
               onClick={() => navigate(-1)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors flex-none ${ambient ? 'hover:bg-white/10' : 'hover:bg-surface-container-high'}`}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors flex-none md:bg-surface-container-high md:border md:border-outline ${ambient ? 'hover:bg-white/10' : 'hover:bg-surface-container-high'}`}
               aria-label="Go back"
             >
               <span className={`material-symbols-outlined ${ambient ? 'text-current' : 'text-on-surface'}`}>arrow_back</span>
@@ -78,14 +78,14 @@ function TopAppBar({ title, rightIcons, showBack = false, titleRef, tabs, active
           )}
           <h1
             ref={titleRef}
-            className="font-headline-md text-headline-md font-bold"
+            className="font-headline-md text-headline-md font-bold md:hidden"
             style={ambient ? { opacity: titleOpacity } : undefined}
           >
             {title}
           </h1>
         </div>
 
-        <div className="flex items-center gap-stack-sm">
+        <div className="flex items-center gap-stack-sm md:hidden">
           {rightIcons}
         </div>
       </div>

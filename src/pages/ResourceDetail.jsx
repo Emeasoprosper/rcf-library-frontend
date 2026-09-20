@@ -364,7 +364,7 @@ function ResourceDetail() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 md:left-80 lg:right-80 z-30 px-margin-mobile py-4 bg-background border-t border-outline flex gap-3">
+      <div className="fixed bottom-0 md:left-80 md:w-[calc(100%-20rem)] lg:w-[calc(100%-40rem)] left-0 right-0 md:left-80 lg:right-80 z-30 px-margin-mobile py-4 bg-background border-t border-outline flex gap-3">
         <button
           onClick={handleReadClick}
           className="flex-1 h-14 rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-2"
