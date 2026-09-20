@@ -426,8 +426,12 @@ function CollectionPage() {
         className="hidden md:flex flex-col fixed top-[72px] left-0 md:left-80 right-0 lg:right-80 z-30 px-6 pt-3 pb-1 border-b border-outline"
         style={{
           background: ambientColor || undefined,
-          opacity: ambientColor ? Math.min(tabsBarProgress + 0.15, 1) : 1,
-          backdropFilter: ambientColor ? `blur(${tabsBarProgress * 16}px)` : undefined,
+          // Completely invisible while the artwork is at full size,
+          // then fades in with the blur as it shrinks.
+          opacity: tabsBarProgress,
+          backdropFilter: `blur(${tabsBarProgress * 16}px)`,
+          WebkitBackdropFilter: `blur(${tabsBarProgress * 16}px)`,
+          pointerEvents: tabsBarProgress > 0.05 ? 'auto' : 'none',
         }}
       >
         <div className="flex items-center gap-3 h-10">
