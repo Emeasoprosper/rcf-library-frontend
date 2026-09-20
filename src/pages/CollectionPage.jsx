@@ -331,7 +331,7 @@ function CollectionPage() {
         <span className="material-symbols-outlined">arrow_back</span>
       </button>
 
-      <div className="relative overflow-hidden pt-[68px] md:pt-24">
+      <div className="relative z-0 overflow-hidden pt-[68px] md:pt-24">
         {ambientColor && (
           <div className="absolute inset-0 -z-10 pointer-events-none">
             <div className="absolute inset-0" style={{ background: ambientColor }} />
