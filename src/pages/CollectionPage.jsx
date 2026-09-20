@@ -197,6 +197,8 @@ function CollectionPage() {
   const artworkRef = useRef(null)
   const titleRef = useRef(null)
   const metaRef = useRef(null)
+  const collapsedBgRef = useRef(null)
+  const collapsedTitleRef = useRef(null)
   const MAX_SCROLL = 180
   const [tabsBarProgress, setTabsBarProgress] = useState(0)
 
@@ -232,11 +234,30 @@ function CollectionPage() {
         titleRef.current.style.transform = `translateY(${-progress * 12}px)`
       }
       setTabsBarProgress(progress)
+
+      if (collapsedBgRef.current) {
+        if (progress > 0.3) {
+          const headerAlpha = Math.min((progress - 0.3) / 0.7, 1)
+          collapsedBgRef.current.style.backgroundColor = ambientColor
+            ? ambientColor
+            : `rgba(20, 20, 20, ${headerAlpha * 0.95})`
+          collapsedBgRef.current.style.opacity = headerAlpha
+          collapsedBgRef.current.style.backdropFilter = `blur(${headerAlpha * 12}px)`
+          collapsedBgRef.current.style.webkitBackdropFilter = `blur(${headerAlpha * 12}px)`
+        } else {
+          collapsedBgRef.current.style.opacity = 0
+          collapsedBgRef.current.style.backdropFilter = 'none'
+          collapsedBgRef.current.style.webkitBackdropFilter = 'none'
+        }
+      }
+      if (collapsedTitleRef.current) {
+        collapsedTitleRef.current.style.opacity = progress > 0.65 ? (progress - 0.65) / 0.35 : 0
+      }
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [ambientColor])
 
   const load = () => {
     setLoading(true)
@@ -337,7 +358,7 @@ function CollectionPage() {
             here), so this is the only back button on mobile too. */}
         <button
           onClick={() => navigate(-1)}
-          className="flex absolute top-6 md:top-28 left-4 md:left-6 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur items-center justify-center text-white hover:bg-black/70 transition"
+          className="hidden md:flex absolute top-28 left-6 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur items-center justify-center text-white hover:bg-black/70 transition"
           aria-label="Go back"
         >
           <span className="material-symbols-outlined">arrow_back</span>
@@ -376,8 +397,18 @@ function CollectionPage() {
         </section>
       </div>
 
+      <div className="fixed top-0 left-0 w-full z-50 h-16 md:hidden flex items-center gap-3 px-4">
+        <div ref={collapsedBgRef} className="absolute inset-0 -z-10" style={{ opacity: 0, backgroundColor: 'transparent' }} />
+        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full flex items-center justify-center text-white flex-none" aria-label="Go back">
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h1 ref={collapsedTitleRef} className="font-headline-md text-headline-md font-bold text-white truncate" style={{ opacity: 0 }}>
+          {collection.title}
+        </h1>
+      </div>
+
       <main>
-        <div className="sticky top-0 md:top-24 z-40 isolate flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
+        <div className="sticky top-16 md:top-24 z-40 isolate flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
           <div className="absolute inset-0 -z-10 bg-background" />
           {ambientColor && (
             <div
