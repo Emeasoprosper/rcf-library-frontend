@@ -25,7 +25,7 @@ function Leaderboard() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar showBack title="Leaderboard" />
 
-      <main className="pb-24 pt-[68px] px-margin-mobile">
+      <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile">
         <p className="font-body-md text-body-md text-on-surface-variant mb-stack-lg">
           Ranked by resources contributed and approved.
         </p>

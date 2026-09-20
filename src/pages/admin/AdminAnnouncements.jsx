@@ -178,10 +178,10 @@ function AdminAnnouncements() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Announcements" showBack />
 
-      <main className="pb-32 pt-[68px] px-margin-mobile">
+      <main className="pb-32 pt-[68px] md:pt-24 md:pt-24 px-margin-mobile">
         <div className="flex gap-2 mb-stack-lg">
           {Object.entries(typeConfig).map(([key, cfg]) => (
             <button

@@ -60,7 +60,7 @@ function Profile() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Profile" />
 
-      <main className="pb-24 pt-[68px] px-margin-mobile md:pt-24">
+      <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile md:pt-24">
         <section className="flex flex-col items-center text-center pt-stack-md pb-stack-lg">
           <div className="w-20 h-20 rounded-full bg-surface-container-highest border border-outline flex items-center justify-center mb-stack-sm overflow-hidden">
             {user?.avatarUrl ? (

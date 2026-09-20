@@ -146,7 +146,7 @@ function Contribute() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Contribute" />
 
-      <main className="pb-32 pt-[68px] md:pt-24">
+      <main className="pb-32 pt-[68px] md:pt-24 md:pt-24">
         <section className="px-margin-mobile pt-stack-md pb-stack-md">
           <h2 className="font-display text-display text-on-surface">Contribute</h2>
           <p className="font-body-md text-on-surface-variant mt-1">Help grow the library.</p>

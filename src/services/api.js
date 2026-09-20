@@ -336,6 +336,7 @@ export const adminApi = {
   },
   deleteAnnouncement: (id) => apiFetch(`/admin/announcements/${id}`, { method: 'DELETE' }),
   lockStatus: (id) => apiFetch(`/admin/uploads/${id}/lock-status`),
+  systemErrors: () => apiFetch('/admin/system/errors'),
   needsOrganizing: () => apiFetch('/admin/resources/needs-organizing'),
   createCollection: (payload) => apiFetch('/admin/resource-collections', { method: 'POST', body: JSON.stringify(payload) }),
   updateCollection: (id, payload) => apiFetch(`/admin/resource-collections/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),

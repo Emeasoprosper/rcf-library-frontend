@@ -62,7 +62,7 @@ function AppOfflineShell({ onContinue }) {
     <div className="min-h-screen bg-background text-on-surface flex flex-col">
       <TopAppBar title="Offline" />
 
-      <main className="flex-1 flex flex-col items-center justify-center px-margin-mobile pt-[68px] pb-24 text-center gap-stack-md">
+      <main className="flex-1 flex flex-col items-center justify-center px-margin-mobile pt-[68px] md:pt-24 pb-24 text-center gap-stack-md">
         <div className="mb-stack-sm">
           <StackedPreview thumbnails={previewThumbnails} icon="wifi_off" width={128} height={176} />
         </div>

@@ -7,6 +7,7 @@ import Pagination from '../../components/ui/Pagination'
 import LibraryLoader from '../../components/ui/LibraryLoader'
 import { adminApi } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
+import { useActiveResource } from '../../contexts/ActiveResourceContext'
 
 const PAGE_SIZE = 10
 const LOCK_POLL_MS = 4000
@@ -66,7 +67,7 @@ function PreviewModal({ item, streamUrl, kickedBy, onClose }) {
   const kind = viewerKindFor(item.file_type)
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black lg:top-[72px] lg:left-auto lg:z-[35] lg:w-[var(--sb-right)] lg:bg-surface lg:border-l lg:border-outline" onClick={onClose}>
       <div
         className="flex-none flex items-center gap-3 px-margin-mobile py-stack-md bg-surface-container border-b border-outline"
         onClick={(e) => e.stopPropagation()}
@@ -157,6 +158,7 @@ function PreviewModal({ item, streamUrl, kickedBy, onClose }) {
 function AdminUploads() {
   const { user } = useAuth()
   const isSuperadmin = user?.role === 'superadmin'
+  const { openInspector, closeInspector } = useActiveResource()
 
   const [uploads, setUploads] = useState([])
   const [decided, setDecided] = useState([])
@@ -171,6 +173,16 @@ function AdminUploads() {
   const [lockNotice, setLockNotice] = useState('')
 
   const previewItemRef = useRef(null)
+
+    // Desktop: while a preview is open, the right panel opens (center
+  // compresses to make room) and closes together with the preview.
+  useEffect(() => {
+    if (!previewItem) return undefined
+    openInspector({ title: previewItem.title })
+    return () => closeInspector()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewItem])
+
   const pollTimerRef = useRef(null)
 
   const fetchUploads = useCallback(async () => {
@@ -297,10 +309,10 @@ function AdminUploads() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Uploads" showBack />
 
-      <main className="pb-32 pt-[68px] px-margin-mobile">
+      <main className="pb-32 pt-[68px] md:pt-24 md:pt-24 px-margin-mobile">
         <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
           Review and manage recent library submissions.
         </p>

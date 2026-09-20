@@ -7,6 +7,7 @@ import DesktopHeader from './components/layout/DesktopHeader'
 import LeftSidebarNav from './components/layout/LeftSidebarNav'
 import RightSidebarPanel from './components/layout/RightSidebarPanel'
 import NotificationsModal from './components/layout/NotificationsModal'
+import LayoutModeSync from './components/layout/LayoutModeSync'
 import { NotificationsModalProvider } from './contexts/NotificationsModalContext'
 import { HeaderAmbientProvider } from './contexts/HeaderAmbientContext'
 import { TourProvider } from './contexts/TourContext'
@@ -19,6 +20,7 @@ function App() {
       <ActiveResourceProvider>
         <HeaderAmbientProvider>
           <NotificationsModalProvider>
+            <LayoutModeSync />
             <DesktopHeader />
             <LeftSidebarNav />
             <AppRoutes />

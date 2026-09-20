@@ -31,7 +31,7 @@ function NewsDetail() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title={item?.type === 'announcement' ? 'Announcement' : 'News'} showBack />
 
-      <main className="pb-32 pt-[68px] px-margin-mobile">
+      <main className="pb-32 pt-[68px] md:pt-24 px-margin-mobile">
         {loading && (
           <p className="font-body-md text-body-md text-on-surface-variant text-center py-stack-lg">Loading…</p>
         )}

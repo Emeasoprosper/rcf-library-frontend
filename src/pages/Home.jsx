@@ -368,7 +368,7 @@ function Home() {
         }
       />
 
-      <main className="pb-24 pt-[68px] md:pt-24 md:pb-12">
+      <main className="pb-24 pt-[68px] md:pt-24 md:pt-24 md:pb-12">
         <section
           className={`sticky z-40 w-full px-margin-mobile pt-stack-md pb-stack-lg bg-background transition-[top] duration-300 ease-in-out md:hidden ${
             headerHidden ? 'top-0' : 'top-[68px]'

@@ -66,7 +66,7 @@ function Downloads() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Downloads" showBack />
 
-      <main className="pb-24 pt-[68px] px-margin-mobile">
+      <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile">
         {downloads.length > 0 && (
           <div className="flex items-center justify-between mb-stack-lg p-stack-sm rounded-xl bg-surface-container border border-outline">
             <div>

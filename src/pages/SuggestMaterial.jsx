@@ -562,7 +562,7 @@ function SuggestMaterial() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Suggest Material" showBack />
 
-      <main className="pb-32 pt-[68px] px-margin-mobile">
+      <main className="pb-32 pt-[68px] md:pt-24 px-margin-mobile">
         <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 px-5 py-6 mt-stack-md shadow-lg">
           <span className="material-symbols-outlined absolute -right-6 -top-6 text-white/15 text-[100px] rotate-[12deg] pointer-events-none">
             auto_awesome

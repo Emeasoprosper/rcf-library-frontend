@@ -31,7 +31,7 @@ function timeAgo(dateString) {
 
 function DesktopHeader() {
   const navigate = useNavigate()
-  const location = useLocation()
+  const location = useLocation(); const isAdmin = location.pathname.startsWith('/admin')
   const { user } = useAuth()
   const [badgeCount, setBadgeCount] = useState(0)
   const [searchValue, setSearchValue] = useState('')
@@ -69,12 +69,12 @@ function DesktopHeader() {
   useEffect(() => { loadBadgeCount() }, [loadBadgeCount])
 
   return (
-    <header className="hidden md:flex fixed top-0 left-0 w-full h-[72px] z-40 items-center gap-6 px-6 bg-surface border-b border-outline">
-      <button onClick={() => navigate('/home')} className="flex items-center gap-2.5 flex-none" aria-label="Home">
+    <header style={{ left: 'var(--hd-left)' }} className="hidden md:flex fixed top-0 right-0 h-[72px] z-40 items-center gap-6 px-6 bg-surface border-b border-outline transition-[left] duration-300 ease-in-out">
+      <button onClick={() => navigate('/home')} className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-2.5 flex-none`} aria-label="Home">
         <img src={logo} alt="" className="h-9 w-9" />
       </button>
 
-      <nav className="flex items-center gap-1 flex-none">
+      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none`}>
         {navItems.slice(0, Math.ceil(navItems.length / 2)).map((item) => {
           const isActive = location.pathname === item.to
           return (
@@ -114,7 +114,7 @@ function DesktopHeader() {
         </div>
       </form>
 
-      <nav className="flex items-center gap-1 flex-none">
+      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none`}>
         {navItems.slice(Math.ceil(navItems.length / 2)).map((item) => {
           const isActive = location.pathname === item.to
           return (

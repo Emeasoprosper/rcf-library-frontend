@@ -314,7 +314,7 @@ function Search() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Search" />
 
-      <main className="pb-24 pt-[68px] px-margin-mobile md:pt-24 md:pb-12">
+      <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile md:pt-24 md:pb-12">
         <div ref={searchBarRef} className="relative mt-stack-md mb-stack-lg">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
             search

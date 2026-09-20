@@ -67,10 +67,10 @@ function AdminResources() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Manage Resources" showBack />
 
-      <main className="px-margin-mobile pt-[68px] pb-32">
+      <main className="px-margin-mobile pt-[68px] md:pt-24 md:pt-24 pb-32">
         <button
           onClick={() => navigate('/admin/organize')}
           className="w-full mt-stack-md p-stack-md rounded-xl bg-primary/10 border border-primary/30 text-left flex items-center gap-3"

@@ -5,7 +5,7 @@ function Licensing() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Licensing & Usage" showBack />
 
-      <main className="pb-24 pt-[68px] px-margin-mobile flex flex-col gap-stack-lg">
+      <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile flex flex-col gap-stack-lg">
         <section>
           <h2 className="font-headline-md text-headline-md text-on-surface mb-2">What You Can Do</h2>
           <p className="font-body-md text-body-md text-on-surface-variant">

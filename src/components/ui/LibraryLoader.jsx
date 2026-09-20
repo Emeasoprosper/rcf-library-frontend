@@ -85,9 +85,9 @@ function HomeSkeleton() {
         </div>
       </div>
 
-      {/* pt-[68px] offset matches Home.jsx's own <main> padding under
+      {/* pt-[68px] md:pt-24 offset matches Home.jsx's own <main> padding under
           the fixed TopAppBar. */}
-      <div className="pt-[68px]">
+      <div className="pt-[68px] md:pt-24">
         <div className="pt-stack-md px-margin-mobile">
           {/* Search bar */}
           <Block className="h-12 w-full rounded-full mb-stack-lg" />
@@ -132,7 +132,7 @@ function HomeSkeleton() {
       </div>
 
       {/* BottomNav approximation — not verified against real BottomNav.jsx */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 border-t border-outline bg-background flex items-center justify-around px-margin-mobile">
+      <div className="fixed bottom-0 md:left-[var(--sb-left)] md:w-[var(--sb-w-md)] lg:w-[var(--sb-w-lg)] left-0 right-0 h-16 border-t border-outline bg-background flex items-center justify-around px-margin-mobile">
         {Array.from({ length: 4 }).map((_, i) => (
           <Block key={i} className="h-6 w-6 rounded-full" />
         ))}

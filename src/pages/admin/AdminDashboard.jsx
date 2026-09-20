@@ -4,6 +4,8 @@ import TopAppBar from '../../components/layout/TopAppBar'
 import AdminNav from '../../components/layout/AdminNav'
 import LibraryLoader from '../../components/ui/LibraryLoader'
 import { adminApi } from '../../services/api'
+import { useAuth } from '../../contexts/AuthContext'
+import { useActiveResource } from '../../contexts/ActiveResourceContext'
 
 const quickLinks = [
   { to: '/admin/uploads', icon: 'upload', label: 'Review Uploads', gradient: 'from-blue-500 to-cyan-400' },
@@ -33,6 +35,26 @@ const statLinks = {
 
 function AdminDashboard() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { openInspector } = useActiveResource()
+  const [loadingErrors, setLoadingErrors] = useState(false)
+
+  async function viewServerErrors() {
+    setLoadingErrors(true)
+    try {
+      const { items } = await adminApi.systemErrors()
+      openInspector({
+        title: 'Server errors',
+        text: items.length
+          ? items.map((e) => `[${new Date(e.at).toLocaleString()}]\n${e.message}`).join('\n\n----------\n\n')
+          : 'No errors logged since the server last started.',
+      })
+    } catch (err) {
+      openInspector({ title: 'Server errors', text: err.message || 'Could not load server errors.' })
+    } finally {
+      setLoadingErrors(false)
+    }
+  }
   const [stats, setStats] = useState(null)
   const [error, setError] = useState('')
 
@@ -53,10 +75,10 @@ function AdminDashboard() {
     : []
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Admin Console" showBack />
 
-      <main className="pb-32 pt-[68px] px-margin-mobile">
+      <main className="pb-32 pt-[68px] md:pt-24 md:pt-24 px-margin-mobile">
         {error && (
           <div className="mb-stack-lg p-stack-md rounded-xl bg-error/10 border border-error/30">
             <p className="font-body-md text-body-md text-error">{error}</p>
@@ -122,6 +144,18 @@ function AdminDashboard() {
             </p>
           </div>
         </section>
+      {user?.role === 'superadmin' && (
+          <button
+            onClick={viewServerErrors}
+            disabled={loadingErrors}
+            className="hidden lg:flex mt-stack-md w-full items-center gap-3 p-stack-md rounded-xl bg-surface-container border border-outline hover:border-on-surface-variant transition-colors text-left disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-on-surface-variant">terminal</span>
+            <span className="font-body-md text-body-md text-on-surface">
+              {loadingErrors ? 'Loading…' : 'View server errors'}
+            </span>
+          </button>
+        )}
       </main>
 
       <AdminNav />

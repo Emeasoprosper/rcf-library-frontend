@@ -5,7 +5,7 @@ function CitationTools() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Citation Tools" showBack />
 
-      <main className="pb-24 pt-[68px] px-margin-mobile">
+      <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile">
         <div className="flex flex-col items-center text-center py-stack-lg">
           <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm">
             format_quote

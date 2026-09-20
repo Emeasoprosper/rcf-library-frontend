@@ -120,9 +120,9 @@ function OrganizeResources() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Collections" showBack />
-      <main className="px-margin-mobile pt-[68px] pb-32">
+      <main className="px-margin-mobile pt-[68px] md:pt-24 md:pt-24 pb-32">
         {loading && <p className="text-on-surface-variant text-center py-stack-lg">Loading…</p>}
 
         {!loading && (

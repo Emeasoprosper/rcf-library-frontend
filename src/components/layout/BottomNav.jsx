@@ -7,7 +7,7 @@ function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 w-full z-50 px-4 pt-2 bg-surface/80 backdrop-blur-md [mask-image:linear-gradient(to_top,black_78%,rgba(0,0,0,0.95)_85%,rgba(0,0,0,0.55)_92%,transparent_100%)] md:hidden"
+      className="fixed bottom-0 md:left-[var(--sb-left)] md:w-[var(--sb-w-md)] lg:w-[var(--sb-w-lg)] left-0 w-full z-50 px-4 pt-2 bg-surface/80 backdrop-blur-md [mask-image:linear-gradient(to_top,black_78%,rgba(0,0,0,0.95)_85%,rgba(0,0,0,0.55)_92%,transparent_100%)] md:hidden"
       style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
     >
       <style>{`

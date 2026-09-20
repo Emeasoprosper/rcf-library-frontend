@@ -222,3 +222,20 @@ body {
   height: 0;
   width: 0;
 }
+:root {
+  --sb-left: 20rem;
+  --sb-right: 28rem;
+  --sb-top: 72px;
+  --hd-left: 0rem;
+  --sb-w-md: calc(100% - var(--sb-left));
+  --sb-w-lg: calc(100% - var(--sb-left) - var(--sb-right));
+}
+:root.admin-mode {
+  --sb-left: 5rem;
+  --sb-right: 0rem;
+  --sb-top: 0px;
+  --hd-left: 5rem;
+}
+:root.admin-mode.admin-inspect {
+  --sb-right: 28rem;
+}

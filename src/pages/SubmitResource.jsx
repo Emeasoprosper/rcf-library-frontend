@@ -201,7 +201,7 @@ function SubmitResource() {
       />
 
       {phase === 'type' && (
-        <main className="pb-32 pt-[68px] px-margin-mobile">
+        <main className="pb-32 pt-[68px] md:pt-24 px-margin-mobile">
           <section className="mb-stack-lg">
             <p className="font-body-md text-body-md text-on-surface-variant">
               What kind of material are you contributing? This decides which file types we'll ask for next.
@@ -228,7 +228,7 @@ function SubmitResource() {
 
       {phase === 'upload' && (
         <>
-          <main className="pb-40 pt-[68px] px-margin-mobile">
+          <main className="pb-40 pt-[68px] md:pt-24 px-margin-mobile">
             <section className="mb-stack-lg">
               <p className="font-body-md text-body-md text-on-surface-variant">
                 Add your {selectedTypeData?.title.toLowerCase()} file{selectedTypeData?.id !== 'other' ? 's' : ''} below.
@@ -270,7 +270,7 @@ function SubmitResource() {
             </div>
           </main>
 
-          <footer className="fixed bottom-0 md:left-80 md:w-[calc(100%-20rem)] lg:w-[calc(100%-40rem)] w-full bg-surface border-t border-outline z-50 px-margin-mobile py-stack-md">
+          <footer className="fixed bottom-0 md:left-[var(--sb-left)] md:w-[var(--sb-w-md)] lg:w-[var(--sb-w-lg)] md:left-80 md:w-[calc(100%-20rem)] lg:w-[calc(100%-40rem)] w-full bg-surface border-t border-outline z-50 px-margin-mobile py-stack-md">
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}

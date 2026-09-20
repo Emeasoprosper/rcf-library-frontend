@@ -35,7 +35,7 @@ function SavedResources() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Saved Resources" showBack />
 
-      <main className="pb-24 pt-[68px] px-margin-mobile">
+      <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile">
         <p className="font-body-md text-body-md text-on-surface-variant mb-stack-lg">
           Resources you've bookmarked for later.
         </p>
