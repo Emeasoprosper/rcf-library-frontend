@@ -218,23 +218,21 @@ function CollectionPage() {
     function handleScroll() {
       const scrollY = window.scrollY
       const progress = Math.min(Math.max(scrollY / MAX_SCROLL, 0), 1)
-      const ambientProgress = Math.min(Math.max((progress - 0.15) / 0.85, 0), 1)
 
       if (artworkRef.current) {
-        const scale = 1 - progress * 0.45
-        const opacity = Math.max(1 - progress * 1.5, 0)
-        artworkRef.current.style.transform = `scale(${scale}) translateY(${progress * 10}px)`
+        const scale = 1 - progress * 0.55
+        const opacity = Math.max(1 - progress * 1.4, 0)
+        artworkRef.current.style.transform = `scale(${scale})`
         artworkRef.current.style.opacity = opacity
       }
       if (metaRef.current) {
-        metaRef.current.style.opacity = Math.max(1 - progress * 2.1, 0)
+        metaRef.current.style.opacity = Math.max(1 - progress * 2, 0)
       }
       if (titleRef.current) {
-        titleRef.current.style.opacity = Math.max(1 - progress * 1.4, 0.15)
-        titleRef.current.style.transform = `translateY(${progress * 12}px)`
+        titleRef.current.style.transform = `translateY(${-progress * 12}px)`
       }
       setTabsBarProgress(progress)
-      setAmbient({ progress: ambientProgress, color: ambientColor })
+      setAmbient({ progress, color: ambientColor })
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
