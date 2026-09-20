@@ -224,7 +224,7 @@ body {
 }
 :root {
   --sb-left: 20rem;
-  --sb-right: 28rem;
+  --sb-right: 20rem;
   --sb-top: 72px;
   --hd-left: 0rem;
   --sb-w-md: calc(100% - var(--sb-left));
