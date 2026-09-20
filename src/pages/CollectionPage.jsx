@@ -10,6 +10,7 @@ import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import { useAuth } from '../contexts/AuthContext'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
+import { useRef } from 'react'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 
 const TABS = ['Sections', 'About', 'More Like This']
@@ -186,6 +187,37 @@ function CollectionPage() {
   const [movingResource, setMovingResource] = useState(null)
   const [showGate, setShowGate] = useState(false)
 
+  // Scroll-collapse effect for the hero artwork/title, matching a
+  // Spotify-style collapsing header. Mutates styles directly via refs
+  // (not React state) to avoid a re-render on every scroll tick.
+  const artworkRef = useRef(null)
+  const titleRef = useRef(null)
+  const metaRef = useRef(null)
+  const MAX_SCROLL = 180
+
+  useEffect(() => {
+    function handleScroll() {
+      const scrollY = window.scrollY
+      const progress = Math.min(Math.max(scrollY / MAX_SCROLL, 0), 1)
+
+      if (artworkRef.current) {
+        const scale = 1 - progress * 0.55
+        const opacity = Math.max(1 - progress * 1.4, 0)
+        artworkRef.current.style.transform = `scale(${scale})`
+        artworkRef.current.style.opacity = opacity
+      }
+      if (metaRef.current) {
+        metaRef.current.style.opacity = Math.max(1 - progress * 2, 0)
+      }
+      if (titleRef.current) {
+        titleRef.current.style.transform = `translateY(${-progress * 12}px)`
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   const load = () => {
     setLoading(true)
     setError('')
@@ -287,14 +319,17 @@ function CollectionPage() {
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         {collection.cover_url && (
-          <div className="absolute inset-0 -z-10">
-            <img src={collection.cover_url} alt="" className="w-full h-full object-cover blur-2xl scale-110 opacity-60" />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-background/80 to-background" />
+          <div className="absolute inset-0 -z-10 pointer-events-none">
+            <img src={collection.cover_url} alt="" className="w-full h-full object-cover blur-3xl scale-150 opacity-70 -translate-y-4" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/40 to-background" />
           </div>
         )}
 
-        <section className="px-margin-mobile pt-stack-lg pb-stack-md flex gap-4 items-end">
-          <div className="w-28 h-28 flex-none rounded-xl overflow-hidden bg-surface-container-high border border-outline shadow-2xl">
+        <section className="px-margin-mobile pt-stack-lg pb-stack-md flex flex-col items-center text-center">
+          <div
+            ref={artworkRef}
+            className="w-40 h-40 md:w-48 md:h-48 flex-none rounded-xl overflow-hidden bg-surface-container-high border border-outline shadow-2xl mb-stack-md origin-top"
+          >
             {collection.cover_url ? (
               <img src={collection.cover_url} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -303,22 +338,29 @@ function CollectionPage() {
               </div>
             )}
           </div>
-          <div className="min-w-0">
+          <div ref={titleRef} className="min-w-0 w-full">
             <h1 className="font-headline-md text-headline-md font-display text-on-surface leading-tight">
               {collection.title}
             </h1>
             {collection.author && (
               <p className="font-label-md text-label-md text-on-surface-variant mt-0.5">{collection.author}</p>
             )}
-            <p className="font-label-sm text-label-sm text-on-surface-variant/70 mt-1">
-              {resourceCount} resource{resourceCount !== 1 ? 's' : ''}
-            </p>
           </div>
+          <p ref={metaRef} className="font-label-sm text-label-sm text-on-surface-variant/70 mt-1">
+            {resourceCount} resource{resourceCount !== 1 ? 's' : ''}
+          </p>
         </section>
       </div>
 
       <main>
-        <div className="sticky top-[68px] md:top-24 z-20 bg-background flex gap-6 border-b border-outline px-margin-mobile">
+        <div className="sticky top-[68px] md:top-24 z-20 flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
+          {collection.cover_url && (
+            <div className="absolute inset-0 -z-10 pointer-events-none">
+              <img src={collection.cover_url} alt="" className="w-full h-full object-cover blur-3xl scale-150 opacity-60 -translate-y-20" />
+              <div className="absolute inset-0 bg-background/40 backdrop-blur-xl" />
+            </div>
+          )}
+          {!collection.cover_url && <div className="absolute inset-0 -z-10 bg-background" />}
           {TABS.map((tab) => (
             <button
               key={tab}
