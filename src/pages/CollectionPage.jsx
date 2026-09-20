@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import CollectionPickerSheet from './admin/CollectionPickerSheet'
@@ -9,14 +10,12 @@ import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import { useAuth } from '../contexts/AuthContext'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
+import { useHeaderAmbient } from '../contexts/HeaderAmbientContext'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 
 const TABS = ['Sections', 'About', 'More Like This']
 const MAX_SCROLL = 180
-// Local header height at this page only (distinct from the app's global
-// DesktopHeader, which is 72px and already fixed above this on md+).
-const HEADER_H = 64
 
 function timeAgo(dateString) {
   const seconds = Math.floor((Date.now() - new Date(dateString)) / 1000)
@@ -180,6 +179,7 @@ function CollectionPage() {
   const { user } = useAuth()
   const { openResource } = useActiveResource()
   const isDesktop = useIsDesktopViewport()
+  const { setAmbient, clearAmbient } = useHeaderAmbient()
   const [ambientColor, setAmbientColor] = useState(null)
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
 
@@ -191,11 +191,10 @@ function CollectionPage() {
   const [movingResource, setMovingResource] = useState(null)
   const [showGate, setShowGate] = useState(false)
 
-  // ONE scroll-driven header/hero mechanism for every screen size — no
-  // separate desktop-only button + mobile-only collapsed bar. Direct
-  // ref mutation (not React state) to avoid a re-render per scroll tick.
-  const headerBgRef = useRef(null)
-  const headerTitleRef = useRef(null)
+  // ONE header per screen size does the color crossfade — the app's
+  // real TopAppBar (mobile) and DesktopHeader (desktop), both already
+  // wired to read HeaderAmbientContext. No second bar is ever rendered
+  // on this page — that was the earlier bug (two stacked headers).
   const artworkRef = useRef(null)
   const titleRef = useRef(null)
   const metaRef = useRef(null)
@@ -226,26 +225,15 @@ function CollectionPage() {
         titleRef.current.style.transform = `translateY(${-progress * 12}px)`
       }
       setTabsBarProgress(progress)
-
-      if (headerBgRef.current) {
-        if (progress > 0.3) {
-          const alpha = Math.min((progress - 0.3) / 0.7, 1)
-          headerBgRef.current.style.background = ambientColor || `rgba(20, 20, 20, ${alpha * 0.95})`
-          headerBgRef.current.style.opacity = alpha
-          headerBgRef.current.style.backdropFilter = `blur(${alpha * 12}px)`
-          headerBgRef.current.style.webkitBackdropFilter = `blur(${alpha * 12}px)`
-        } else {
-          headerBgRef.current.style.opacity = 0
-        }
-      }
-      if (headerTitleRef.current) {
-        headerTitleRef.current.style.opacity = progress > 0.65 ? (progress - 0.65) / 0.35 : 0
-      }
+      setAmbient({ progress, color: ambientColor })
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [ambientColor])
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      clearAmbient()
+    }
+  }, [ambientColor, setAmbient, clearAmbient])
 
   const load = () => {
     setLoading(true)
@@ -318,13 +306,7 @@ function CollectionPage() {
   if (error || !data) {
     return (
       <div className="min-h-screen bg-background text-on-surface">
-        <button
-          onClick={() => navigate(-1)}
-          className="fixed top-6 left-4 z-50 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition"
-          aria-label="Go back"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
+        <TopAppBar title="Collection" showBack />
         <p className="font-body-md text-body-md text-on-surface-variant text-center pt-24">
           {error || 'Collection not found.'}
         </p>
@@ -337,31 +319,19 @@ function CollectionPage() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
-      {/* Single fixed header for every screen size. Sits under the
-          app's global DesktopHeader on md+ (72px), and at the true top
-          on mobile (this page renders no TopAppBar). Starts transparent,
-          crossfades to the extracted cover color as you scroll. */}
-      <div
-        className="fixed left-0 w-full z-50 flex items-center gap-3 px-4 top-0 md:top-[72px]"
-        style={{ height: HEADER_H }}
-      >
-        <div ref={headerBgRef} className="absolute inset-0 -z-10" style={{ opacity: 0 }} />
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white flex-none"
-          aria-label="Go back"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
-        <h1 ref={headerTitleRef} className="font-headline-md text-headline-md font-bold text-white truncate" style={{ opacity: 0 }}>
-          {collection.title}
-        </h1>
-      </div>
+      <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} />
 
-      <div
-        className="relative overflow-hidden"
-        style={{ paddingTop: HEADER_H }}
+      {/* Desktop-only equivalent back button, since DesktopHeader has no
+          per-page back affordance of its own. */}
+      <button
+        onClick={() => navigate(-1)}
+        className="hidden md:flex fixed top-28 left-6 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur items-center justify-center text-white hover:bg-black/70 transition"
+        aria-label="Go back"
       >
+        <span className="material-symbols-outlined">arrow_back</span>
+      </button>
+
+      <div className="relative overflow-hidden pt-[68px] md:pt-24">
         {ambientColor && (
           <div className="absolute inset-0 -z-10 pointer-events-none">
             <div className="absolute inset-0" style={{ background: ambientColor }} />
@@ -397,9 +367,7 @@ function CollectionPage() {
       </div>
 
       <main>
-        <div
-          className="sticky z-40 isolate flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden top-16 md:top-[136px]"
-        >
+        <div className="sticky top-[68px] md:top-24 z-20 isolate flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
           <div className="absolute inset-0 -z-10 bg-background" />
           {ambientColor && (
             <div
