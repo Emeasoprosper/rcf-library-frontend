@@ -312,7 +312,7 @@ function AdminUploads() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Uploads" showBack />
 
-      <main className="pb-32 pt-[68px] md:pt-24 md:pt-24 px-margin-mobile">
+      <main className="pb-32 pt-[68px] md:pt-24 md:max-w-5xl md:mx-auto px-margin-mobile">
         <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
           Review and manage recent library submissions.
         </p>
@@ -357,7 +357,7 @@ function AdminUploads() {
 
           {!loading && uploads.length > 0 && (
             <>
-              <div className="flex flex-col gap-gutter">
+              <div className="flex flex-col gap-gutter xl:grid xl:grid-cols-2">
                 {uploads.map((item) => {
                   const isMe = item.reviewing_by === user?.id
                   const lockedByOther = item.reviewing_by && !isMe
@@ -444,7 +444,7 @@ function AdminUploads() {
             <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-stack-sm">
               Just Decided
             </h2>
-            <div className="flex flex-col gap-gutter">
+            <div className="flex flex-col gap-gutter xl:grid xl:grid-cols-2">
               {decided.map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-stack-sm rounded-xl bg-surface-container border border-outline opacity-60">
                   <div className="min-w-0">

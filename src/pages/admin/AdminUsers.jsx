@@ -62,7 +62,7 @@ function AdminUsers() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Users" showBack />
 
-      <main className="pb-24 pt-[68px] md:pt-24 md:pt-24 px-margin-mobile">
+      <main className="pb-24 pt-[68px] md:pt-24 md:max-w-5xl md:mx-auto px-margin-mobile">
         <div className="relative mb-stack-sm">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
             search
@@ -94,7 +94,7 @@ function AdminUsers() {
           </p>
         )}
 
-        <div className="flex flex-col gap-gutter">
+        <div className="flex flex-col gap-gutter xl:grid xl:grid-cols-2">
           {users.map((user) => (
             <div key={user.id} className="flex items-center gap-4 p-stack-md rounded-xl bg-surface-container border border-outline">
               <div className="w-10 h-10 rounded-full bg-surface-container-highest border border-outline flex items-center justify-center flex-none overflow-hidden">

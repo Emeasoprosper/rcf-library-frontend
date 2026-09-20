@@ -84,7 +84,7 @@ function AdminRequests() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Requests" showBack />
 
-      <main className="pb-32 pt-[68px] md:pt-24 md:pt-24 px-margin-mobile">
+      <main className="pb-32 pt-[68px] md:pt-24 md:max-w-5xl md:mx-auto px-margin-mobile">
         <p className="font-body-md text-body-md text-on-surface-variant mb-stack-lg">
           Materials students have asked the library to add.
         </p>
@@ -108,7 +108,7 @@ function AdminRequests() {
             </p>
           )}
 
-          <div className="flex flex-col gap-gutter">
+          <div className="flex flex-col gap-gutter xl:grid xl:grid-cols-2 xl:items-start">
             {requests.map((group) => {
               const detailSummary = summarizeDetails(group.details)
               const isFulfilling = fulfillingId === group.id
@@ -224,7 +224,7 @@ function AdminRequests() {
             <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-stack-sm">
               Recently Resolved
             </h2>
-            <div className="flex flex-col gap-gutter">
+            <div className="flex flex-col gap-gutter xl:grid xl:grid-cols-2 xl:items-start">
               {fulfilled.map((group) => (
                 <div key={group.id} className="flex items-center justify-between p-stack-sm rounded-xl bg-surface-container border border-outline opacity-60">
                   <p className="font-body-md text-body-md text-on-surface truncate">

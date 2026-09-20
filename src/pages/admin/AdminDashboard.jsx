@@ -78,7 +78,7 @@ function AdminDashboard() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Admin Console" showBack />
 
-      <main className="pb-32 pt-[68px] md:pt-24 md:pt-24 px-margin-mobile">
+      <main className="pb-32 pt-[68px] md:pt-24 md:max-w-5xl md:mx-auto px-margin-mobile">
         {error && (
           <div className="mb-stack-lg p-stack-md rounded-xl bg-error/10 border border-error/30">
             <p className="font-body-md text-body-md text-error">{error}</p>
@@ -92,7 +92,7 @@ function AdminDashboard() {
         )}
 
         {stats && (
-          <section className="grid grid-cols-2 gap-gutter mb-stack-lg">
+          <section className="grid grid-cols-2 xl:grid-cols-4 gap-gutter mb-stack-lg">
             {statCards.map((stat) => (
               <button
                 key={stat.label}
@@ -109,7 +109,7 @@ function AdminDashboard() {
           </section>
         )}
 
-        <section className="grid grid-cols-2 gap-gutter mb-stack-lg">
+        <section className="grid grid-cols-2 xl:grid-cols-3 gap-gutter mb-stack-lg">
           {quickLinks.map((link) => (
             <button
               key={link.to}

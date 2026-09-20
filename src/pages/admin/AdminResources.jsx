@@ -70,7 +70,7 @@ function AdminResources() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Manage Resources" showBack />
 
-      <main className="px-margin-mobile pt-[68px] md:pt-24 md:pt-24 pb-32">
+      <main className="px-margin-mobile pt-[68px] md:pt-24 md:max-w-5xl md:mx-auto pb-32">
         <button
           onClick={() => navigate('/admin/organize')}
           className="w-full mt-stack-md p-stack-md rounded-xl bg-primary/10 border border-primary/30 text-left flex items-center gap-3"
@@ -109,7 +109,7 @@ function AdminResources() {
           <p className="text-on-surface-variant font-body-md py-stack-md text-center">No approved resources found.</p>
         )}
 
-        <div className="flex flex-col gap-gutter">
+        <div className="flex flex-col gap-gutter xl:grid xl:grid-cols-2">
           {items.map((item) => (
             <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl bg-surface-container border border-outline">
               <div className="w-12 h-16 flex-none bg-surface-container-highest rounded overflow-hidden border border-outline/50">
