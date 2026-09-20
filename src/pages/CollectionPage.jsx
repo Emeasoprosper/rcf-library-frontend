@@ -191,14 +191,40 @@ function CollectionPage() {
   const [movingResource, setMovingResource] = useState(null)
   const [showGate, setShowGate] = useState(false)
 
-  // ONE header per screen size does the color crossfade — the app's
-  // real TopAppBar (mobile) and DesktopHeader (desktop), both already
-  // wired to read HeaderAmbientContext. No second bar is ever rendered
-  // on this page — that was the earlier bug (two stacked headers).
   const artworkRef = useRef(null)
-  const titleRef = useRef(null)
+  const heroTitleRef = useRef(null)
   const metaRef = useRef(null)
   const [tabsBarProgress, setTabsBarProgress] = useState(0)
+
+  // Real on-screen positions of the moving hero title and its landing
+  // spot (the real header title), measured via getBoundingClientRect —
+  // not guessed pixel values — so the slide-and-scale lands exactly on
+  // target regardless of screen size or font metrics. Re-measured on
+  // mount and on resize; scroll itself only interpolates between them.
+  const mobileHeaderTitleRef = useRef(null)
+  const desktopHeaderTitleRef = useRef(null)
+  const titleTransformRef = useRef({ dx: 0, dy: 0, scale: 1 })
+
+  function measureTitlePositions() {
+    const hero = heroTitleRef.current
+    const target = window.innerWidth >= 768 ? desktopHeaderTitleRef.current : mobileHeaderTitleRef.current
+    if (!hero || !target) return
+    const heroRect = hero.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    if (heroRect.width === 0 || targetRect.width === 0) return
+    titleTransformRef.current = {
+      dx: targetRect.left - heroRect.left,
+      dy: targetRect.top - heroRect.top,
+      scale: targetRect.height / heroRect.height,
+    }
+  }
+
+  useEffect(() => {
+    measureTitlePositions()
+    window.addEventListener('resize', measureTitlePositions)
+    return () => window.removeEventListener('resize', measureTitlePositions)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.collection?.title])
 
   useEffect(() => {
     let cancelled = false
@@ -221,8 +247,11 @@ function CollectionPage() {
       if (metaRef.current) {
         metaRef.current.style.opacity = Math.max(1 - progress * 2, 0)
       }
-      if (titleRef.current) {
-        titleRef.current.style.transform = `translateY(${-progress * 12}px)`
+      if (heroTitleRef.current) {
+        const { dx, dy, scale } = titleTransformRef.current
+        const s = 1 - (1 - scale) * progress
+        heroTitleRef.current.style.transformOrigin = 'top left'
+        heroTitleRef.current.style.transform = `translate(${dx * progress}px, ${dy * progress}px) scale(${s})`
       }
       setTabsBarProgress(progress)
       setAmbient({ progress, color: ambientColor })
@@ -319,26 +348,61 @@ function CollectionPage() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
-      <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} />
+      <TopAppBar
+        title={collection.title}
+        showBack
+        onBack={() => navigate(-1)}
+        titleRef={mobileHeaderTitleRef}
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
-      {/* Desktop-only page title bar, scoped to the center column only
-          (matches md:pl-80 lg:pr-80 on the outer div) — sits below the
-          global DesktopHeader, crossfades to the extracted cover color
-          on scroll, and visually joins the sticky tabs bar right under
-          it. This is NOT the global search/nav header — that one is
-          untouched. */}
+      {/* Desktop-only page title bar, confined to the center column
+          (md:left-80 lg:right-80 matches the outer div's own offsets) —
+          never touches the global search/nav header above it. Docks
+          the same tabs row under its title, both fading in together. */}
       <div
-        className="hidden md:flex fixed top-[72px] left-0 md:left-80 right-0 lg:right-80 h-16 z-30 items-center gap-3 px-6 border-b border-outline"
-        style={{ background: ambientColor ? ambientColor : undefined, opacity: ambientColor ? tabsBarProgress : 1, backdropFilter: ambientColor ? `blur(${tabsBarProgress * 12}px)` : undefined }}
+        className="hidden md:flex flex-col fixed top-[72px] left-0 md:left-80 right-0 lg:right-80 z-30 px-6 pt-3 pb-1 border-b border-outline"
+        style={{
+          background: ambientColor || undefined,
+          opacity: ambientColor ? Math.min(tabsBarProgress + 0.15, 1) : 1,
+          backdropFilter: ambientColor ? `blur(${tabsBarProgress * 16}px)` : undefined,
+        }}
       >
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface hover:bg-white/10 flex-none"
-          aria-label="Go back"
+        <div className="flex items-center gap-3 h-10">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface hover:bg-white/10 flex-none"
+            aria-label="Go back"
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h2
+            ref={desktopHeaderTitleRef}
+            className="font-headline-md text-headline-md font-bold text-on-surface truncate"
+            style={{ opacity: Math.min(Math.max((tabsBarProgress - 0.85) / 0.15, 0), 1) }}
+          >
+            {collection.title}
+          </h2>
+        </div>
+        <div
+          className="flex gap-6 pb-2"
+          style={{ opacity: Math.min(Math.max((tabsBarProgress - 0.5) / 0.4, 0), 1) }}
         >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
-        <h2 className="font-headline-md text-headline-md font-bold text-on-surface truncate">{collection.title}</h2>
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-1 font-label-md text-label-md relative ${
+                activeTab === tab ? 'font-semibold text-on-surface' : 'text-on-surface-variant'
+              }`}
+            >
+              {tab}
+              {activeTab === tab && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-on-surface rounded-full" />}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="relative z-0 overflow-hidden pt-[68px] md:pt-24">
@@ -362,8 +426,11 @@ function CollectionPage() {
               </div>
             )}
           </div>
-          <div ref={titleRef} className="min-w-0 w-full">
-            <h1 className="font-headline-md text-headline-md font-display text-on-surface leading-tight">
+          <div className="min-w-0 w-full">
+            <h1
+              ref={heroTitleRef}
+              className="font-headline-md text-headline-md font-display text-on-surface leading-tight inline-block"
+            >
               {collection.title}
             </h1>
             {collection.author && (
@@ -377,14 +444,11 @@ function CollectionPage() {
       </div>
 
       <main>
-        <div className="sticky top-[68px] md:top-24 z-20 isolate flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
-          <div className="absolute inset-0 -z-10 bg-background" />
-          {ambientColor && (
-            <div
-              className="absolute inset-0 -z-10"
-              style={{ background: ambientColor, opacity: tabsBarProgress > 0.3 ? Math.min((tabsBarProgress - 0.3) / 0.7, 1) : 0 }}
-            />
-          )}
+        {/* No longer sticky — scrolls normally with the page and passes
+            behind the fixed header above it instead of pinning below
+            it. The header's own cloned tabs row (above) takes over
+            visually once this one scrolls out of view. */}
+        <div className="flex gap-6 border-b border-outline px-margin-mobile">
           {TABS.map((tab) => (
             <button
               key={tab}
