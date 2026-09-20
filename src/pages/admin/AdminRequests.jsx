@@ -4,6 +4,8 @@ import AdminNav from '../../components/layout/AdminNav'
 import LibraryLoader from '../../components/ui/LibraryLoader'
 import { adminApi } from '../../services/api'
 
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+
 function timeAgo(dateString) {
   const seconds = Math.floor((Date.now() - new Date(dateString)) / 1000)
   const minutes = Math.floor(seconds / 60)
@@ -27,15 +29,31 @@ function summarizeDetails(details) {
   return { departments, levels, searchQueries }
 }
 
+function ResourceThumb({ url }) {
+  return (
+    <div className="w-10 h-14 flex-none rounded overflow-hidden bg-surface-container-highest border border-outline/50 flex items-center justify-center">
+      {url ? (
+        <img src={url} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <span className="material-symbols-outlined text-on-surface-variant text-xl">description</span>
+      )}
+    </div>
+  )
+}
+
 function AdminRequests() {
   const [requests, setRequests] = useState([])
   const [fulfilled, setFulfilled] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
-  // Which group's inline "paste resource link" field is currently open.
+  // Which group's inline "find the resource" panel is currently open.
   const [fulfillingId, setFulfillingId] = useState(null)
-  const [resourceIdInput, setResourceIdInput] = useState('')
+  const [resourceQuery, setResourceQuery] = useState('')
+  const [resourceResults, setResourceResults] = useState([])
+  const [selectedResource, setSelectedResource] = useState(null)
+  const [searching, setSearching] = useState(false)
+  const [searchedFor, setSearchedFor] = useState('')
   // Which group's inline "reason for declining" field is currently open.
   const [decliningId, setDecliningId] = useState(null)
   const [declineReason, setDeclineReason] = useState('')
@@ -57,6 +75,35 @@ function AdminRequests() {
     fetchRequests()
   }, [fetchRequests])
 
+  // Debounced library search while the fulfil panel is open. Skipped once
+  // a resource is picked, or when the box holds a pasted link/ID instead.
+  useEffect(() => {
+    const q = resourceQuery.trim()
+    if (!fulfillingId || selectedResource || q.length < 2 || UUID_RE.test(q)) {
+      setResourceResults([])
+      return undefined
+    }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const { items } = await adminApi.resources({ status: 'approved', search: q, pageSize: 5 })
+        if (!cancelled) {
+          setResourceResults(items || [])
+          setSearchedFor(q)
+        }
+      } catch {
+        if (!cancelled) setResourceResults([])
+      } finally {
+        if (!cancelled) setSearching(false)
+      }
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [resourceQuery, fulfillingId, selectedResource])
+
   // Resolves every underlying request in the group, not just one — a
   // group of 4 identical requests means 4 material_requests rows, and
   // each requester should get their own "resolved" notification (the
@@ -73,7 +120,8 @@ function AdminRequests() {
       setRequests((prev) => prev.filter((r) => r.id !== group.id))
       setFulfilled((prev) => [{ ...group, outcome: status }, ...prev])
       setFulfillingId(null)
-      setResourceIdInput('')
+      setResourceQuery('')
+      setSelectedResource(null)
       setDecliningId(null)
       setDeclineReason('')
     } catch (err) {
@@ -86,7 +134,9 @@ function AdminRequests() {
   const openFulfillInput = (groupId) => {
     setDecliningId(null)
     setFulfillingId(groupId)
-    setResourceIdInput('')
+    setResourceQuery('')
+    setResourceResults([])
+    setSelectedResource(null)
   }
 
   const openDeclineInput = (groupId) => {
@@ -94,6 +144,11 @@ function AdminRequests() {
     setDecliningId(groupId)
     setDeclineReason('')
   }
+
+  const trimmedQuery = resourceQuery.trim()
+  const hasPastedLink = UUID_RE.test(trimmedQuery)
+  const canConfirmFulfil = !!selectedResource || !trimmedQuery || hasPastedLink
+  const linkToSend = selectedResource ? selectedResource.id : hasPastedLink ? trimmedQuery : null
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
@@ -210,17 +265,78 @@ function AdminRequests() {
                     </div>
                   ) : isFulfilling ? (
                     <div className="flex flex-col gap-2 mt-2">
-                      <input
-                        type="text"
-                        value={resourceIdInput}
-                        onChange={(e) => setResourceIdInput(e.target.value)}
-                        placeholder="Paste the resource link or ID (optional)"
-                        className="w-full h-10 px-3 bg-surface-container-low border border-outline rounded-lg text-on-surface placeholder:text-on-surface-variant text-sm focus:outline-none focus:border-primary"
-                      />
+                      {selectedResource ? (
+                        <div className="flex items-center gap-3 p-2 rounded-lg border border-outline bg-surface-container-low">
+                          <ResourceThumb url={selectedResource.thumbnail_url} />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-body-md text-body-md font-semibold text-on-surface truncate">
+                              {selectedResource.title}
+                            </p>
+                            <p className="font-label-sm text-label-sm text-on-surface-variant truncate">
+                              {selectedResource.author || 'Unknown author'}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedResource(null)
+                              setResourceQuery('')
+                            }}
+                            className="w-8 h-8 flex-none rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface"
+                            aria-label="Remove selected resource"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">close</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            value={resourceQuery}
+                            onChange={(e) => setResourceQuery(e.target.value)}
+                            placeholder="Search the library or paste a link (optional)"
+                            className="w-full h-10 px-3 bg-surface-container-low border border-outline rounded-lg text-on-surface placeholder:text-on-surface-variant text-sm focus:outline-none focus:border-primary"
+                          />
+                          {searching && (
+                            <p className="font-label-sm text-label-sm text-on-surface-variant">Searching…</p>
+                          )}
+                          {resourceResults.length > 0 && (
+                            <div className="flex flex-col rounded-lg border border-outline overflow-hidden">
+                              {resourceResults.map((r) => (
+                                <button
+                                  key={r.id}
+                                  onClick={() => {
+                                    setSelectedResource(r)
+                                    setResourceResults([])
+                                  }}
+                                  className="flex items-center gap-3 p-2 text-left hover:bg-surface-container-high transition-colors border-b border-outline last:border-0"
+                                >
+                                  <ResourceThumb url={r.thumbnail_url} />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-body-md text-body-md text-on-surface truncate">{r.title}</p>
+                                    <p className="font-label-sm text-label-sm text-on-surface-variant truncate">
+                                      {r.author || 'Unknown author'}
+                                    </p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {!searching && searchedFor === trimmedQuery && trimmedQuery.length >= 2 && resourceResults.length === 0 && !hasPastedLink && (
+                            <p className="font-label-sm text-label-sm text-on-surface-variant">
+                              No approved resources match.
+                            </p>
+                          )}
+                          {!canConfirmFulfil && !searching && (
+                            <p className="font-label-sm text-label-sm text-on-surface-variant">
+                              Pick a result above, or clear the box to fulfil without a link.
+                            </p>
+                          )}
+                        </>
+                      )}
                       <div className="flex gap-2">
                         <button
-                          onClick={() => resolveGroup(group, 'fulfilled', resourceIdInput.trim())}
-                          disabled={busyId === group.id}
+                          onClick={() => resolveGroup(group, 'fulfilled', linkToSend)}
+                          disabled={busyId === group.id || !canConfirmFulfil}
                           className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[16px]">check_circle</span>
