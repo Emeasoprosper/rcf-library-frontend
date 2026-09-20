@@ -196,33 +196,42 @@ function CollectionPage() {
   const metaRef = useRef(null)
   const [tabsBarProgress, setTabsBarProgress] = useState(0)
 
-  // Real on-screen positions of the moving hero title and its landing
-  // spot (the real header title), measured via getBoundingClientRect —
-  // not guessed pixel values — so the slide-and-scale lands exactly on
-  // target regardless of screen size or font metrics. Re-measured on
-  // mount and on resize; scroll itself only interpolates between them.
+  // The hero title docks into the real header title (mobile bar or
+  // desktop bar). Positions are read from the live DOM on every scroll
+  // frame, never hard-coded, so the dock point is exact on any screen.
   const mobileHeaderTitleRef = useRef(null)
   const desktopHeaderTitleRef = useRef(null)
-  const titleTransformRef = useRef({ dx: 0, dy: 0, scale: 1 })
+  const desktopBarRef = useRef(null)
+  const [docked, setDocked] = useState(false)
+  const [stickyTop, setStickyTop] = useState(0)
 
-  function measureTitlePositions() {
-    const hero = heroTitleRef.current
-    const target = window.innerWidth >= 768 ? desktopHeaderTitleRef.current : mobileHeaderTitleRef.current
-    if (!hero || !target) return
-    const heroRect = hero.getBoundingClientRect()
-    const targetRect = target.getBoundingClientRect()
-    if (heroRect.width === 0 || targetRect.width === 0) return
-    titleTransformRef.current = {
-      dx: targetRect.left - heroRect.left,
-      dy: targetRect.top - heroRect.top,
-      scale: targetRect.height / heroRect.height,
+  // Whichever header is actually on screen (a hidden one measures 0 wide).
+  function getDockElements() {
+    const desktopTitle = desktopHeaderTitleRef.current
+    if (desktopTitle && desktopTitle.getBoundingClientRect().width > 0) {
+      return { title: desktopTitle, bar: desktopBarRef.current }
     }
+    const mobileTitle = mobileHeaderTitleRef.current
+    return { title: mobileTitle, bar: mobileTitle ? mobileTitle.closest('header') : null }
+  }
+
+  // The tabs bar sticks exactly at the bottom edge of that header.
+  function measureStickyTop() {
+    const { bar } = getDockElements()
+    if (bar) setStickyTop(Math.round(bar.getBoundingClientRect().bottom))
   }
 
   useEffect(() => {
-    measureTitlePositions()
-    window.addEventListener('resize', measureTitlePositions)
-    return () => window.removeEventListener('resize', measureTitlePositions)
+    measureStickyTop()
+    const observer = new ResizeObserver(measureStickyTop)
+    if (desktopBarRef.current) observer.observe(desktopBarRef.current)
+    const mobileBar = mobileHeaderTitleRef.current?.closest('header')
+    if (mobileBar) observer.observe(mobileBar)
+    window.addEventListener('resize', measureStickyTop)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measureStickyTop)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.collection?.title])
 
@@ -239,7 +248,34 @@ function CollectionPage() {
 
   useEffect(() => {
     function handleScroll() {
-      const progress = Math.min(Math.max(window.scrollY / MAX_SCROLL, 0), 1)
+      const scrollY = Math.max(window.scrollY, 0)
+      const hero = heroTitleRef.current
+      const { title } = getDockElements()
+
+      // Geometry is read fresh every frame (hero transform cleared first,
+      // so it is measured where it naturally sits). MAX_SCROLL is only a
+      // fallback while the elements aren't mounted yet.
+      let progress = Math.min(scrollY / MAX_SCROLL, 1)
+      let isDocked = false
+      let slide = null
+      if (hero && title) {
+        hero.style.transform = 'none'
+        const natural = hero.getBoundingClientRect()
+        const target = title.getBoundingClientRect()
+        if (natural.height > 0 && target.height > 0) {
+          const heroCenter = natural.top + natural.height / 2
+          const targetCenter = target.top + target.height / 2
+          const dockDistance = heroCenter + scrollY - targetCenter
+          progress = dockDistance > 0 ? Math.min(scrollY / dockDistance, 1) : 1
+          isDocked = heroCenter <= targetCenter
+          const heroFont = parseFloat(getComputedStyle(hero).fontSize)
+          const targetFont = parseFloat(getComputedStyle(title).fontSize)
+          slide = {
+            dx: target.left - natural.left,
+            scale: heroFont > 0 && targetFont > 0 ? targetFont / heroFont : 1,
+          }
+        }
+      }
 
       if (artworkRef.current) {
         artworkRef.current.style.transform = `scale(${1 - progress * 0.55})`
@@ -247,14 +283,20 @@ function CollectionPage() {
       if (metaRef.current) {
         metaRef.current.style.opacity = Math.max(1 - progress * 2, 0)
       }
-      if (heroTitleRef.current) {
-        const { dx, dy, scale } = titleTransformRef.current
-        const s = 1 - (1 - scale) * progress
-        heroTitleRef.current.style.transformOrigin = 'top left'
-        heroTitleRef.current.style.transform = `translate(${dx * progress}px, ${dy * progress}px) scale(${s})`
+      if (hero) {
+        // Vertical travel is the page scroll itself (1:1). Only the
+        // sideways slide and size change are interpolated, so the hero
+        // arrives on the header title exactly when it reaches it.
+        if (slide) {
+          hero.style.transformOrigin = 'left center'
+          hero.style.transform = `translateX(${slide.dx * progress}px) scale(${1 - (1 - slide.scale) * progress})`
+        }
+        hero.style.transition = 'opacity 100ms'
+        hero.style.opacity = isDocked ? '0' : '1'
       }
       setTabsBarProgress(progress)
-      setAmbient({ progress, color: ambientColor })
+      setDocked(isDocked)
+      setAmbient({ progress, color: ambientColor, titleOpacity: isDocked ? 1 : 0 })
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
@@ -262,7 +304,8 @@ function CollectionPage() {
       window.removeEventListener('scroll', handleScroll)
       clearAmbient()
     }
-  }, [ambientColor, setAmbient, clearAmbient])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, ambientColor, setAmbient, clearAmbient])
 
   const load = () => {
     setLoading(true)
@@ -353,17 +396,16 @@ function CollectionPage() {
         showBack
         onBack={() => navigate(-1)}
         titleRef={mobileHeaderTitleRef}
-        tabs={TABS}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
       />
 
       {/* Desktop-only page title bar, confined to the center column
           (md:left-80 lg:right-80 matches the outer div's own offsets) —
-          never touches the global search/nav header above it. Docks
-          the same tabs row under its title, both fading in together. */}
+          never touches the global search/nav header above it. The hero
+          title docks into the h2 below; the tabs stay a single sticky
+          bar in <main>. */}
       <div
-        className="hidden md:flex flex-col fixed top-[72px] left-0 md:left-80 right-0 lg:right-80 z-30 px-6 pt-3 pb-1 border-b border-outline"
+        ref={desktopBarRef}
+        className="hidden md:flex flex-col fixed top-[72px] left-0 md:left-80 right-0 lg:right-80 z-30 px-6 py-2 border-b border-outline"
         style={{
           background: ambientColor || undefined,
           opacity: ambientColor ? Math.min(tabsBarProgress + 0.15, 1) : 1,
@@ -381,28 +423,12 @@ function CollectionPage() {
           <h2
             ref={desktopHeaderTitleRef}
             className="font-headline-md text-headline-md font-bold text-on-surface truncate"
-            style={{ opacity: Math.min(Math.max((tabsBarProgress - 0.85) / 0.15, 0), 1) }}
+            style={{ opacity: docked ? 1 : 0, transition: 'opacity 100ms' }}
           >
             {collection.title}
           </h2>
         </div>
-        <div
-          className="flex gap-6 pb-2"
-          style={{ opacity: Math.min(Math.max((tabsBarProgress - 0.5) / 0.4, 0), 1) }}
-        >
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-1 font-label-md text-label-md relative ${
-                activeTab === tab ? 'font-semibold text-on-surface' : 'text-on-surface-variant'
-              }`}
-            >
-              {tab}
-              {activeTab === tab && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-on-surface rounded-full" />}
-            </button>
-          ))}
-        </div>
+
       </div>
 
       <div className="relative z-0 overflow-hidden pt-[68px] md:pt-24">
@@ -444,11 +470,12 @@ function CollectionPage() {
       </div>
 
       <main>
-        {/* No longer sticky — scrolls normally with the page and passes
-            behind the fixed header above it instead of pinning below
-            it. The header's own cloned tabs row (above) takes over
-            visually once this one scrolls out of view. */}
-        <div className="flex gap-6 border-b border-outline px-margin-mobile">
+        {/* The only tabs bar (no clone in either header). Sticks flush
+            under the fixed header, at the bottom edge held in stickyTop. */}
+        <div
+          className="sticky z-20 flex gap-6 border-b border-outline px-margin-mobile bg-background/95 backdrop-blur-md"
+          style={{ top: stickyTop }}
+        >
           {TABS.map((tab) => (
             <button
               key={tab}

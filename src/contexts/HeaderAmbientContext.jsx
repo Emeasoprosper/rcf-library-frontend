@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useCallback } from 'react'
 const HeaderAmbientContext = createContext(null)
 
 export function HeaderAmbientProvider({ children }) {
-  // { progress: 0..1, color: <css background value> } | null
+  // { progress: 0..1, color: <css background value>, titleOpacity: 0..1 } | null
   const [ambient, setAmbientState] = useState(null)
 
   const setAmbient = useCallback((value) => setAmbientState(value), [])
