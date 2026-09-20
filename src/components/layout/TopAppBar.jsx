@@ -1,19 +1,41 @@
 import { useNavigate } from 'react-router-dom'
 import { useScrollDirection } from '../../hooks/useScrollDirection'
 import { useAuth } from '../../contexts/AuthContext'
+import { useHeaderAmbient } from '../../contexts/HeaderAmbientContext'
 
 function TopAppBar({ title, rightIcons, showBack = false }) {
   const hidden = useScrollDirection()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { ambient } = useHeaderAmbient()
+
+  // Opt-in per page via HeaderAmbientContext (only CollectionPage sets
+  // this right now). Every other screen leaves ambient null, so this
+  // header renders exactly as before — solid bar, title always visible.
+  const titleOpacity = ambient ? Math.max((ambient.progress - 0.5) / 0.5, 0) : 1
+  const iconTone = ambient && ambient.progress < 0.6 ? 'text-white' : 'text-on-surface'
 
   return (
     <header
-      className={`fixed top-0 left-0 z-50 w-full px-margin-mobile py-stack-md bg-surface/80 backdrop-blur-md border-b border-outline transition-transform duration-300 ease-in-out md:hidden ${
+      className={`fixed top-0 left-0 z-50 w-full px-margin-mobile py-stack-md border-b transition-transform duration-300 ease-in-out md:hidden ${
         hidden ? '-translate-y-full' : 'translate-y-0'
-      }`}
+      } ${ambient ? 'border-transparent' : 'border-outline'} relative`}
+      style={ambient ? { backgroundColor: 'transparent' } : undefined}
     >
-      <div className="flex justify-between items-center">
+      {ambient ? (
+        <div
+          className="absolute inset-0 -z-10"
+          style={{
+            background: ambient.color,
+            opacity: ambient.progress,
+            backdropFilter: `blur(${ambient.progress * 16}px)`,
+            WebkitBackdropFilter: `blur(${ambient.progress * 16}px)`,
+          }}
+        />
+      ) : (
+        <div className="absolute inset-0 -z-10 bg-surface/80 backdrop-blur-md" />
+      )}
+      <div className={`flex justify-between items-center ${iconTone}`}>
         <div className="flex items-center gap-3">
           {showBack ? (
             <button
@@ -48,7 +70,12 @@ function TopAppBar({ title, rightIcons, showBack = false }) {
               )}
             </button>
           )}
-          <h1 className="font-headline-md text-headline-md font-bold text-on-surface">{title}</h1>
+          <h1
+            className="font-headline-md text-headline-md font-bold"
+            style={ambient ? { opacity: titleOpacity, transition: 'opacity 100ms' } : undefined}
+          >
+            {title}
+          </h1>
         </div>
 
         <div className="flex items-center gap-stack-sm">

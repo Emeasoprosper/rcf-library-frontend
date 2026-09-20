@@ -329,9 +329,9 @@ function CollectionPage() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
-      <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} transparent />
+      <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} />
 
-      <div className="relative -mt-[68px] pt-[68px] md:mt-0 md:pt-24 overflow-hidden">
+      <div className="relative z-0 -mt-[68px] pt-[68px] md:mt-0 md:pt-24 overflow-hidden">
         {/* TopAppBar's back button is md:hidden now — this is the
             desktop-only equivalent, satisfying Part 8's requirement for
             a reliable back control regardless of which header is active. */}
