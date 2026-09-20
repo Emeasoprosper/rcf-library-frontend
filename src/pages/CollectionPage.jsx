@@ -10,6 +10,8 @@ import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import { useAuth } from '../contexts/AuthContext'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
+import { useHeaderAmbient } from '../contexts/HeaderAmbientContext'
+import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { useRef } from 'react'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 
@@ -177,6 +179,8 @@ function CollectionPage() {
   const { user } = useAuth()
   const { openResource } = useActiveResource()
   const isDesktop = useIsDesktopViewport()
+  const { setAmbient, clearAmbient } = useHeaderAmbient()
+  const [ambientColor, setAmbientColor] = useState(null)
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
 
   const [data, setData] = useState(null)
@@ -194,6 +198,21 @@ function CollectionPage() {
   const titleRef = useRef(null)
   const metaRef = useRef(null)
   const MAX_SCROLL = 180
+  const [tabsBarProgress, setTabsBarProgress] = useState(0)
+
+  // Real extracted color from the cover art (same utility already used
+  // for audio player backgrounds elsewhere) rather than a blurred copy
+  // of the photo itself.
+  useEffect(() => {
+    let cancelled = false
+    setAmbientColor(null)
+    if (data?.collection?.cover_url) {
+      extractAccentColorMixedWithBlack(data.collection.cover_url)
+        .then((gradient) => { if (!cancelled) setAmbientColor(gradient) })
+        .catch(() => {})
+    }
+    return () => { cancelled = true }
+  }, [data?.collection?.cover_url])
 
   useEffect(() => {
     function handleScroll() {
@@ -212,11 +231,16 @@ function CollectionPage() {
       if (titleRef.current) {
         titleRef.current.style.transform = `translateY(${-progress * 12}px)`
       }
+      setTabsBarProgress(progress)
+      setAmbient({ progress, color: ambientColor })
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      clearAmbient()
+    }
+  }, [setAmbient, clearAmbient, ambientColor])
 
   const load = () => {
     setLoading(true)
@@ -318,10 +342,10 @@ function CollectionPage() {
         >
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
-        {collection.cover_url && (
+        {ambientColor && (
           <div className="absolute inset-0 -z-10 pointer-events-none">
-            <img src={collection.cover_url} alt="" className="w-full h-full object-cover blur-3xl scale-150 opacity-70 -translate-y-4" />
-            <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/40 to-background" />
+            <div className="absolute inset-0" style={{ background: ambientColor }} />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" />
           </div>
         )}
 
@@ -354,13 +378,13 @@ function CollectionPage() {
 
       <main>
         <div className="sticky top-[68px] md:top-24 z-20 flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
-          {collection.cover_url && (
-            <div className="absolute inset-0 -z-10 pointer-events-none">
-              <img src={collection.cover_url} alt="" className="w-full h-full object-cover blur-3xl scale-150 opacity-60 -translate-y-20" />
-              <div className="absolute inset-0 bg-background/40 backdrop-blur-xl" />
-            </div>
+          <div className="absolute inset-0 -z-10 bg-background" />
+          {ambientColor && (
+            <div
+              className="absolute inset-0 -z-10 transition-opacity duration-100"
+              style={{ background: ambientColor, opacity: tabsBarProgress }}
+            />
           )}
-          {!collection.cover_url && <div className="absolute inset-0 -z-10 bg-background" />}
           {TABS.map((tab) => (
             <button
               key={tab}

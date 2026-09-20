@@ -8,6 +8,7 @@ import LeftSidebarNav from './components/layout/LeftSidebarNav'
 import RightSidebarPanel from './components/layout/RightSidebarPanel'
 import NotificationsModal from './components/layout/NotificationsModal'
 import { NotificationsModalProvider } from './contexts/NotificationsModalContext'
+import { HeaderAmbientProvider } from './contexts/HeaderAmbientContext'
 import { TourProvider } from './contexts/TourContext'
 import SpotlightTour from './components/tour/SpotlightTour'
 
@@ -16,16 +17,18 @@ function App() {
     <AppLoader>
       <TourProvider>
       <ActiveResourceProvider>
-        <NotificationsModalProvider>
-          <DesktopHeader />
-          <LeftSidebarNav />
-          <AppRoutes />
-          <RightSidebarPanel />
-          <InstallPrompt />
-          <ApkUpdateBanner />
-          <SpotlightTour />
-          <NotificationsModal />
-        </NotificationsModalProvider>
+        <HeaderAmbientProvider>
+          <NotificationsModalProvider>
+            <DesktopHeader />
+            <LeftSidebarNav />
+            <AppRoutes />
+            <RightSidebarPanel />
+            <InstallPrompt />
+            <ApkUpdateBanner />
+            <SpotlightTour />
+            <NotificationsModal />
+          </NotificationsModalProvider>
+        </HeaderAmbientProvider>
       </ActiveResourceProvider>
       </TourProvider>
     </AppLoader>
