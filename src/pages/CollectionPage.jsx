@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
@@ -10,10 +10,13 @@ import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import { useAuth } from '../contexts/AuthContext'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
-import { useRef } from 'react'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 
 const TABS = ['Sections', 'About', 'More Like This']
+const MAX_SCROLL = 180
+// Local header height at this page only (distinct from the app's global
+// DesktopHeader, which is 72px and already fixed above this on md+).
+const HEADER_H = 64
 
 function timeAgo(dateString) {
   const seconds = Math.floor((Date.now() - new Date(dateString)) / 1000)
@@ -42,7 +45,7 @@ function openReaderFor(resource, { isDesktop, openResource, navigate }) {
   navigate(targetPathFor(resource))
 }
 
-function ResourceListRow({ resource, navigate, isAdmin, onRemove, onMove, onDownload, onToggleSave, onOpen }) {
+function ResourceListRow({ resource, isAdmin, onRemove, onMove, onDownload, onToggleSave, onOpen }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
   const [saved, setSaved] = useState(Boolean(resource.is_bookmarked))
@@ -188,23 +191,16 @@ function CollectionPage() {
   const [movingResource, setMovingResource] = useState(null)
   const [showGate, setShowGate] = useState(false)
 
-  // Scroll-collapse effect for the hero artwork/title, matching a
-  // Spotify-style collapsing header. Mutates styles directly via refs
-  // (not React state) to avoid a re-render on every scroll tick.
-  // NOTE: no TopAppBar renders on this page (see back button below), so
-  // this no longer feeds HeaderAmbientContext — it only drives the
-  // in-page hero fade and the sticky tabs-bar background below.
+  // ONE scroll-driven header/hero mechanism for every screen size — no
+  // separate desktop-only button + mobile-only collapsed bar. Direct
+  // ref mutation (not React state) to avoid a re-render per scroll tick.
+  const headerBgRef = useRef(null)
+  const headerTitleRef = useRef(null)
   const artworkRef = useRef(null)
   const titleRef = useRef(null)
   const metaRef = useRef(null)
-  const collapsedBgRef = useRef(null)
-  const collapsedTitleRef = useRef(null)
-  const MAX_SCROLL = 180
   const [tabsBarProgress, setTabsBarProgress] = useState(0)
 
-  // Real extracted color from the cover art (same utility already used
-  // for audio player backgrounds elsewhere) rather than a blurred copy
-  // of the photo itself.
   useEffect(() => {
     let cancelled = false
     setAmbientColor(null)
@@ -218,12 +214,10 @@ function CollectionPage() {
 
   useEffect(() => {
     function handleScroll() {
-      const scrollY = window.scrollY
-      const progress = Math.min(Math.max(scrollY / MAX_SCROLL, 0), 1)
+      const progress = Math.min(Math.max(window.scrollY / MAX_SCROLL, 0), 1)
 
       if (artworkRef.current) {
-        const scale = 1 - progress * 0.55
-        artworkRef.current.style.transform = `scale(${scale})`
+        artworkRef.current.style.transform = `scale(${1 - progress * 0.55})`
       }
       if (metaRef.current) {
         metaRef.current.style.opacity = Math.max(1 - progress * 2, 0)
@@ -233,23 +227,19 @@ function CollectionPage() {
       }
       setTabsBarProgress(progress)
 
-      if (collapsedBgRef.current) {
+      if (headerBgRef.current) {
         if (progress > 0.3) {
-          const headerAlpha = Math.min((progress - 0.3) / 0.7, 1)
-          collapsedBgRef.current.style.backgroundColor = ambientColor
-            ? ambientColor
-            : `rgba(20, 20, 20, ${headerAlpha * 0.95})`
-          collapsedBgRef.current.style.opacity = headerAlpha
-          collapsedBgRef.current.style.backdropFilter = `blur(${headerAlpha * 12}px)`
-          collapsedBgRef.current.style.webkitBackdropFilter = `blur(${headerAlpha * 12}px)`
+          const alpha = Math.min((progress - 0.3) / 0.7, 1)
+          headerBgRef.current.style.background = ambientColor || `rgba(20, 20, 20, ${alpha * 0.95})`
+          headerBgRef.current.style.opacity = alpha
+          headerBgRef.current.style.backdropFilter = `blur(${alpha * 12}px)`
+          headerBgRef.current.style.webkitBackdropFilter = `blur(${alpha * 12}px)`
         } else {
-          collapsedBgRef.current.style.opacity = 0
-          collapsedBgRef.current.style.backdropFilter = 'none'
-          collapsedBgRef.current.style.webkitBackdropFilter = 'none'
+          headerBgRef.current.style.opacity = 0
         }
       }
-      if (collapsedTitleRef.current) {
-        collapsedTitleRef.current.style.opacity = progress > 0.65 ? (progress - 0.65) / 0.35 : 0
+      if (headerTitleRef.current) {
+        headerTitleRef.current.style.opacity = progress > 0.65 ? (progress - 0.65) / 0.35 : 0
       }
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -298,9 +288,6 @@ function CollectionPage() {
     }
   }
 
-  // Same install-gate + offline-save flow as ResourceDetail.jsx — a
-  // resource downloaded from inside a collection ends up in the exact
-  // same offline library as one downloaded from its own detail page.
   const handleDownload = async (resource) => {
     if (!isRunningAsInstalledApp()) {
       setShowGate(true)
@@ -333,12 +320,12 @@ function CollectionPage() {
       <div className="min-h-screen bg-background text-on-surface">
         <button
           onClick={() => navigate(-1)}
-          className="fixed top-6 left-4 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition"
+          className="fixed top-6 left-4 z-50 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition"
           aria-label="Go back"
         >
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
-        <p className="font-body-md text-body-md text-on-surface-variant text-center mt-stack-lg pt-24">
+        <p className="font-body-md text-body-md text-on-surface-variant text-center pt-24">
           {error || 'Collection not found.'}
         </p>
       </div>
@@ -350,17 +337,31 @@ function CollectionPage() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
-      <div className="relative z-50 md:sticky md:top-24 overflow-hidden">
-        {/* Single back control for every viewport — TopAppBar does not
-            render on this page (its collapsing bar was never wired up
-            here), so this is the only back button on mobile too. */}
+      {/* Single fixed header for every screen size. Sits under the
+          app's global DesktopHeader on md+ (72px), and at the true top
+          on mobile (this page renders no TopAppBar). Starts transparent,
+          crossfades to the extracted cover color as you scroll. */}
+      <div
+        className="fixed left-0 w-full z-50 flex items-center gap-3 px-4 top-0 md:top-[72px]"
+        style={{ height: HEADER_H }}
+      >
+        <div ref={headerBgRef} className="absolute inset-0 -z-10" style={{ opacity: 0 }} />
         <button
           onClick={() => navigate(-1)}
-          className="hidden md:flex absolute top-28 left-6 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur items-center justify-center text-white hover:bg-black/70 transition"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white flex-none"
           aria-label="Go back"
         >
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
+        <h1 ref={headerTitleRef} className="font-headline-md text-headline-md font-bold text-white truncate" style={{ opacity: 0 }}>
+          {collection.title}
+        </h1>
+      </div>
+
+      <div
+        className="relative overflow-hidden"
+        style={{ paddingTop: HEADER_H }}
+      >
         {ambientColor && (
           <div className="absolute inset-0 -z-10 pointer-events-none">
             <div className="absolute inset-0" style={{ background: ambientColor }} />
@@ -395,18 +396,10 @@ function CollectionPage() {
         </section>
       </div>
 
-      <div className="fixed top-0 left-0 w-full z-50 h-16 md:hidden flex items-center gap-3 px-4">
-        <div ref={collapsedBgRef} className="absolute inset-0 -z-10" style={{ opacity: 0, backgroundColor: 'transparent' }} />
-        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full flex items-center justify-center text-white flex-none" aria-label="Go back">
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
-        <h1 ref={collapsedTitleRef} className="font-headline-md text-headline-md font-bold text-white truncate" style={{ opacity: 0 }}>
-          {collection.title}
-        </h1>
-      </div>
-
       <main>
-        <div className="sticky top-16 md:top-24 z-40 isolate flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
+        <div
+          className="sticky z-40 isolate flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden top-16 md:top-[136px]"
+        >
           <div className="absolute inset-0 -z-10 bg-background" />
           {ambientColor && (
             <div
@@ -440,7 +433,6 @@ function CollectionPage() {
                     <ResourceListRow
                       key={r.id}
                       resource={r}
-                      navigate={navigate}
                       isAdmin={isAdmin}
                       onRemove={handleRemove}
                       onMove={setMovingResource}
