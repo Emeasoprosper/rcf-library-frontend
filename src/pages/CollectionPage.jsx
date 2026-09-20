@@ -412,8 +412,8 @@ function CollectionPage() {
           <div className="absolute inset-0 -z-10 bg-background" />
           {ambientColor && (
             <div
-              className="absolute inset-0 -z-10 transition-opacity duration-100"
-              style={{ background: ambientColor, opacity: tabsBarProgress }}
+              className="absolute inset-0 -z-10"
+              style={{ background: ambientColor, opacity: tabsBarProgress > 0.3 ? Math.min((tabsBarProgress - 0.3) / 0.7, 1) : 0 }}
             />
           )}
           {TABS.map((tab) => (
