@@ -12,8 +12,8 @@ function TopAppBar({ title, rightIcons, showBack = false }) {
   // Opt-in per page via HeaderAmbientContext (only CollectionPage sets
   // this right now). Every other screen leaves ambient null, so this
   // header renders exactly as before — solid bar, title always visible.
-  const titleOpacity = ambient ? Math.max((ambient.progress - 0.5) / 0.5, 0) : 1
-  const iconTone = ambient && ambient.progress < 0.6 ? 'text-white' : 'text-on-surface'
+  const titleOpacity = ambient ? Math.min(Math.max((ambient.progress - 0.15) / 0.85, 0), 1) : 1
+  const iconTone = ambient && ambient.progress > 0.15 ? 'text-white' : 'text-on-surface'
 
   return (
     <header
@@ -27,7 +27,7 @@ function TopAppBar({ title, rightIcons, showBack = false }) {
           className="absolute inset-0 -z-10"
           style={{
             background: ambient.color,
-            opacity: ambient.progress,
+            opacity: Math.min(ambient.progress + 0.15, 1),
             backdropFilter: `blur(${ambient.progress * 16}px)`,
             WebkitBackdropFilter: `blur(${ambient.progress * 16}px)`,
           }}
@@ -40,10 +40,10 @@ function TopAppBar({ title, rightIcons, showBack = false }) {
           {showBack ? (
             <button
               onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors flex-none"
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors flex-none ${ambient ? 'hover:bg-white/10' : 'hover:bg-surface-container-high'}`}
               aria-label="Go back"
             >
-              <span className="material-symbols-outlined text-on-surface">arrow_back</span>
+              <span className={`material-symbols-outlined ${ambient ? 'text-current' : 'text-on-surface'}`}>arrow_back</span>
             </button>
           ) : (
             <button
