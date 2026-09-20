@@ -377,7 +377,7 @@ function CollectionPage() {
       </div>
 
       <main>
-        <div className="sticky top-0 md:top-24 z-20 flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
+        <div className="sticky top-0 md:top-24 z-40 isolate flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
           <div className="absolute inset-0 -z-10 bg-background" />
           {ambientColor && (
             <div
