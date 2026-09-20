@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import CollectionPickerSheet from './admin/CollectionPickerSheet'
@@ -10,7 +9,6 @@ import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import { useAuth } from '../contexts/AuthContext'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
-import { useHeaderAmbient } from '../contexts/HeaderAmbientContext'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { useRef } from 'react'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
@@ -179,7 +177,6 @@ function CollectionPage() {
   const { user } = useAuth()
   const { openResource } = useActiveResource()
   const isDesktop = useIsDesktopViewport()
-  const { setAmbient, clearAmbient } = useHeaderAmbient()
   const [ambientColor, setAmbientColor] = useState(null)
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
 
@@ -194,6 +191,9 @@ function CollectionPage() {
   // Scroll-collapse effect for the hero artwork/title, matching a
   // Spotify-style collapsing header. Mutates styles directly via refs
   // (not React state) to avoid a re-render on every scroll tick.
+  // NOTE: no TopAppBar renders on this page (see back button below), so
+  // this no longer feeds HeaderAmbientContext — it only drives the
+  // in-page hero fade and the sticky tabs-bar background below.
   const artworkRef = useRef(null)
   const titleRef = useRef(null)
   const metaRef = useRef(null)
@@ -232,15 +232,11 @@ function CollectionPage() {
         titleRef.current.style.transform = `translateY(${-progress * 12}px)`
       }
       setTabsBarProgress(progress)
-      setAmbient({ progress, color: ambientColor })
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      clearAmbient()
-    }
-  }, [setAmbient, clearAmbient, ambientColor])
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const load = () => {
     setLoading(true)
@@ -316,8 +312,14 @@ function CollectionPage() {
   if (error || !data) {
     return (
       <div className="min-h-screen bg-background text-on-surface">
-        <TopAppBar title="Collection" showBack onBack={() => navigate(-1)} />
-        <p className="font-body-md text-body-md text-on-surface-variant text-center mt-stack-lg pt-[68px]">
+        <button
+          onClick={() => navigate(-1)}
+          className="fixed top-6 left-4 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition"
+          aria-label="Go back"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
+        <p className="font-body-md text-body-md text-on-surface-variant text-center mt-stack-lg pt-24">
           {error || 'Collection not found.'}
         </p>
       </div>
@@ -329,15 +331,13 @@ function CollectionPage() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
-      <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} />
-
-      <div className="relative z-0 -mt-[68px] pt-[68px] md:mt-0 md:pt-24 overflow-hidden">
-        {/* TopAppBar's back button is md:hidden now — this is the
-            desktop-only equivalent, satisfying Part 8's requirement for
-            a reliable back control regardless of which header is active. */}
+      <div className="relative z-0 md:pt-24 overflow-hidden">
+        {/* Single back control for every viewport — TopAppBar does not
+            render on this page (its collapsing bar was never wired up
+            here), so this is the only back button on mobile too. */}
         <button
           onClick={() => navigate(-1)}
-          className="hidden md:flex absolute top-28 left-6 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur items-center justify-center text-white hover:bg-black/70 transition"
+          className="flex absolute top-6 md:top-28 left-4 md:left-6 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur items-center justify-center text-white hover:bg-black/70 transition"
           aria-label="Go back"
         >
           <span className="material-symbols-outlined">arrow_back</span>
@@ -377,7 +377,7 @@ function CollectionPage() {
       </div>
 
       <main>
-        <div className="sticky top-[68px] md:top-24 z-20 flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
+        <div className="sticky top-0 md:top-24 z-20 flex gap-6 border-b border-outline px-margin-mobile relative overflow-hidden">
           <div className="absolute inset-0 -z-10 bg-background" />
           {ambientColor && (
             <div
