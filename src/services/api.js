@@ -322,10 +322,10 @@ export const adminApi = {
   suspendUser: (id, suspended) =>
     apiFetch(`/admin/users/${id}/suspend`, { method: 'PATCH', body: JSON.stringify({ suspended }) }),
   requests: () => apiFetch('/admin/requests'),
-  resolveRequest: (id, status, fulfilledResourceId) =>
+  resolveRequest: (id, status, fulfilledResourceId, reason) =>
     apiFetch(`/admin/requests/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ status, fulfilledResourceId }),
+      body: JSON.stringify({ status, fulfilledResourceId, reason }),
     }),
   createAnnouncement: (payload) =>
     apiFetch('/admin/announcements', { method: 'POST', body: JSON.stringify(payload) }),

@@ -33,9 +33,12 @@ function AdminRequests() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
-  // Which group's inline "paste resource ID" field is currently open.
+  // Which group's inline "paste resource link" field is currently open.
   const [fulfillingId, setFulfillingId] = useState(null)
   const [resourceIdInput, setResourceIdInput] = useState('')
+  // Which group's inline "reason for declining" field is currently open.
+  const [decliningId, setDecliningId] = useState(null)
+  const [declineReason, setDeclineReason] = useState('')
 
   const fetchRequests = useCallback(async () => {
     setLoading(true)
@@ -58,16 +61,21 @@ function AdminRequests() {
   // group of 4 identical requests means 4 material_requests rows, and
   // each requester should get their own "resolved" notification (the
   // backend already sends one per row in PATCH /admin/requests/:id).
-  const resolveGroup = async (group, status, fulfilledResourceId) => {
+  const resolveGroup = async (group, status, fulfilledResourceId, reason) => {
     setBusyId(group.id)
+    setError('')
     try {
       await Promise.all(
-        group.memberIds.map((id) => adminApi.resolveRequest(id, status, fulfilledResourceId || null))
+        group.memberIds.map((id) =>
+          adminApi.resolveRequest(id, status, fulfilledResourceId || null, reason || null)
+        )
       )
       setRequests((prev) => prev.filter((r) => r.id !== group.id))
       setFulfilled((prev) => [{ ...group, outcome: status }, ...prev])
       setFulfillingId(null)
       setResourceIdInput('')
+      setDecliningId(null)
+      setDeclineReason('')
     } catch (err) {
       setError(err.message || 'Action failed.')
     } finally {
@@ -76,8 +84,15 @@ function AdminRequests() {
   }
 
   const openFulfillInput = (groupId) => {
+    setDecliningId(null)
     setFulfillingId(groupId)
     setResourceIdInput('')
+  }
+
+  const openDeclineInput = (groupId) => {
+    setFulfillingId(null)
+    setDecliningId(groupId)
+    setDeclineReason('')
   }
 
   return (
@@ -112,6 +127,7 @@ function AdminRequests() {
             {requests.map((group) => {
               const detailSummary = summarizeDetails(group.details)
               const isFulfilling = fulfillingId === group.id
+              const isDeclining = decliningId === group.id
 
               return (
                 <div key={group.id} className="p-stack-md rounded-xl bg-surface-container border border-outline">
@@ -166,13 +182,39 @@ function AdminRequests() {
                     </p>
                   )}
 
-                  {isFulfilling ? (
+                  {isDeclining ? (
+                    <div className="flex flex-col gap-2 mt-2">
+                      <textarea
+                        rows={3}
+                        value={declineReason}
+                        onChange={(e) => setDeclineReason(e.target.value)}
+                        placeholder="Reason for declining (the student will see this)"
+                        className="w-full px-3 py-2 bg-surface-container-low border border-outline rounded-lg text-on-surface placeholder:text-on-surface-variant text-sm focus:outline-none focus:border-primary resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => resolveGroup(group, 'declined', null, declineReason.trim())}
+                          disabled={busyId === group.id || !declineReason.trim()}
+                          className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-50"
+                        >
+                          {busyId === group.id ? 'Working…' : 'Confirm Decline'}
+                        </button>
+                        <button
+                          onClick={() => setDecliningId(null)}
+                          disabled={busyId === group.id}
+                          className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg border border-outline text-on-surface font-label-sm text-label-sm disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : isFulfilling ? (
                     <div className="flex flex-col gap-2 mt-2">
                       <input
                         type="text"
                         value={resourceIdInput}
                         onChange={(e) => setResourceIdInput(e.target.value)}
-                        placeholder="Paste the resource ID to link (optional)"
+                        placeholder="Paste the resource link or ID (optional)"
                         className="w-full h-10 px-3 bg-surface-container-low border border-outline rounded-lg text-on-surface placeholder:text-on-surface-variant text-sm focus:outline-none focus:border-primary"
                       />
                       <div className="flex gap-2">
@@ -204,12 +246,12 @@ function AdminRequests() {
                         Mark Fulfilled
                       </button>
                       <button
-                        onClick={() => resolveGroup(group, 'declined')}
+                        onClick={() => openDeclineInput(group.id)}
                         disabled={busyId === group.id}
                         className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg border border-outline text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high transition-colors disabled:opacity-50"
                       >
                         <span className="material-symbols-outlined text-[16px]">close</span>
-                        {busyId === group.id ? 'Working…' : 'Decline'}
+                        Decline
                       </button>
                     </div>
                   )}
