@@ -217,7 +217,7 @@ function Notifications() {
   if (isDesktop) return null
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Notifications" showBack />
       <main className="pb-24 pt-[68px]">
         <NotificationsContent />

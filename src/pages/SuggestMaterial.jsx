@@ -559,7 +559,7 @@ function SuggestMaterial() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Suggest Material" showBack />
 
       <main className="pb-32 pt-[68px] px-margin-mobile">

@@ -188,7 +188,7 @@ function SubmitResource() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar
         title="Submit a Resource"
         showBack

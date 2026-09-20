@@ -2,7 +2,7 @@ import TopAppBar from '../components/layout/TopAppBar'
 
 function Licensing() {
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Licensing & Usage" showBack />
 
       <main className="pb-24 pt-[68px] px-margin-mobile flex flex-col gap-stack-lg">

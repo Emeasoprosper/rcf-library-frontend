@@ -28,7 +28,7 @@ function NewsDetail() {
   const isDoc = item?.attachment_url && !isImage
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md">
+    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title={item?.type === 'announcement' ? 'Announcement' : 'News'} showBack />
 
       <main className="pb-32 pt-[68px] px-margin-mobile">
