@@ -423,21 +423,26 @@ function CollectionPage() {
           the same tabs row under its title, both fading in together. */}
       <div
         ref={desktopBarRef}
-        className="hidden md:flex flex-col fixed top-[72px] left-0 md:left-80 right-0 lg:right-80 z-30 px-6 pt-3 pb-1 border-b border-outline"
-        style={{
-          background: ambientColor || undefined,
-          // Completely invisible while the artwork is at full size,
-          // then fades in with the blur as it shrinks.
-          opacity: tabsBarProgress,
-          backdropFilter: `blur(${tabsBarProgress * 16}px)`,
-          WebkitBackdropFilter: `blur(${tabsBarProgress * 16}px)`,
-          pointerEvents: tabsBarProgress > 0.05 ? 'auto' : 'none',
-        }}
+        className="hidden md:flex flex-col fixed top-[72px] left-0 md:left-80 right-0 lg:right-80 z-30 px-6 pt-3 pb-1 isolate"
+        style={{ pointerEvents: tabsBarProgress > 0.05 ? 'auto' : 'none' }}
       >
+        {/* Background layer: the only part that is completely invisible
+            while the artwork is at full size; it fades in with the blur
+            as the artwork shrinks. The back arrow sits outside it, so
+            it is always visible. */}
+        <div
+          className="absolute inset-0 -z-10 border-b border-outline"
+          style={{
+            background: ambientColor || undefined,
+            opacity: tabsBarProgress,
+            backdropFilter: `blur(${tabsBarProgress * 16}px)`,
+            WebkitBackdropFilter: `blur(${tabsBarProgress * 16}px)`,
+          }}
+        />
         <div className="flex items-center gap-3 h-10">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface hover:bg-white/10 flex-none"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface hover:bg-white/10 flex-none pointer-events-auto"
             aria-label="Go back"
           >
             <span className="material-symbols-outlined">arrow_back</span>
