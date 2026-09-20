@@ -350,7 +350,7 @@ function CollectionPage() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
-      <div className="relative z-10 md:pt-24 overflow-hidden">
+      <div className="relative z-10 md:sticky md:top-24 overflow-hidden">
         {/* Single back control for every viewport — TopAppBar does not
             render on this page (its collapsing bar was never wired up
             here), so this is the only back button on mobile too. */}
