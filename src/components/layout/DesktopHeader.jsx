@@ -10,7 +10,6 @@ import logo from '../../assets/RCFmouau.svg'
 import NavIcon from './NavIcon'
 import { navItems } from '../../lib/navItems'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
-import { useHeaderAmbient } from '../../contexts/HeaderAmbientContext'
 
 const notificationIcon = {
   announcement: 'campaign',
@@ -37,7 +36,6 @@ function DesktopHeader() {
   const [badgeCount, setBadgeCount] = useState(0)
   const [searchValue, setSearchValue] = useState('')
   const { openModal } = useNotificationsModal()
-  const { ambient } = useHeaderAmbient()
 
   const loadBadgeCount = useCallback(() => {
     Promise.all([
@@ -71,22 +69,7 @@ function DesktopHeader() {
   useEffect(() => { loadBadgeCount() }, [loadBadgeCount])
 
   return (
-    <header
-      className="hidden md:flex fixed top-0 left-0 w-full h-[72px] z-40 items-center gap-6 px-6 border-b border-outline relative"
-      style={ambient ? { backgroundColor: 'transparent' } : undefined}
-    >
-      {ambient && (
-        <div
-          className="absolute inset-0 -z-10 transition-opacity duration-100"
-          style={{
-            background: ambient.color,
-            opacity: ambient.progress,
-            backdropFilter: `blur(${ambient.progress * 16}px)`,
-            WebkitBackdropFilter: `blur(${ambient.progress * 16}px)`,
-          }}
-        />
-      )}
-      {!ambient && <div className="absolute inset-0 -z-10 bg-surface" />}
+    <header className="hidden md:flex fixed top-0 left-0 w-full h-[72px] z-40 items-center gap-6 px-6 bg-surface border-b border-outline">
       <button onClick={() => navigate('/home')} className="flex items-center gap-2.5 flex-none" aria-label="Home">
         <img src={logo} alt="" className="h-9 w-9" />
       </button>
