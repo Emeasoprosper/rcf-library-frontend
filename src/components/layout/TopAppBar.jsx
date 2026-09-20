@@ -17,7 +17,7 @@ function TopAppBar({ title, rightIcons, showBack = false }) {
 
   return (
     <header
-      className={`fixed top-0 left-0 z-50 w-full px-margin-mobile py-stack-md border-b transition-transform duration-300 ease-in-out md:hidden ${
+      className={`fixed top-0 left-0 z-[100] w-full px-margin-mobile py-stack-md border-b transition-transform duration-300 ease-in-out md:hidden ${
         hidden ? '-translate-y-full' : 'translate-y-0'
       } ${ambient ? 'border-transparent' : 'border-outline'} relative`}
       style={ambient ? { backgroundColor: 'transparent' } : undefined}
