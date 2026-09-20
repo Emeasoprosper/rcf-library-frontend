@@ -321,15 +321,25 @@ function CollectionPage() {
     <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
       <TopAppBar title={collection.title} showBack onBack={() => navigate(-1)} />
 
-      {/* Desktop-only equivalent back button, since DesktopHeader has no
-          per-page back affordance of its own. */}
-      <button
-        onClick={() => navigate(-1)}
-        className="hidden md:flex fixed top-28 left-6 z-10 w-9 h-9 rounded-full bg-black/50 backdrop-blur items-center justify-center text-white hover:bg-black/70 transition"
-        aria-label="Go back"
+      {/* Desktop-only page title bar, scoped to the center column only
+          (matches md:pl-80 lg:pr-80 on the outer div) — sits below the
+          global DesktopHeader, crossfades to the extracted cover color
+          on scroll, and visually joins the sticky tabs bar right under
+          it. This is NOT the global search/nav header — that one is
+          untouched. */}
+      <div
+        className="hidden md:flex fixed top-[72px] left-0 md:left-80 right-0 lg:right-80 h-16 z-30 items-center gap-3 px-6 border-b border-outline"
+        style={{ background: ambientColor ? ambientColor : undefined, opacity: ambientColor ? tabsBarProgress : 1, backdropFilter: ambientColor ? `blur(${tabsBarProgress * 12}px)` : undefined }}
       >
-        <span className="material-symbols-outlined">arrow_back</span>
-      </button>
+        <button
+          onClick={() => navigate(-1)}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface hover:bg-white/10 flex-none"
+          aria-label="Go back"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
+        <h2 className="font-headline-md text-headline-md font-bold text-on-surface truncate">{collection.title}</h2>
+      </div>
 
       <div className="relative z-0 overflow-hidden pt-[68px] md:pt-24">
         {ambientColor && (
