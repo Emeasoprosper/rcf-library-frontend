@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { usePageHeader } from '../contexts/PageHeaderContext'
+import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import Dropdown from '../components/ui/Dropdown'
 import { communityApi, resourcesApi } from '../services/api'

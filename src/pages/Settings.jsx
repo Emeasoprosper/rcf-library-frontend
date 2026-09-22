@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { usePageHeader } from '../contexts/PageHeaderContext'
+import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import ToggleSwitch from '../components/ui/ToggleSwitch'
 import { useAuth } from '../contexts/AuthContext'
@@ -13,7 +13,6 @@ function Settings() {
   const navigate = useNavigate()
   const { user, refreshUser } = useAuth()
   const [openSection, setOpenSection] = useState(null)
-  usePageHeader({ title: 'Settings', showBack: true })
 
   const [profileDraft, setProfileDraft] = useState({ name: '', bio: '' })
   const [profileSaved, setProfileSaved] = useState(false)
@@ -72,7 +71,7 @@ function Settings() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
-
+      <TopAppBar title="Settings" showBack />
 
       <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile">
         <section className="mb-stack-lg">

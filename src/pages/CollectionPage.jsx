@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { usePageHeader } from '../contexts/PageHeaderContext'
+import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import CollectionPickerSheet from './admin/CollectionPickerSheet'

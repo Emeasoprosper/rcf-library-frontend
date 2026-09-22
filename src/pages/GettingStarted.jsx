@@ -1,4 +1,4 @@
-import { usePageHeader } from '../contexts/PageHeaderContext'
+import TopAppBar from '../components/layout/TopAppBar'
 
 const steps = [
   {

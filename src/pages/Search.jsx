@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { usePageHeader } from '../contexts/PageHeaderContext'
+import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import ResourceCard from '../components/resource/ResourceCard'

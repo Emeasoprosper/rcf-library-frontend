@@ -1,7 +1,7 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/pages/Library.jsx
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { usePageHeader } from '../contexts/PageHeaderContext'
+import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import ResourceCard from '../components/resource/ResourceCard'
 import Pagination from '../components/ui/Pagination'
