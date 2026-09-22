@@ -165,7 +165,7 @@ function RequestMaterial() {
                   )}
                   {r.status === 'fulfilled' && r.fulfilled_resource_title && (
                     <button
-                      onClick={() => navigate(`/resources/${r.fulfilled_resource_id}`)}
+                      onClick={() => navigate(`/library/${r.fulfilled_resource_id}`)}
                       className="mt-2 font-label-sm text-label-sm text-primary underline underline-offset-2"
                     >
                       View "{r.fulfilled_resource_title}"
