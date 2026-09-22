@@ -69,7 +69,7 @@ function DesktopHeader() {
   useEffect(() => { loadBadgeCount() }, [loadBadgeCount])
 
   return (
-    <header style={{ left: 'var(--hd-left)' }} className="hidden md:flex fixed top-0 right-0 h-[72px] z-40 items-center gap-6 px-6 bg-surface border-b border-outline transition-[left] duration-300 ease-in-out">
+    <header style={{ left: 'var(--hd-left)' }} className="hidden md:flex fixed top-0 right-0 h-[72px] z-40 min-w-0 items-center gap-6 px-6 bg-surface border-b border-outline transition-[left] duration-300 ease-in-out">
       <button onClick={() => navigate('/home')} className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-2.5 flex-none`} aria-label="Home">
         <img src={logo} alt="" className="h-9 w-9" />
       </button>
@@ -95,7 +95,7 @@ function DesktopHeader() {
         })}
       </nav>
 
-      <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xl mx-auto">
+      <form onSubmit={handleSearchSubmit} className="flex-1 min-w-0 max-w-xl mx-auto">
         <div className="relative w-full">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
             search

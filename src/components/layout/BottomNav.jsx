@@ -35,13 +35,14 @@ function BottomNav() {
 
       <div className="flex justify-around items-center [mask-image:none]">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.to
+          const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
           return (
             <Link
               key={item.to}
               to={item.to}
               data-tour={TOUR_NAV_IDS[item.icon]}
-              className={`flex flex-col items-center justify-center gap-1 transition-colors duration-150 active:scale-90 ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-1 transition-colors duration-150 active:scale-90 ${
                 isActive ? 'text-orange-500 font-semibold' : 'text-on-surface-variant'
               }`}
             >
