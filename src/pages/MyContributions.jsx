@@ -1,7 +1,7 @@
 // pages/MyContributions.jsx
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import TopAppBar from '../components/layout/TopAppBar'
+import { usePageHeader } from '../contexts/PageHeaderContext'
 import BottomNav from '../components/layout/BottomNav'
 import StatusBadge from '../components/ui/StatusBadge'
 import LibraryLoader from '../components/ui/LibraryLoader'

@@ -1,7 +1,7 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/pages/Home.jsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import TopAppBar from '../components/layout/TopAppBar'
+import { usePageHeader } from '../contexts/PageHeaderContext'
 import BottomNav from '../components/layout/BottomNav'
 import BookGrid from '../components/resource/BookGrid'
 import HorizontalRail from '../components/resource/HorizontalRail'
@@ -166,6 +166,25 @@ function Home() {
   const [selectedNews, setSelectedNews] = useState(null)
   const [badgeCount, setBadgeCount] = useState(0)
   const [loading, setLoading] = useState(true)
+
+  usePageHeader({
+    title: 'Home',
+    rightIcons: (
+      <button
+        data-tour="tour-notifications"
+        onClick={() => navigate('/notifications')}
+        className="relative p-2 rounded-full hover:bg-surface-container-high transition-colors"
+        aria-label="Notifications"
+      >
+        <span className="material-symbols-outlined text-on-surface">notifications</span>
+        {badgeCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-surface">
+            {badgeCount > 9 ? '9+' : badgeCount}
+          </span>
+        )}
+      </button>
+    ),
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -349,24 +368,7 @@ function Home() {
   const continueConfig = continueLane ? CONTINUE_LANE_CONFIG[continueLane] : null
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
-      <TopAppBar
-        title="Home"
-        rightIcons={
-          <button
-            data-tour="tour-notifications"
-            onClick={() => navigate('/notifications')}
-            className="relative p-2 rounded-full hover:bg-surface-container-high transition-colors"
-            aria-label="Notifications"
-          >
-            <span className="material-symbols-outlined text-on-surface">notifications</span>
-            {badgeCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none flex items-center justify-center border-2 border-surface">
-                {badgeCount > 9 ? '9+' : badgeCount}
-              </span>
-            )}
-          </button>
-        }
-      />
+
 
       <main className="pb-24 pt-[68px] md:pt-24 md:pt-24 md:pb-12">
         <section

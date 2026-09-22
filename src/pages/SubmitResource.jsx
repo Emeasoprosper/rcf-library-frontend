@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import TopAppBar from '../components/layout/TopAppBar'
+import { usePageHeader } from '../contexts/PageHeaderContext'
 import MultiFileUpload from '../components/ui/MultiFileUpload'
 import { uploadResourceFile, resourcesApi } from '../services/api'
 import { createRipple } from '../lib/ripple'

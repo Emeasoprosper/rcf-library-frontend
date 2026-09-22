@@ -8,9 +8,11 @@ import LeftSidebarNav from './components/layout/LeftSidebarNav'
 import RightSidebarPanel from './components/layout/RightSidebarPanel'
 import NotificationsModal from './components/layout/NotificationsModal'
 import LayoutModeSync from './components/layout/LayoutModeSync'
+import GlobalTopAppBar from './components/layout/GlobalTopAppBar'
 import { NotificationsModalProvider } from './contexts/NotificationsModalContext'
 import { HeaderAmbientProvider } from './contexts/HeaderAmbientContext'
 import { TourProvider } from './contexts/TourContext'
+import { PageHeaderProvider } from './contexts/PageHeaderContext'
 import SpotlightTour from './components/tour/SpotlightTour'
 
 function App() {
@@ -20,15 +22,18 @@ function App() {
       <ActiveResourceProvider>
         <HeaderAmbientProvider>
           <NotificationsModalProvider>
-            <LayoutModeSync />
-            <DesktopHeader />
-            <LeftSidebarNav />
-            <AppRoutes />
-            <RightSidebarPanel />
-            <InstallPrompt />
-            <ApkUpdateBanner />
-            <SpotlightTour />
-            <NotificationsModal />
+            <PageHeaderProvider>
+              <LayoutModeSync />
+              <DesktopHeader />
+              <LeftSidebarNav />
+              <GlobalTopAppBar />
+              <AppRoutes />
+              <RightSidebarPanel />
+              <InstallPrompt />
+              <ApkUpdateBanner />
+              <SpotlightTour />
+              <NotificationsModal />
+            </PageHeaderProvider>
           </NotificationsModalProvider>
         </HeaderAmbientProvider>
       </ActiveResourceProvider>

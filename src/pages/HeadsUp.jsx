@@ -3,7 +3,7 @@
 // list of every current admin announcement/news item.
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import TopAppBar from '../components/layout/TopAppBar'
+import { usePageHeader } from '../contexts/PageHeaderContext'
 import BottomNav from '../components/layout/BottomNav'
 import { newsApi } from '../services/api'
 

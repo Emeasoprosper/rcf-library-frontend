@@ -2,7 +2,7 @@
 // The dedicated "read it fully" page. Both popup styles land here.
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import TopAppBar from '../components/layout/TopAppBar'
+import { usePageHeader } from '../contexts/PageHeaderContext'
 import { newsApi } from '../services/api'
 
 function NewsDetail() {

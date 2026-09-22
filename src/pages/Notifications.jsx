@@ -4,7 +4,7 @@
 // inside a centered popup instead — desktop must never show this as a
 // full-screen page, same rule as the audio/video reader.
 import { useEffect, useState } from 'react'
-import TopAppBar from '../components/layout/TopAppBar'
+import { usePageHeader } from '../contexts/PageHeaderContext'
 import BottomNav from '../components/layout/BottomNav'
 import AttachmentViewerModal from '../components/ui/AttachmentViewerModal'
 import { communityApi, newsApi } from '../services/api'
