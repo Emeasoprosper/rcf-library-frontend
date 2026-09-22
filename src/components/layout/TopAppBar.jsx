@@ -28,7 +28,7 @@ function TopAppBar({ title, rightIcons, showBack = false, titleRef, tabs, active
 
   return (
     <header
-      className={`fixed top-0 left-0 z-[9999] w-full px-margin-mobile py-stack-md border-b transition-transform duration-300 ease-in-out ${showBack && !ambient ? 'md:sticky md:top-[72px] md:z-20 md:translate-y-0 md:py-2 md:border-transparent' : 'md:hidden'} isolate ${
+      className={`fixed top-0 left-0 z-40 w-full px-margin-mobile py-stack-md border-b transition-transform duration-300 ease-in-out ${showBack && !ambient ? 'md:sticky md:top-[72px] md:z-20 md:translate-y-0 md:py-2 md:border-transparent' : 'md:hidden'} isolate ${
         !ambient && hidden ? '-translate-y-full' : 'translate-y-0'
       } ${ambient ? 'border-transparent' : 'border-outline'}`}
       style={ambient ? { backgroundColor: 'transparent' } : undefined}

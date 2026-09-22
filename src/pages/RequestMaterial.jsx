@@ -164,12 +164,26 @@ function RequestMaterial() {
                     </p>
                   )}
                   {r.status === 'fulfilled' && r.fulfilled_resource_title && (
-                    <button
-                      onClick={() => navigate(`/library/${r.fulfilled_resource_id}`)}
-                      className="mt-2 font-label-sm text-label-sm text-primary underline underline-offset-2"
-                    >
-                      View "{r.fulfilled_resource_title}"
-                    </button>
+                    <div className="mt-3 flex items-center gap-3">
+                      <div className="w-10 h-14 rounded-md overflow-hidden bg-surface-container-high border border-outline flex-none">
+                        {r.fulfilled_resource_thumbnail_url ? (
+                          <img src={r.fulfilled_resource_thumbnail_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-on-surface-variant text-[18px]">menu_book</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-grow">
+                        <p className="font-label-sm text-label-sm text-on-surface truncate">{r.fulfilled_resource_title}</p>
+                        <button
+                          onClick={() => navigate(`/library/${r.fulfilled_resource_id}`)}
+                          className="mt-1 px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm active:scale-[0.98] hover:opacity-90 transition-all"
+                        >
+                          See Resource
+                        </button>
+                      </div>
+                    </div>
                   )}
                   <p className="font-label-sm text-label-sm text-on-surface-variant/60 mt-2">
                     {new Date(r.created_at).toLocaleDateString()}
