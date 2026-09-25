@@ -209,8 +209,8 @@ function Settings() {
                     />
                   </div>
                   <p className="font-label-sm text-label-sm text-on-surface-variant pt-2 border-t border-outline/30">
-                    These toggles aren't wired to the backend yet — no notification-preferences
-                    table or route exists. Changes here won't persist on refresh.
+                    Push Notifications is live. Email Updates and New Resource Alerts aren't
+                    wired to the backend yet — changes to those two won't persist on refresh.
                   </p>
                 </div>
               )}
