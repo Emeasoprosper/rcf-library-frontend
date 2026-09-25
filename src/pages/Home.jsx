@@ -274,12 +274,7 @@ function Home() {
 
   useEffect(() => {
     if (loading) return
-    // Tour targets (BottomNav's data-tour ids, the mobile search bar
-    // below) are mobile-only UI, now hidden at md — see BottomNav.jsx
-    // and the section below. Rather than teaching SpotlightTour a
-    // second set of desktop selectors, the tour just doesn't start on
-    // desktop-width viewports.
-    if (window.innerWidth >= 768) return
+
     const forced = shouldForceStart()
     if (!forced && hasCompletedTour()) return
     const timer = setTimeout(() => startTour(), 600)

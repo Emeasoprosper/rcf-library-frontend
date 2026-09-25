@@ -1,14 +1,15 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/components/tour/SpotlightTour.jsx
 import { useState, useLayoutEffect, useRef, useCallback } from 'react'
 import { useTour } from '../../contexts/TourContext'
+import { useIsDesktopViewport } from '../../hooks/useIsDesktopViewport'
 
-const PADDING = 10 // gap between spotlight hole and the actual element
+const PADDING = 10
 const TOOLTIP_MARGIN = 16
-const TOOLTIP_MIN_GAP = TOOLTIP_MARGIN + 12 // enforced clearance between tooltip and target
+const TOOLTIP_MIN_GAP = TOOLTIP_MARGIN + 12
 const TOOLTIP_WIDTH = 300
-const VIEWPORT_TOLERANCE = 4 // px slack before we consider an element "already visible"
-const SETTLE_MAX_MS = 700 // hard cap on how long we'll poll for the target to stop moving
-const SETTLE_STABLE_FRAMES = 3 // consecutive matching frames required before we call it "settled"
+const VIEWPORT_TOLERANCE = 4
+const SETTLE_MAX_MS = 700
+const SETTLE_STABLE_FRAMES = 3
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), Math.max(max, min))
@@ -33,13 +34,16 @@ function rectsMatch(a, b) {
   )
 }
 
-// Four plain (unmasked) rectangles framing the target. Each one just
-// backdrop-blurs + dims its own patch of screen — the gap between them is
-// real empty space, so whatever sits under it (icons, labels, anything)
-// shows through with zero manipulation. This avoids combining
-// backdrop-filter with mask-image, which reliably renders as a solid black
-// hole on several mobile browsers when the masked element sits above
-// another element that also uses backdrop-filter (e.g. the bottom nav).
+// Picks the right selector for the current viewport. A step with no
+// desktopSelector (none defined) falls back to its mobileSelector, so
+// existing steps keep working even before every step has a desktop
+// variant.
+function getSelector(step, isDesktop) {
+  if (!step) return null
+  if (isDesktop && step.desktopSelector) return step.desktopSelector
+  return step.mobileSelector
+}
+
 function computeFrameRects(rect) {
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -54,18 +58,13 @@ function computeFrameRects(rect) {
   const holeBottom = Math.min(rect.top + rect.height + PADDING, vh)
 
   return [
-    { top: 0, left: 0, width: vw, height: holeTop }, // above the hole
-    { top: holeBottom, left: 0, width: vw, height: Math.max(vh - holeBottom, 0) }, // below the hole
-    { top: holeTop, left: 0, width: holeLeft, height: holeBottom - holeTop }, // left of the hole
-    { top: holeTop, left: holeRight, width: Math.max(vw - holeRight, 0), height: holeBottom - holeTop }, // right of the hole
+    { top: 0, left: 0, width: vw, height: holeTop },
+    { top: holeBottom, left: 0, width: vw, height: Math.max(vh - holeBottom, 0) },
+    { top: holeTop, left: 0, width: holeLeft, height: holeBottom - holeTop },
+    { top: holeTop, left: holeRight, width: Math.max(vw - holeRight, 0), height: holeBottom - holeTop },
   ]
 }
 
-// Computes tooltip position using the tooltip's REAL measured height.
-// Every candidate top is derived directly from the target's own edges
-// (rect.bottom or rect.top) — never a fixed/unrelated screen coordinate —
-// so the tooltip can never mathematically land on top of the target,
-// no matter how short or narrow the viewport is.
 function computeTooltipPos(rect, tooltipHeight) {
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -90,19 +89,12 @@ function computeTooltipPos(rect, tooltipHeight) {
   } else if (aboveFits) {
     top = aboveTop
   } else {
-    // Neither placement fully fits the viewport — pick whichever side has
-    // more room and let the card extend toward the edge of the screen
-    // rather than ever falling back to a fixed point that could coincide
-    // with the target.
     const spaceBelow = vh - belowTop
     const spaceAbove = rect.top - PADDING - 12
     if (spaceBelow >= spaceAbove) {
       top = Math.max(belowTop, TOOLTIP_MARGIN)
     } else {
       top = Math.max(aboveTop, TOOLTIP_MARGIN)
-      // If clamping to stay on-screen pushed the card's bottom edge back
-      // down into the target's zone, prefer "below" instead — it's the
-      // one placement that's overlap-safe by construction either way.
       if (top + height > rect.top - PADDING) {
         top = Math.max(belowTop, TOOLTIP_MARGIN)
       }
@@ -114,6 +106,7 @@ function computeTooltipPos(rect, tooltipHeight) {
 
 function SpotlightTour() {
   const { active, stepIndex, steps, nextStep, prevStep, skipTour } = useTour()
+  const isDesktop = useIsDesktopViewport()
   const [rect, setRect] = useState(null)
   const [ready, setReady] = useState(false)
   const [tooltipHeight, setTooltipHeight] = useState(null)
@@ -124,27 +117,16 @@ function SpotlightTour() {
   const resizeObserverRef = useRef(null)
 
   const step = steps[stepIndex]
+  const selector = getSelector(step, isDesktop)
 
-  // Single, synchronous read of the target's current rect. Returns null
-  // when there's no selector for this step (centered/modal-style step) or
-  // the element isn't in the DOM.
   const measureOnce = useCallback(() => {
-    if (!step) return null
-    if (!step.selector) return null
-    const el = document.querySelector(step.selector)
+    if (!selector) return null
+    const el = document.querySelector(selector)
     if (!el) return null
     const r = el.getBoundingClientRect()
     return { top: r.top, left: r.left, width: r.width, height: r.height }
-  }, [step])
+  }, [selector])
 
-  // Keeps re-measuring on every animation frame until the target's rect
-  // stops changing for a few consecutive frames (or a hard time cap is
-  // hit). This is what fixes the tooltip landing on top of a target that
-  // hasn't finished moving: a single fixed-delay measurement after
-  // scrollIntoView can fire before a sticky header / hero section /
-  // search bar finishes settling into its final position, so the ring and
-  // tooltip both get placed relative to a rect that's about to shift out
-  // from under them.
   const settleAndMeasure = useCallback(() => {
     cancelAnimationFrame(settleRafRef.current)
     setReady(false)
@@ -179,13 +161,12 @@ function SpotlightTour() {
     settleRafRef.current = requestAnimationFrame(tick)
   }, [measureOnce])
 
-  // Decide whether we need to scroll at all, then settle-measure.
   useLayoutEffect(() => {
     if (!active || !step) return
     clearTimeout(scrollTimerRef.current)
     cancelAnimationFrame(settleRafRef.current)
 
-    const el = step.selector ? document.querySelector(step.selector) : null
+    const el = selector ? document.querySelector(selector) : null
 
     if (el) {
       const currentRect = el.getBoundingClientRect()
@@ -193,9 +174,6 @@ function SpotlightTour() {
         settleAndMeasure()
       } else {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        // Give the smooth scroll a moment to start, then poll frame-by-frame
-        // until the rect actually stops moving instead of trusting a single
-        // fixed delay.
         scrollTimerRef.current = setTimeout(settleAndMeasure, 150)
       }
     } else {
@@ -206,15 +184,11 @@ function SpotlightTour() {
       clearTimeout(scrollTimerRef.current)
       cancelAnimationFrame(settleRafRef.current)
     }
-  }, [active, step, settleAndMeasure])
+  }, [active, step, selector, settleAndMeasure])
 
-  // Watch the target element itself for size changes — e.g. a search bar
-  // that grows when focused/suggestions appear, or content above it
-  // loading in and pushing it down. Window resize/scroll listeners alone
-  // don't catch this class of shift since it's neither.
   useLayoutEffect(() => {
-    if (!active || !step || !step.selector) return
-    const el = document.querySelector(step.selector)
+    if (!active || !step || !selector) return
+    const el = document.querySelector(selector)
     if (!el || typeof ResizeObserver === 'undefined') return
 
     resizeObserverRef.current = new ResizeObserver(() => {
@@ -226,9 +200,8 @@ function SpotlightTour() {
       resizeObserverRef.current?.disconnect()
       resizeObserverRef.current = null
     }
-  }, [active, step, settleAndMeasure])
+  }, [active, step, selector, settleAndMeasure])
 
-  // Re-measure the actual tooltip card size once it's rendered.
   useLayoutEffect(() => {
     if (!ready || !tooltipRef.current) return
     const h = tooltipRef.current.getBoundingClientRect().height
@@ -279,12 +252,6 @@ function SpotlightTour() {
         .tour-card { animation: tourFadeUp 320ms cubic-bezier(0.25,1,0.5,1); }
       `}</style>
 
-      {/* Four unmasked rectangles framing the target — dims/blurs everything
-          except the real gap left open around the target itself. Position
-          is intentionally NOT CSS-transitioned: while the page is still
-          settling from a scrollIntoView, the live scroll/resize listener
-          re-measures every frame, and animating on top of that would make
-          the spotlight visibly lag behind a target that's still moving. */}
       {frameRects.map((r, i) => (
         <div
           key={i}
@@ -294,7 +261,6 @@ function SpotlightTour() {
         />
       ))}
 
-      {/* Attention ring around the target */}
       {rect && (
         <div
           className="tour-ring absolute rounded-2xl border-2 border-orange-500 pointer-events-none"
@@ -307,7 +273,6 @@ function SpotlightTour() {
         />
       )}
 
-      {/* Tooltip card */}
       <div
         ref={tooltipRef}
         className="tour-card absolute bg-surface-container-highest border border-outline rounded-2xl shadow-2xl p-5"

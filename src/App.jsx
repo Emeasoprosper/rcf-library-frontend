@@ -11,11 +11,13 @@ import LayoutModeSync from './components/layout/LayoutModeSync'
 import { NotificationsModalProvider } from './contexts/NotificationsModalContext'
 import { HeaderAmbientProvider } from './contexts/HeaderAmbientContext'
 import { TourProvider } from './contexts/TourContext'
+import { LanguageProvider } from './contexts/LanguageContext'
 import SpotlightTour from './components/tour/SpotlightTour'
 
 function App() {
   return (
     <AppLoader>
+      <LanguageProvider>
       <TourProvider>
       <ActiveResourceProvider>
         <HeaderAmbientProvider>
@@ -33,6 +35,7 @@ function App() {
         </HeaderAmbientProvider>
       </ActiveResourceProvider>
       </TourProvider>
+      </LanguageProvider>
     </AppLoader>
   )
 }

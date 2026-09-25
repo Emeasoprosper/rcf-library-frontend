@@ -6,11 +6,11 @@ import ToggleSwitch from '../components/ui/ToggleSwitch'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
 import { TOUR_FORCE_START_KEY } from '../contexts/TourContext'
-
-const languages = ['English']
+import { useLanguage, AVAILABLE_LANGUAGES } from '../contexts/LanguageContext'
 
 function Settings() {
   const navigate = useNavigate()
+  const { language, setLanguage, t } = useLanguage()
   const { user, refreshUser } = useAuth()
   const [openSection, setOpenSection] = useState(null)
 
@@ -36,6 +36,30 @@ function Settings() {
     showProfile: true,
     showHistory: false,
   })
+  const [privacySaving, setPrivacySaving] = useState(false)
+  const [privacyError, setPrivacyError] = useState('')
+
+  useEffect(() => {
+    if (user) {
+      setPrivacy({
+        showProfile: user.showProfile ?? true,
+        showHistory: user.showHistory ?? false,
+      })
+    }
+  }, [user])
+
+  const savePrivacy = async (next) => {
+    setPrivacySaving(true)
+    setPrivacyError('')
+    try {
+      await authApi.updatePrivacy(next)
+      await refreshUser()
+    } catch (err) {
+      setPrivacyError(err.message || 'Failed to save.')
+    } finally {
+      setPrivacySaving(false)
+    }
+  }
 
   const toggleSection = (key) => {
     setOpenSection(openSection === key ? null : key)
@@ -203,7 +227,11 @@ function Settings() {
                     <span className="font-body-md text-body-md text-on-surface">Show Profile to Others</span>
                     <ToggleSwitch
                       checked={privacy.showProfile}
-                      onChange={(v) => setPrivacy((p) => ({ ...p, showProfile: v }))}
+                      onChange={(v) => {
+                        const next = { ...privacy, showProfile: v }
+                        setPrivacy(next)
+                        savePrivacy(next)
+                      }}
                       label="Show Profile to Others"
                     />
                   </div>
@@ -211,14 +239,17 @@ function Settings() {
                     <span className="font-body-md text-body-md text-on-surface">Show Reading History</span>
                     <ToggleSwitch
                       checked={privacy.showHistory}
-                      onChange={(v) => setPrivacy((p) => ({ ...p, showHistory: v }))}
+                      onChange={(v) => {
+                        const next = { ...privacy, showHistory: v }
+                        setPrivacy(next)
+                        savePrivacy(next)
+                      }}
                       label="Show Reading History"
                     />
                   </div>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant pt-2 border-t border-outline/30">
-                    show_profile/show_history columns already exist in the users table but this
-                    page doesn't call a save route yet — same situation as the toggles above.
-                  </p>
+                  {privacyError && (
+                    <p className="font-label-sm text-label-sm text-error pt-2">{privacyError}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -240,15 +271,18 @@ function Settings() {
               </button>
               {openSection === 'language' && (
                 <div className="px-stack-md pb-stack-md border-t border-outline/30 pt-stack-md">
-                  {languages.map((lang) => (
-                    <div key={lang} className="flex items-center justify-between py-2">
-                      <span className="font-body-md text-body-md text-on-surface">{lang}</span>
-                      <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                    </div>
+                  {AVAILABLE_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => setLanguage(lang.code)}
+                      className="w-full flex items-center justify-between py-2 text-left"
+                    >
+                      <span className="font-body-md text-body-md text-on-surface">{lang.label}</span>
+                      {language === lang.code && (
+                        <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                      )}
+                    </button>
                   ))}
-                  <p className="font-label-sm text-label-sm text-on-surface-variant pt-2">
-                    More languages coming soon.
-                  </p>
                 </div>
               )}
             </div>

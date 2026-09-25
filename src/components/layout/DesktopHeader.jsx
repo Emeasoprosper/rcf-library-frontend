@@ -8,7 +8,7 @@ import { communityApi, newsApi } from '../../services/api'
 import { getDismissedNewsIds, addDismissedNewsId } from '../../lib/dismissedNews'
 import logo from '../../assets/RCFmouau.svg'
 import NavIcon from './NavIcon'
-import { navItems } from '../../lib/navItems'
+import { navItems, TOUR_NAV_IDS } from '../../lib/navItems'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
 
 const notificationIcon = {
@@ -82,6 +82,7 @@ function DesktopHeader() {
               key={item.to}
               onClick={() => navigate(item.to)}
               aria-label={item.label}
+              data-tour={TOUR_NAV_IDS[item.icon] ? `${TOUR_NAV_IDS[item.icon]}-desktop` : undefined}
               title={item.label}
               className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors ${
                 isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -122,6 +123,7 @@ function DesktopHeader() {
               key={item.to}
               onClick={() => navigate(item.to)}
               aria-label={item.label}
+              data-tour={TOUR_NAV_IDS[item.icon] ? `${TOUR_NAV_IDS[item.icon]}-desktop` : undefined}
               title={item.label}
               className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors ${
                 isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -137,6 +139,7 @@ function DesktopHeader() {
 
       <div className="flex items-center gap-4 flex-none">
         <button
+          data-tour="tour-notifications-desktop"
           onClick={() => { setBadgeCount(0); openModal() }}
           className="relative p-2 rounded-full hover:bg-surface-container-high transition-colors"
           aria-label="Notifications"
