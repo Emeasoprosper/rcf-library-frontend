@@ -6,6 +6,7 @@ import ToggleSwitch from '../components/ui/ToggleSwitch'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
 import { TOUR_FORCE_START_KEY } from '../contexts/TourContext'
+import { subscribeToPush, unsubscribeFromPush } from '../lib/pushNotifications'
 import { useLanguage, AVAILABLE_LANGUAGES } from '../contexts/LanguageContext'
 
 function Settings() {
@@ -178,7 +179,16 @@ function Settings() {
                     <span className="font-body-md text-body-md text-on-surface">Push Notifications</span>
                     <ToggleSwitch
                       checked={notifications.push}
-                      onChange={(v) => setNotifications((n) => ({ ...n, push: v }))}
+                      onChange={async (v) => {
+                        setNotifications((n) => ({ ...n, push: v }))
+                        try {
+                          if (v) await subscribeToPush()
+                          else await unsubscribeFromPush()
+                        } catch (err) {
+                          setNotifications((n) => ({ ...n, push: !v }))
+                          alert(err.message)
+                        }
+                      }}
                       label="Push Notifications"
                     />
                   </div>

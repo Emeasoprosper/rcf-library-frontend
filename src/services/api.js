@@ -293,6 +293,10 @@ export const communityApi = {
   myUploads: () => apiFetch('/me/uploads'),
   deleteMyUpload: (id) => apiFetch(`/me/uploads/${id}`, { method: 'DELETE' }),
   leaderboard: () => apiFetch('/leaderboard'),
+  subscribePush: (subscription) =>
+    apiFetch('/push/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
+  unsubscribePush: (payload) =>
+    apiFetch('/push/subscribe', { method: 'DELETE', body: JSON.stringify(payload) }),
 }
 
 export const adminApi = {

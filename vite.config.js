@@ -9,6 +9,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
 
       devOptions: {
         enabled: true,
@@ -56,6 +59,9 @@ export default defineConfig({
         ]
       },
 
+      injectManifest: {
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+      },
       workbox: {
         // FIX (root cause of "This resource couldn't be opened" for
         // PDFs specifically, while offline): pdf.js loads its worker
