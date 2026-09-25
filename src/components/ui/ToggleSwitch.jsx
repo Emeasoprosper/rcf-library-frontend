@@ -10,7 +10,7 @@ function ToggleSwitch({ checked, onChange, label }) {
       }`}
     >
       <span
-        className={`absolute top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
+        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
           checked ? 'translate-x-[22px]' : 'translate-x-0.5'
         }`}
       />
