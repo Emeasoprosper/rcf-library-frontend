@@ -425,20 +425,14 @@ function Home() {
 
         {jumpBackIn.length > 0 && <HorizontalRail title="Jump Back In" items={jumpBackIn} />}
 
-        {collections.length > 0 && (
+        {collections[0] && (
           <section className="mb-stack-lg px-margin-mobile">
-            <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-stack-sm">Collections</h2>
-            <div className="flex flex-col gap-gutter">
-              {collections.map((c) => (
-                <CollectionCard
-                  key={c.id}
-                  title={c.title}
-                  author={c.author}
-                  coverUrl={c.cover_url}
-                  onClick={() => navigate(`/collections/${c.id}`)}
-                />
-              ))}
-            </div>
+            <CollectionCard
+              title={collections[0].title}
+              author={collections[0].author}
+              coverUrl={collections[0].cover_url}
+              onClick={() => navigate(`/collections/${collections[0].id}`)}
+            />
           </section>
         )}
 
@@ -459,6 +453,17 @@ function Home() {
         ))}
 
         {popularBooks.length > 0 && <HorizontalRail title="Popular With Fellow Readers" items={popularBooks} />}
+
+        {collections[1] && (
+          <section className="mb-stack-lg px-margin-mobile">
+            <CollectionCard
+              title={collections[1].title}
+              author={collections[1].author}
+              coverUrl={collections[1].cover_url}
+              onClick={() => navigate(`/collections/${collections[1].id}`)}
+            />
+          </section>
+        )}
 
         {recentVideos.length > 0 && <HorizontalRail title="New Videos" items={recentVideos} />}
 
