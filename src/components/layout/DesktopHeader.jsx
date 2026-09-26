@@ -56,8 +56,8 @@ function DesktopHeader() {
         <img src={logo} alt="" className="h-9 w-9" />
       </button>
 
-      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none flex-1 justify-end`}>
-        {navItems.slice(0, Math.ceil(navItems.length / 2)).map((item) => {
+      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none`}>
+        {navItems.map((item) => {
           const isActive = location.pathname === item.to
           return (
             <button
@@ -78,27 +78,7 @@ function DesktopHeader() {
         })}
       </nav>
 
-      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none flex-1`}>
-        {navItems.slice(Math.ceil(navItems.length / 2)).map((item) => {
-          const isActive = location.pathname === item.to
-          return (
-            <button
-              key={item.to}
-              onClick={() => navigate(item.to)}
-              aria-label={item.label}
-              data-tour={TOUR_NAV_IDS[item.icon] ? `${TOUR_NAV_IDS[item.icon]}-desktop` : undefined}
-              title={item.label}
-              className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors ${
-                isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
-              }`}
-            >
-              <span className="inline-flex scale-125">
-                <NavIcon icon={item.icon} active={isActive} />
-              </span>
-            </button>
-          )
-        })}
-      </nav>
+      <div className="flex-1" />
 
       <div className="flex items-center gap-4 flex-none">
         <button
