@@ -139,7 +139,7 @@ function SubmitResource() {
         if (entry.author) formData.append('author', entry.author)
         if (entry.courseCode) formData.append('courseCode', entry.courseCode)
         if (entry.description) formData.append('description', entry.description)
-        if (entry.categoryId) formData.append('categoryId', entry.categoryId)
+        if (entry.categoryNames) formData.append('categoryNames', entry.categoryNames)
         if (entry.chapter) formData.append('chapter', entry.chapter)
         if (entry.part) formData.append('part', entry.part)
         if (entry.volume) formData.append('volume', entry.volume)

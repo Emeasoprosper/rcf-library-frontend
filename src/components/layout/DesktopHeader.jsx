@@ -29,6 +29,8 @@ function timeAgo(dateString) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
+const DESKTOP_NAV_ITEMS = navItems.filter((item) => item.icon !== 'search')
+
 function DesktopHeader() {
   const navigate = useNavigate()
   const location = useLocation(); const isAdmin = location.pathname.startsWith('/admin')
@@ -75,7 +77,7 @@ function DesktopHeader() {
       </button>
 
       <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none`}>
-        {navItems.slice(0, Math.ceil(navItems.length / 2)).map((item) => {
+        {DESKTOP_NAV_ITEMS.slice(0, Math.ceil(DESKTOP_NAV_ITEMS.length / 2)).map((item) => {
           const isActive = location.pathname === item.to
           return (
             <button
@@ -116,7 +118,7 @@ function DesktopHeader() {
       </form>
 
       <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none`}>
-        {navItems.slice(Math.ceil(navItems.length / 2)).map((item) => {
+        {DESKTOP_NAV_ITEMS.slice(Math.ceil(DESKTOP_NAV_ITEMS.length / 2)).map((item) => {
           const isActive = location.pathname === item.to
           return (
             <button

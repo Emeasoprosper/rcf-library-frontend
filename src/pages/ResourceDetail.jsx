@@ -58,16 +58,24 @@ function ActionIcon({ icon, className }) {
   return <span className={`material-symbols-outlined ${className || ''}`}>{icon}</span>
 }
 
-// Scores a candidate resource against the one currently being viewed, so
-// "More Like This" reflects topic/subject match instead of just "also a
-// video". Same-kind is enforced by the filter before this ever runs.
-function relatedScore(candidate, current) {
-  let score = 0
-  if (current.category && candidate.category === current.category) score += 3
-  if (current.department && candidate.department === current.department) score += 2
-  if (current.course_code && candidate.course_code === current.course_code) score += 2
-  return score
+// Scores a candidate resource against the one currently being viewed by
+// real category overlap — the % of shared categories out of the total
+// distinct categories across both resources (Jaccard similarity). Only
+// candidates at 90% or higher are considered "More Like This"; anything
+// below that threshold is left out entirely rather than padded in with
+// a weaker match, per how this feature is meant to work now that a
+// resource can carry more than one category.
+function categoryOverlap(currentCats = [], candidateCats = []) {
+  if (!currentCats.length || !candidateCats.length) return 0
+  const currentSet = new Set(currentCats)
+  const candidateSet = new Set(candidateCats)
+  let shared = 0
+  for (const c of currentSet) if (candidateSet.has(c)) shared += 1
+  const union = new Set([...currentSet, ...candidateSet]).size
+  return union === 0 ? 0 : shared / union
 }
+
+const SIMILARITY_THRESHOLD = 0.9
 
 function toRelatedItem(r, navigate) {
   return {
@@ -120,12 +128,14 @@ function ResourceDetail() {
         const related = await resourcesApi.list({ sort: 'popular', pageSize: 30 })
         if (cancelled) return
 
+        const currentCategories = res.resource.categories || []
         const sameKind = (related.items || []).filter(
           (r) => r.id !== id && getMediaKind(r.file_type) === kind
         )
         const ranked = sameKind
-          .map((r) => ({ r, score: relatedScore(r, res.resource) }))
-          .sort((a, b) => b.score - a.score)
+          .map((r) => ({ r, similarity: categoryOverlap(currentCategories, r.categories || []) }))
+          .filter(({ similarity }) => similarity >= SIMILARITY_THRESHOLD)
+          .sort((a, b) => b.similarity - a.similarity)
           .slice(0, 6)
           .map(({ r }) => toRelatedItem(r, navigate))
 

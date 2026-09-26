@@ -35,11 +35,6 @@ const kindIcon = {
   other: 'description',
 }
 
-// Only these kinds currently produce a real AI suggestion server-side
-// (services/aiAnalysis.js only extracts text from PDFs and sends images
-// directly — see rcf-library-backend). Gating the call here too, not just
-// trusting the backend to return null quickly, avoids firing a network
-// request at all for kinds that can never benefit from one.
 const ANALYZABLE_KINDS = new Set(['pdf', 'image'])
 
 function FilePreviewCard({
@@ -47,7 +42,7 @@ function FilePreviewCard({
   name,
   author = '',
   authorLabel = 'Author',
-  categoryId,
+  categoryNames = '',
   courseCode = '',
   description = '',
   tags = '',
@@ -61,7 +56,7 @@ function FilePreviewCard({
   resourceTypeSlug,
   onNameChange,
   onAuthorChange,
-  onCategoryIdChange,
+  onCategoryNamesChange,
   onCourseCodeChange,
   onDescriptionChange,
   onTagsChange,
@@ -72,7 +67,7 @@ function FilePreviewCard({
   onCollectionMatchChange,
   onCollectionChoiceChange,
   onCreateCategory,
-  onThumbnailChange,   // NEW — reports the real client-rendered thumbnail Blob up to MultiFileUpload.jsx
+  onThumbnailChange,
   onRemove,
 }) {
   const [thumbnail, setThumbnail] = useState(null)
@@ -80,7 +75,7 @@ function FilePreviewCard({
   const [modalOpen, setModalOpen] = useState(false)
   const [audioUrl, setAudioUrl] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
-  const [courseNotFound, setCourseNotFound] = useState(null) // holds the detected code when it's not in the courses table
+  const [courseNotFound, setCourseNotFound] = useState(null)
   const analysisStartedRef = useRef(false)
 
   const kind = getFileKind(file)
@@ -130,20 +125,9 @@ function FilePreviewCard({
     return () => URL.revokeObjectURL(url)
   }, [file, kind])
 
-  // Fires once per file, right when it's added — never on every render,
-  // never re-triggered by later edits (feature 12: don't call AI more
-  // than necessary). Suggestions only fill fields that are still blank at
-  // the moment the response arrives, so anything the user already typed
-  // in the few seconds this takes is never overwritten.
   useEffect(() => {
     if (analysisStartedRef.current) return
     if (!ANALYZABLE_KINDS.has(kind)) return
-
-    // For a PDF, wait until the client-side page-1 thumbnail has finished
-    // (successfully or not) before analyzing — if the PDF has no
-    // extractable text layer, that same rendered image is sent up as a
-    // fallback so Gemini can still read the cover page visually. Images
-    // don't need this wait: the raw file is already sent to Gemini directly.
     if (kind === 'pdf' && thumbnail === null && !thumbnailFailed) return
 
     analysisStartedRef.current = true
@@ -166,35 +150,28 @@ function FilePreviewCard({
             if (!suggestion.course.found) setCourseNotFound(suggestion.course.code)
           }
 
-          if (!categoryId && suggestion.category?.categoryId) {
-            onCategoryIdChange(String(suggestion.category.categoryId))
+          // suggestion.category still comes back as a categoryId (the AI
+          // matches against the existing category list server-side) — map
+          // it to its name here since the field this fills is now a
+          // comma-separated name string, not an id.
+          if (!categoryNames?.trim() && suggestion.category?.categoryId) {
+            const matched = categories.find((c) => String(c.id) === String(suggestion.category.categoryId))
+            if (matched) onCategoryNamesChange(matched.name)
           }
-          // A suggested category with no existing match (isNew) is
-          // deliberately NOT auto-applied as free text — categoryId expects
-          // a real id. The user sees it via the "+ Write your own category"
-          // flow instead if they open the edit modal and want to use it.
         }
 
-        // detected is filename/DB-lookup based — runs even when Gemini is
-        // unavailable or suggestion came back null, so it's handled
-        // separately from the suggestion block above rather than being
-        // skipped by the same early return.
         if (detected) {
           if (!chapter?.trim() && detected.chapter) onChapterChange?.(detected.chapter)
           if (!part?.trim() && detected.part) onPartChange?.(detected.part)
           if (!volume?.trim() && detected.volume) onVolumeChange?.(detected.volume)
           if (!edition?.trim() && detected.edition) onEditionChange?.(detected.edition)
 
-          // Only fall back to the filename-scanned course code if the AI/
-          // course lookup above didn't already supply one this same pass.
           if (!courseCode?.trim() && !suggestion?.course?.code && detected.courseCode) {
             onCourseCodeChange?.(detected.courseCode)
           }
 
           if (detected.collectionMatch) {
             onCollectionMatchChange?.(detected.collectionMatch)
-            // High confidence pre-fills silently; low confidence leaves
-            // collectionChoice null so the confirm prompt renders below.
             if (detected.collectionMatch.confidence === 'high' && !collectionChoice) {
               onCollectionChoiceChange?.('use')
             }
@@ -202,8 +179,6 @@ function FilePreviewCard({
         }
       })
       .catch((err) => {
-        // AI being unavailable is never an error state for the uploader —
-        // manual entry just works exactly as before.
         console.warn(`[FilePreviewCard] AI analysis skipped for ${file.name}:`, err.message)
       })
       .finally(() => {
@@ -214,18 +189,15 @@ function FilePreviewCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, kind, thumbnail, thumbnailFailed])
 
-  const categoryName = categories.find((c) => String(c.id) === String(categoryId))?.name
-
   const fields = [
     { key: 'name', label: 'Name', value: name, type: 'text' },
     { key: 'author', label: authorLabel, value: author, type: 'text' },
     {
-      key: 'categoryId',
-      label: 'Category',
-      value: categoryId,
-      type: 'category',
+      key: 'categoryNames',
+      label: 'Categories',
+      value: categoryNames,
+      type: 'categories',
       categories,
-      onCreateCategory,
     },
     { key: 'courseCode', label: 'Course Code', value: courseCode, type: 'text' },
     { key: 'description', label: 'Description', value: description, type: 'textarea' },
@@ -239,10 +211,10 @@ function FilePreviewCard({
   const handleFieldSave = (key, value) => {
     if (key === 'name') onNameChange(value)
     if (key === 'author') onAuthorChange?.(value)
-    if (key === 'categoryId') onCategoryIdChange(value)
+    if (key === 'categoryNames') onCategoryNamesChange(value)
     if (key === 'courseCode') {
       onCourseCodeChange?.(value)
-      setCourseNotFound(null) // user took over — stop showing the stale AI note
+      setCourseNotFound(null)
     }
     if (key === 'description') onDescriptionChange?.(value)
     if (key === 'tags') onTagsChange?.(value)
@@ -280,7 +252,7 @@ function FilePreviewCard({
             {name || 'Untitled — tap the pencil to add a title'}
           </p>
           <p className="font-label-sm text-label-sm text-white/70 truncate">
-            {categoryName || 'Uncategorized'} · {formatBytes(file.size)}
+            {categoryNames?.trim() || 'Uncategorized'} · {formatBytes(file.size)}
           </p>
           {analyzing && (
             <p className="font-label-sm text-label-sm text-white/50 italic">Analyzing…</p>

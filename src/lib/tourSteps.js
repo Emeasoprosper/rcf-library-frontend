@@ -24,7 +24,7 @@ export const TOUR_STEPS = [
   {
     id: 'nav-search',
     mobileSelector: '[data-tour="tour-nav-search"]',
-    desktopSelector: '[data-tour="tour-nav-search-desktop"]',
+    desktopSelector: '[data-tour="tour-search-desktop"]',
     title: 'Browse & filter',
     body: 'Explore categories, departments and levels to find exactly what you need.',
   },
