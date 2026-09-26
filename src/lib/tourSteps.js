@@ -10,7 +10,7 @@ export const TOUR_STEPS = [
   {
     id: 'search',
     mobileSelector: '[data-tour="tour-search"]',
-    desktopSelector: '[data-tour="tour-search-desktop"]',
+    desktopSelector: null,
     title: 'Search the archives',
     body: 'Find books, audio and videos across the whole library — tap here anytime.',
   },
@@ -24,7 +24,7 @@ export const TOUR_STEPS = [
   {
     id: 'nav-search',
     mobileSelector: '[data-tour="tour-nav-search"]',
-    desktopSelector: '[data-tour="tour-search-desktop"]',
+    desktopSelector: '[data-tour="tour-nav-search-desktop"]',
     title: 'Browse & filter',
     body: 'Explore categories, departments and levels to find exactly what you need.',
   },

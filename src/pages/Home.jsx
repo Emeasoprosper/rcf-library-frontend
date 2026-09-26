@@ -152,6 +152,7 @@ function Home() {
   const { openResource } = useActiveResource()
 
   const [collections, setCollections] = useState([])
+  const [categoryRails, setCategoryRails] = useState([])
   const [recentBooks, setRecentBooks] = useState([])
   const [recentVideos, setRecentVideos] = useState([])
   const [recentAudios, setRecentAudios] = useState([])
@@ -172,7 +173,7 @@ function Home() {
 
     async function load() {
       try {
-        const [recentRes, popularRes, recentAudioRes, historyRes, notificationsRes, newsRes, collectionsRes] = await Promise.all([
+        const [recentRes, popularRes, recentAudioRes, historyRes, notificationsRes, newsRes, collectionsRes, homeRailsRes] = await Promise.all([
           resourcesApi.list({ sort: 'recent', pageSize: 12 }),
           resourcesApi.list({ sort: 'popular', pageSize: 8 }),
           // Audio needs its own dedicated recent fetch — filtering the
@@ -184,6 +185,7 @@ function Home() {
           communityApi.notifications().catch(() => ({ items: [] })),
           newsApi.latest().catch(() => ({ adminNews: [], external: [] })),
           resourceCollectionsApi.list().catch(() => ({ items: [] })),
+          resourcesApi.homeRails().catch(() => ({ rails: [] })),
         ])
         if (cancelled) return
 
@@ -200,6 +202,7 @@ function Home() {
 
         const collectionRows = collectionsRes.items || []
         setCollections(collectionRows)
+        setCategoryRails(homeRailsRes.rails || [])
 
         const recentItems = recentRes.items || []
         setRecentBooks(
@@ -438,6 +441,22 @@ function Home() {
             </div>
           </section>
         )}
+
+        {categoryRails.map((rail) => (
+          <HorizontalRail
+            key={rail.id}
+            title={rail.title}
+            items={rail.items.map((r) => ({
+              id: r.id,
+              title: r.title,
+              subtitle: r.author,
+              thumbnailUrl: r.thumbnail_url,
+              thumbnailStatus: r.thumbnail_status,
+              fileType: r.file_type,
+              onClick: () => navigate(`/library/${r.id}`),
+            }))}
+          />
+        ))}
 
         {popularBooks.length > 0 && <HorizontalRail title="Popular With Fellow Readers" items={popularBooks} />}
 

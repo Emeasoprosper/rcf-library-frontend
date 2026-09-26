@@ -29,14 +29,11 @@ function timeAgo(dateString) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-const DESKTOP_NAV_ITEMS = navItems.filter((item) => item.icon !== 'search')
-
 function DesktopHeader() {
   const navigate = useNavigate()
   const location = useLocation(); const isAdmin = location.pathname.startsWith('/admin')
   const { user } = useAuth()
   const [badgeCount, setBadgeCount] = useState(0)
-  const [searchValue, setSearchValue] = useState('')
   const { openModal } = useNotificationsModal()
 
   const loadBadgeCount = useCallback(() => {
@@ -51,23 +48,6 @@ function DesktopHeader() {
     })
   }, [])
 
-  useEffect(() => {
-    if (location.pathname !== '/search' && !location.pathname.startsWith('/library')) {
-      setSearchValue('')
-    }
-  }, [location.pathname])
-
-  function targetSearchPath() {
-    return location.pathname.startsWith('/library') ? '/library' : '/search'
-  }
-
-  function handleSearchSubmit(e) {
-    e.preventDefault()
-    const trimmed = searchValue.trim()
-    if (!trimmed) return
-    navigate(`${targetSearchPath()}?q=${encodeURIComponent(trimmed)}`)
-  }
-
   useEffect(() => { loadBadgeCount() }, [loadBadgeCount])
 
   return (
@@ -76,8 +56,8 @@ function DesktopHeader() {
         <img src={logo} alt="" className="h-9 w-9" />
       </button>
 
-      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none`}>
-        {DESKTOP_NAV_ITEMS.slice(0, Math.ceil(DESKTOP_NAV_ITEMS.length / 2)).map((item) => {
+      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none flex-1 justify-end`}>
+        {navItems.slice(0, Math.ceil(navItems.length / 2)).map((item) => {
           const isActive = location.pathname === item.to
           return (
             <button
@@ -98,27 +78,8 @@ function DesktopHeader() {
         })}
       </nav>
 
-      <form onSubmit={handleSearchSubmit} className="flex-1 min-w-0 max-w-xl mx-auto">
-        <div className="relative w-full">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
-            search
-          </span>
-          <input
-            type="text"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            onFocus={() => {
-              const target = targetSearchPath()
-              if (location.pathname !== target) navigate(target)
-            }}
-            placeholder="Search the archives..."
-            className="w-full h-11 pl-12 pr-4 bg-surface-container-low border border-outline rounded-full text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
-          />
-        </div>
-      </form>
-
-      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none`}>
-        {DESKTOP_NAV_ITEMS.slice(Math.ceil(DESKTOP_NAV_ITEMS.length / 2)).map((item) => {
+      <nav className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-1 flex-none flex-1`}>
+        {navItems.slice(Math.ceil(navItems.length / 2)).map((item) => {
           const isActive = location.pathname === item.to
           return (
             <button

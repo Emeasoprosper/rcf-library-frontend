@@ -209,6 +209,7 @@ export const resourceCollectionsApi = {
 }
 
 export const resourcesApi = {
+  homeRails: () => apiFetch('/resources/home-rails'),
   list: (params = {}, { signal } = {}) => {
     const query = new URLSearchParams(params).toString()
     return apiFetch(`/resources${query ? `?${query}` : ''}`, { signal })
@@ -367,6 +368,12 @@ export const adminApi = {
   authors: (search = '') => apiFetch(`/admin/authors?search=${encodeURIComponent(search)}`),
   organizeResource: (id, payload) =>
     apiFetch(`/admin/resources/${id}/organize`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  homeRails: () => apiFetch('/admin/home-rails'),
+  createHomeRail: (title) => apiFetch('/admin/home-rails', { method: 'POST', body: JSON.stringify({ title }) }),
+  updateHomeRail: (id, payload) => apiFetch(`/admin/home-rails/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteHomeRail: (id) => apiFetch(`/admin/home-rails/${id}`, { method: 'DELETE' }),
+  addHomeRailItem: (id, resourceId) => apiFetch(`/admin/home-rails/${id}/items`, { method: 'POST', body: JSON.stringify({ resourceId }) }),
+  removeHomeRailItem: (id, resourceId) => apiFetch(`/admin/home-rails/${id}/items/${resourceId}`, { method: 'DELETE' }),
 }
 
 export const newsApi = {
