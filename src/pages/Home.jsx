@@ -19,6 +19,7 @@ import { getDismissedNewsIds, addDismissedNewsId } from '../lib/dismissedNews'
 import { useTour } from '../contexts/TourContext'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
+import RatingPopupModal, { shouldShowRatingPrompt, markRatingPromptShown } from '../components/ui/RatingPopupModal'
 
 const ads = []
 
@@ -167,6 +168,7 @@ function Home() {
   const [selectedNews, setSelectedNews] = useState(null)
   const [badgeCount, setBadgeCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [showRating, setShowRating] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -274,6 +276,14 @@ function Home() {
     load()
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    if (loading) return
+    if (shouldShowRatingPrompt()) {
+      const t = setTimeout(() => setShowRating(true), 2000)
+      return () => clearTimeout(t)
+    }
+  }, [loading])
 
   useEffect(() => {
     if (loading) return
@@ -550,6 +560,11 @@ function Home() {
               }
             : undefined
         }
+      />
+
+      <RatingPopupModal
+        open={showRating}
+        onClose={() => { markRatingPromptShown(); setShowRating(false) }}
       />
 
       <NewsPopupModal

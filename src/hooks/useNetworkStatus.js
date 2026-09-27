@@ -24,6 +24,69 @@ export function useNetworkStatus() {
   return isOnline
 }
 
+// Speed classification. Uses the real Network Information API where the
+// browser supports it (Chrome/Edge/Android — NOT Safari or Firefox, no
+// browser exposes this everywhere). Where it isn't available, falls back
+// to timing a tiny real request (the app's own favicon, ~1KB, already
+// cached rarely so it reflects a real round-trip) and classifying by how
+// long that takes. Either way returns one of: 'fast' | 'medium' | 'slow'
+// | 'offline' | 'unknown' (unknown only while the first check is still
+// in flight).
+const EFFECTIVE_TYPE_MAP = {
+  '4g': 'fast',
+  '3g': 'medium',
+  '2g': 'slow',
+  'slow-2g': 'slow',
+}
+
+async function measureFallbackSpeed() {
+  const start = performance.now()
+  try {
+    await fetch(`/favicon.ico?_=${Date.now()}`, { cache: 'no-store' })
+    const elapsed = performance.now() - start
+    if (elapsed < 400) return 'fast'
+    if (elapsed < 1500) return 'medium'
+    return 'slow'
+  } catch {
+    return 'unknown'
+  }
+}
+
+export function useConnectionQuality() {
+  const isOnline = useNetworkStatus()
+  const [quality, setQuality] = useState('unknown')
+
+  useEffect(() => {
+    if (!isOnline) {
+      setQuality('offline')
+      return
+    }
+
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+
+    if (connection?.effectiveType) {
+      const update = () => setQuality(EFFECTIVE_TYPE_MAP[connection.effectiveType] || 'unknown')
+      update()
+      connection.addEventListener?.('change', update)
+      return () => connection.removeEventListener?.('change', update)
+    }
+
+    // No Network Information API support (Safari, Firefox) — measure once
+    // now, and re-measure whenever the tab regains focus, since that's a
+    // reasonable, low-cost moment to recheck without polling constantly.
+    let cancelled = false
+    measureFallbackSpeed().then((q) => { if (!cancelled) setQuality(q) })
+    const onFocus = () => measureFallbackSpeed().then((q) => { if (!cancelled) setQuality(q) })
+    window.addEventListener('focus', onFocus)
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [isOnline])
+
+  return quality
+}
+
 // Doesn't cancel or time out the fetch itself — just flips `isSlow` to true
 // if the operation hasn't finished within `thresholdMs`, so the UI can show
 // a "this is taking a while" banner instead of a silent frozen screen.

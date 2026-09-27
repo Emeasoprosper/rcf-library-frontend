@@ -13,6 +13,8 @@ import { HeaderAmbientProvider } from './contexts/HeaderAmbientContext'
 import { TourProvider } from './contexts/TourContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import SpotlightTour from './components/tour/SpotlightTour'
+import MissingDetailsPrompt from './components/ui/MissingDetailsPrompt'
+import NetworkStatusBanner from './components/ui/NetworkStatusBanner'
 
 function App() {
   return (
@@ -23,6 +25,7 @@ function App() {
         <HeaderAmbientProvider>
           <NotificationsModalProvider>
             <LayoutModeSync />
+            <NetworkStatusBanner />
             <DesktopHeader />
             <LeftSidebarNav />
             <AppRoutes />
@@ -30,6 +33,7 @@ function App() {
             <InstallPrompt />
             <ApkUpdateBanner />
             <SpotlightTour />
+            <MissingDetailsPrompt />
             <NotificationsModal />
           </NotificationsModalProvider>
         </HeaderAmbientProvider>

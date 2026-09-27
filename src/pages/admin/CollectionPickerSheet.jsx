@@ -49,8 +49,8 @@ function CollectionPickerSheet({ open, resource, collections, onClose, onPicked,
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 flex items-end" onClick={onClose}>
-      <div className="w-full max-h-[80vh] overflow-y-auto bg-surface rounded-t-2xl p-stack-md" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] bg-black/60 flex items-end md:items-center md:justify-center" onClick={onClose}>
+      <div className="w-full md:w-full md:max-w-sm max-h-[80vh] md:max-h-[70vh] overflow-y-auto bg-surface rounded-t-2xl md:rounded-2xl p-stack-md" onClick={(e) => e.stopPropagation()}>
         <div className="w-10 h-1 bg-outline rounded-full mx-auto mb-stack-md" />
 
         {mode === 'pick' && (

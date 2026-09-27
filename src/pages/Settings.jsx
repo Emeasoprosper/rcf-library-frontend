@@ -15,7 +15,7 @@ function Settings() {
   const { user, refreshUser } = useAuth()
   const [openSection, setOpenSection] = useState(null)
 
-  const [profileDraft, setProfileDraft] = useState({ name: '', bio: '' })
+  const [profileDraft, setProfileDraft] = useState({ name: '', bio: '', department: '', level: '', gender: '' })
   const [profileSaved, setProfileSaved] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
@@ -23,7 +23,13 @@ function Settings() {
   // Sync draft with real user data once it loads/changes.
   useEffect(() => {
     if (user) {
-      setProfileDraft({ name: user.name || '', bio: user.bio || '' })
+      setProfileDraft({
+        name: user.name || '',
+        bio: user.bio || '',
+        department: user.department || '',
+        level: user.level || '',
+        gender: user.gender || '',
+      })
     }
   }, [user])
 
@@ -83,7 +89,13 @@ function Settings() {
     setProfileError('')
     setSavingProfile(true)
     try {
-      await authApi.updateMe({ name: profileDraft.name.trim(), bio: profileDraft.bio.trim() })
+      await authApi.updateMe({
+        name: profileDraft.name.trim(),
+        bio: profileDraft.bio.trim(),
+        department: profileDraft.department.trim(),
+        level: profileDraft.level,
+        gender: profileDraft.gender,
+      })
       await refreshUser()
       setProfileSaved(true)
       setTimeout(() => setProfileSaved(false), 2000)
@@ -138,6 +150,53 @@ function Settings() {
                     className="w-full px-4 py-2 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md resize-none"
                   />
                 </div>
+                <div>
+                  <label className="font-label-md text-label-md text-on-surface-variant mb-1 block">Department</label>
+                  <input
+                    type="text"
+                    value={profileDraft.department}
+                    onChange={(e) => setProfileDraft((p) => ({ ...p, department: e.target.value }))}
+                    className="w-full h-11 px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-md text-label-md text-on-surface-variant mb-1 block">Level</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['100', '200', '300', '400', '500', 'PG'].map((lvl) => (
+                      <button
+                        key={lvl}
+                        type="button"
+                        onClick={() => setProfileDraft((p) => ({ ...p, level: lvl }))}
+                        className={`py-2 rounded-lg border font-label-md text-label-md transition-colors ${
+                          profileDraft.level === lvl
+                            ? 'bg-primary text-on-primary border-primary'
+                            : 'bg-surface-container-low text-on-surface border-outline'
+                        }`}
+                      >
+                        {lvl === 'PG' ? 'PG' : `${lvl}L`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="font-label-md text-label-md text-on-surface-variant mb-1 block">Gender</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Male', 'Female'].map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setProfileDraft((p) => ({ ...p, gender: g }))}
+                        className={`py-2 rounded-lg border font-label-md text-label-md transition-colors ${
+                          profileDraft.gender === g
+                            ? 'bg-primary text-on-primary border-primary'
+                            : 'bg-surface-container-low text-on-surface border-outline'
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {profileError && (
                   <p className="font-label-sm text-label-sm text-error">{profileError}</p>
                 )}
@@ -148,6 +207,26 @@ function Settings() {
                 >
                   {savingProfile ? 'Saving…' : profileSaved ? 'Saved' : 'Save Changes'}
                 </button>
+
+                <div className="pt-stack-sm border-t border-outline/30 flex flex-col gap-2">
+                  <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                    Can't be changed
+                  </p>
+                  <div className="flex justify-between">
+                    <span className="font-body-md text-body-md text-on-surface-variant">Email</span>
+                    <span className="font-body-md text-body-md text-on-surface">{user?.email || '—'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-body-md text-body-md text-on-surface-variant">Student ID</span>
+                    <span className="font-body-md text-body-md text-on-surface">{user?.studentId || '—'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-body-md text-body-md text-on-surface-variant">RCF Member</span>
+                    <span className="font-body-md text-body-md text-on-surface">
+                      {user?.isRcfMember === true ? 'Yes' : user?.isRcfMember === false ? 'No' : '—'}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </div>

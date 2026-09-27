@@ -199,6 +199,8 @@ export const authApi = {
   refresh: () => apiFetch('/auth/refresh', { method: 'POST' }),
   completeProfile: (payload) =>
     apiFetch('/auth/profile', { method: 'PATCH', body: JSON.stringify(payload) }),
+  updateProfileExtra: (payload) =>
+    apiFetch('/auth/profile-extra', { method: 'PATCH', body: JSON.stringify(payload) }),
   updateMe: (payload) =>
     apiFetch('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),
 }
@@ -298,6 +300,8 @@ export const communityApi = {
     apiFetch('/push/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
   unsubscribePush: (payload) =>
     apiFetch('/push/subscribe', { method: 'DELETE', body: JSON.stringify(payload) }),
+  submitRating: (stars) => apiFetch('/ratings', { method: 'POST', body: JSON.stringify({ stars }) }),
+  submitFeedback: (type, message) => apiFetch('/feedback', { method: 'POST', body: JSON.stringify({ type, message }) }),
 }
 
 export const adminApi = {
@@ -342,6 +346,9 @@ export const adminApi = {
   deleteAnnouncement: (id) => apiFetch(`/admin/announcements/${id}`, { method: 'DELETE' }),
   lockStatus: (id) => apiFetch(`/admin/uploads/${id}/lock-status`),
   systemErrors: () => apiFetch('/admin/system/errors'),
+  ratingsSummary: () => apiFetch('/admin/ratings-summary'),
+  feedback: () => apiFetch('/admin/feedback'),
+  registrationStats: () => apiFetch('/admin/registration-stats'),
   needsOrganizing: () => apiFetch('/admin/resources/needs-organizing'),
   createCollection: (payload) => apiFetch('/admin/resource-collections', { method: 'POST', body: JSON.stringify(payload) }),
   updateCollection: (id, payload) => apiFetch(`/admin/resource-collections/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
