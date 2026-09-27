@@ -423,51 +423,99 @@ function Home() {
           </section>
         )}
 
-        {jumpBackIn.length > 0 && <HorizontalRail title="Jump Back In" items={jumpBackIn} />}
+        {(() => {
+          // Every rail-like block on the page, in display order, each as
+          // plain data first — this lets collections be woven in between
+          // them programmatically instead of hardcoding which collection
+          // goes after which specific rail. Collections are chunked into
+          // pairs and one pair is slotted in after each rail in turn; if
+          // there are more pairs than rails, it cycles back to the start
+          // and stacks a second pair after an earlier rail rather than
+          // ever dropping any collection.
+          const railBlocks = []
 
-        {collections[0] && (
-          <section className="mb-stack-lg px-margin-mobile">
-            <CollectionCard
-              title={collections[0].title}
-              author={collections[0].author}
-              coverUrl={collections[0].cover_url}
-              onClick={() => navigate(`/collections/${collections[0].id}`)}
-            />
-          </section>
-        )}
+          if (jumpBackIn.length > 0) {
+            railBlocks.push(<HorizontalRail key="jump-back-in" title="Jump Back In" items={jumpBackIn} />)
+          }
+          categoryRails.forEach((rail) => {
+            railBlocks.push(
+              <HorizontalRail
+                key={rail.id}
+                title={rail.title}
+                items={rail.items.map((r) => ({
+                  id: r.id,
+                  title: r.title,
+                  subtitle: r.author,
+                  thumbnailUrl: r.thumbnail_url,
+                  thumbnailStatus: r.thumbnail_status,
+                  fileType: r.file_type,
+                  onClick: () => navigate(`/library/${r.id}`),
+                }))}
+              />
+            )
+          })
+          if (popularBooks.length > 0) {
+            railBlocks.push(<HorizontalRail key="popular" title="Popular With Fellow Readers" items={popularBooks} />)
+          }
+          if (recentVideos.length > 0) {
+            railBlocks.push(<HorizontalRail key="videos" title="New Videos" items={recentVideos} />)
+          }
+          if (recentAudios.length > 0) {
+            railBlocks.push(<HorizontalRail key="audio" title="New Audio" items={recentAudios} />)
+          }
 
-        {categoryRails.map((rail) => (
-          <HorizontalRail
-            key={rail.id}
-            title={rail.title}
-            items={rail.items.map((r) => ({
-              id: r.id,
-              title: r.title,
-              subtitle: r.author,
-              thumbnailUrl: r.thumbnail_url,
-              thumbnailStatus: r.thumbnail_status,
-              fileType: r.file_type,
-              onClick: () => navigate(`/library/${r.id}`),
-            }))}
-          />
-        ))}
+          const collectionPairs = []
+          for (let i = 0; i < collections.length; i += 2) {
+            collectionPairs.push(collections.slice(i, i + 2))
+          }
 
-        {popularBooks.length > 0 && <HorizontalRail title="Popular With Fellow Readers" items={popularBooks} />}
+          const output = []
+          railBlocks.forEach((block, i) => {
+            output.push(block)
+            const pair = collectionPairs.length > 0 ? collectionPairs[i % collectionPairs.length] : null
+            // Only attach a pair the first time it's used per full cycle
+            // through railBlocks — prevents the same pair repeating
+            // forever if there are far fewer rails than collection pairs.
+            if (pair && Math.floor(i / railBlocks.length) === 0) {
+              output.push(
+                <section key={`collections-${i}`} className="mb-stack-lg px-margin-mobile flex flex-col gap-gutter">
+                  {pair.map((c) => (
+                    <CollectionCard
+                      key={c.id}
+                      title={c.title}
+                      author={c.author}
+                      coverUrl={c.cover_url}
+                      onClick={() => navigate(`/collections/${c.id}`)}
+                    />
+                  ))}
+                </section>
+              )
+            }
+          })
 
-        {collections[1] && (
-          <section className="mb-stack-lg px-margin-mobile">
-            <CollectionCard
-              title={collections[1].title}
-              author={collections[1].author}
-              coverUrl={collections[1].cover_url}
-              onClick={() => navigate(`/collections/${collections[1].id}`)}
-            />
-          </section>
-        )}
+          // Any leftover pairs (more collection pairs than rails to
+          // attach them to) go at the very end, still in twos, still
+          // never dropped.
+          if (collectionPairs.length > railBlocks.length) {
+            collectionPairs.slice(railBlocks.length).forEach((pair, i) => {
+              output.push(
+                <section key={`collections-extra-${i}`} className="mb-stack-lg px-margin-mobile flex flex-col gap-gutter">
+                  {pair.map((c) => (
+                    <CollectionCard
+                      key={c.id}
+                      title={c.title}
+                      author={c.author}
+                      coverUrl={c.cover_url}
+                      onClick={() => navigate(`/collections/${c.id}`)}
+                    />
+                  ))}
+                </section>
+              )
+            })
+          }
 
-        {recentVideos.length > 0 && <HorizontalRail title="New Videos" items={recentVideos} />}
-
-        {recentAudios.length > 0 && <HorizontalRail title="New Audio" items={recentAudios} />}
+          return output
+        })()}
 
         {!loading && recentBooks.length > 0 && (
           <BookGrid title="Recently Added" items={recentBooks} variant="compact" onSeeAll={() => navigate('/shelf?sort=recent')} />
