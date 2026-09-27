@@ -38,6 +38,7 @@ import ResourceReader from '../pages/ResourceReader'
 import ShareRedirect from '../pages/ShareRedirect'
 import AdminResources from '../pages/admin/AdminResources'
 import OrganizeResources from '../pages/admin/OrganizeResources'
+import AdminHomeRails from '../pages/admin/AdminHomeRails'
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth()
@@ -95,6 +96,7 @@ function AppRoutes() {
       <Route path="/s/:token" element={<ProtectedRoute><ShareRedirect /></ProtectedRoute>} />
       <Route path="/admin/resources" element={<AdminRoute><AdminResources /></AdminRoute>} />
       <Route path="/admin/organize" element={<AdminRoute><OrganizeResources /></AdminRoute>} />
+      <Route path="/admin/home-rails" element={<AdminRoute><AdminHomeRails /></AdminRoute>} />
       <Route path="/library/:id" element={<ResourceDetail />} />
       <Route path="/collections/:id" element={<ProtectedRoute><CollectionPage /></ProtectedRoute>} />
     </Routes>
