@@ -176,10 +176,12 @@ function Library() {
         {loading && <LibraryLoader size={240} fullScreen />}
 
         {!loading && !error && items.length === 0 && (
-          <div className="flex flex-col items-center text-center py-stack-lg">
-            <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm">
-              search_off
-            </span>
+          <div className="flex flex-col items-center text-center py-stack-xl px-margin-mobile">
+            <img
+              src={searchInput ? '/searchNotFound.png' : '/noResourcesHere.png'}
+              alt=""
+              className="w-full max-w-xs h-auto mb-stack-md"
+            />
             <p className="font-body-md text-body-md text-on-surface-variant">
               {searchInput ? 'No resources match your search.' : 'No resources here yet.'}
             </p>

@@ -132,9 +132,12 @@ function OrganizeResources() {
                 Needs Organizing ({unassigned.length})
               </h3>
               {unassigned.length === 0 ? (
-                <p className="font-label-sm text-label-sm text-on-surface-variant py-stack-sm">
-                  Nothing left to organize — everything's assigned.
-                </p>
+                <div className="flex flex-col items-center text-center py-stack-lg">
+                  <img src="/Allcoughtup.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">
+                    Nothing left to organize — everything's assigned.
+                  </p>
+                </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   {unassigned.map((r) => (

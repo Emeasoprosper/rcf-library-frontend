@@ -134,9 +134,12 @@ function RequestMaterial() {
           )}
 
           {!loadingHistory && myRequests.length === 0 && (
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Nothing requested yet.
-            </p>
+            <div className="flex flex-col items-center text-center py-stack-lg">
+              <img src="/NoUploadsYet.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
+              <p className="font-body-md text-body-md text-on-surface-variant">
+                Nothing requested yet.
+              </p>
+            </div>
           )}
 
           <div className="flex flex-col gap-gutter">

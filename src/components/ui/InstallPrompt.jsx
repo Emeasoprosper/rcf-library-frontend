@@ -73,7 +73,7 @@ function InstallPrompt() {
       <div className="w-full max-w-sm bg-surface-container rounded-2xl border border-outline p-stack-lg">
         {apkDownloaded ? (
           <>
-            <span className="material-symbols-outlined text-primary text-4xl mb-stack-sm">download_done</span>
+            <img src="/installApp.png" alt="" className="w-full h-auto mb-stack-md" />
             <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">APK downloaded</h3>
             <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
               Open the downloaded file from your notifications or Downloads folder, then tap Install (or Update) to
@@ -162,7 +162,7 @@ function InstallPrompt() {
           )
         ) : (
           <>
-            <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm">install_mobile</span>
+            <img src="/installApp.png" alt="" className="w-full h-auto mb-stack-md" />
             <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Install App</h3>
             <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
               Install the app to access downloaded materials and use the app offline.

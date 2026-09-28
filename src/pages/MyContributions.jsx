@@ -88,9 +88,12 @@ function MyContributions() {
         {loading && <LibraryLoader size={500} fullScreen />}
 
         {!loading && myUploads.length === 0 && (
-          <p className="font-body-md text-body-md text-on-surface-variant py-stack-lg text-center">
-            Nothing submitted yet.
-          </p>
+          <div className="flex flex-col items-center text-center py-stack-xl">
+            <img src="/NoUploadsYet.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              Nothing submitted yet.
+            </p>
+          </div>
         )}
 
         {errorMsg && (

@@ -532,8 +532,8 @@ function Home() {
         )}
 
         {!loading && !hasAnyContent && (
-          <div className="px-margin-mobile py-stack-lg text-center">
-            <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm">library_add</span>
+          <div className="px-margin-mobile py-stack-xl text-center flex flex-col items-center">
+            <img src="/noResourcesHere.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
             <p className="font-body-md text-body-md text-on-surface-variant">
               No resources yet — be the first to contribute one.
             </p>

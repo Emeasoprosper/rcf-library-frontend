@@ -403,6 +403,13 @@ function AdminAnnouncements() {
           </button>
         </div>
 
+        {!loadingSentLog && sentLog.length === 0 && (
+          <div className="flex flex-col items-center text-center py-stack-lg">
+            <img src="/NothingFromAdminYet.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
+            <p className="font-label-md text-label-md text-on-surface-variant">Nothing sent yet.</p>
+          </div>
+        )}
+
         {!loadingSentLog && sentLog.length > 0 && (
           <section>
             <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-stack-sm">
