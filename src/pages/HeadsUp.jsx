@@ -42,7 +42,7 @@ function HeadsUp() {
 
         {!loading && items.length === 0 && (
           <div className="flex flex-col items-center text-center py-stack-lg">
-            <span className="material-symbols-outlined text-on-surface-variant text-4xl mb-stack-sm">campaign</span>
+            <img src="/NothingFromAdminYet.png" alt="" className="w-36 h-36 object-contain mb-stack-sm" />
             <p className="font-body-md text-body-md text-on-surface-variant">Nothing from admin yet.</p>
           </div>
         )}

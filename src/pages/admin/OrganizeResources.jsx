@@ -133,7 +133,7 @@ function OrganizeResources() {
               </h3>
               {unassigned.length === 0 ? (
                 <div className="flex flex-col items-center text-center py-stack-lg">
-                  <img src="/Allcoughtup.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
+                  <img src="/Allcoughtup.png" alt="" className="w-36 h-36 object-contain mb-stack-md" />
                   <p className="font-label-sm text-label-sm text-on-surface-variant">
                     Nothing left to organize — everything's assigned.
                   </p>

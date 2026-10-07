@@ -70,10 +70,13 @@ function InstallPrompt() {
 
   return (
     <div className="fixed inset-0 z-[120] bg-black/70 flex items-end sm:items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-surface-container rounded-2xl border border-outline p-stack-lg">
+      <div
+        className="w-full max-w-sm rounded-2xl border border-outline p-stack-lg overflow-hidden relative"
+        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(168,85,247,0.25), transparent 60%), radial-gradient(circle at 100% 100%, rgba(249,115,22,0.18), transparent 55%), var(--color-surface-container)' }}
+      >
         {apkDownloaded ? (
           <>
-            <img src="/installApp.png" alt="" className="w-full h-auto mb-stack-md" />
+            <img src="/installApp.png" alt="" className="w-36 h-36 mx-auto object-contain mb-stack-md" />
             <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">APK downloaded</h3>
             <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
               Open the downloaded file from your notifications or Downloads folder, then tap Install (or Update) to
@@ -162,7 +165,7 @@ function InstallPrompt() {
           )
         ) : (
           <>
-            <img src="/installApp.png" alt="" className="w-full h-auto mb-stack-md" />
+            <img src="/installApp.png" alt="" className="w-36 h-36 mx-auto object-contain mb-stack-md" />
             <h3 className="font-headline-sm text-headline-sm font-display text-on-surface mb-1">Install App</h3>
             <p className="font-body-md text-body-md text-on-surface-variant mb-stack-md">
               Install the app to access downloaded materials and use the app offline.

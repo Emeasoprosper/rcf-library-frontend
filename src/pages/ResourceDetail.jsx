@@ -247,7 +247,7 @@ function ResourceDetail() {
   if (error || !resource) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <img src="/somethingunexpectedHappened.png" alt="" className="w-full max-w-xs h-auto" />
+        <img src="/somethingunexpectedHappened.png" alt="" className="w-36 h-36 object-contain" />
         <p className="text-on-surface-variant font-body-md">This resource couldn't be found.</p>
         <button onClick={() => navigate(-1)} className="text-primary font-label-md">Go back</button>
       </div>

@@ -393,7 +393,7 @@ function Search() {
 
             {!searching && !searchError && hasSearched && results.length === 0 && (
               <div className="mb-stack-sm p-stack-md rounded-xl bg-surface-container border border-outline flex flex-col items-center text-center">
-                <img src="/searchNotFound.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
+                <img src="/searchNotFound.png" alt="" className="w-36 h-36 object-contain mb-stack-md" />
                 <p className="font-label-md text-label-md text-on-surface-variant mb-stack-sm">
                   No results for "{query.trim()}".
                 </p>
@@ -493,7 +493,7 @@ function Search() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center text-center py-stack-lg">
-                  <img src="/NoCategoryWithResourceYet.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
+                  <img src="/NoCategoryWithResourceYet.png" alt="" className="w-36 h-36 object-contain mb-stack-md" />
                   <p className="font-label-md text-label-md text-on-surface-variant">
                     No categories with resources yet.
                   </p>

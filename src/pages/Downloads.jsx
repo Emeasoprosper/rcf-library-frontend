@@ -86,7 +86,7 @@ function Downloads() {
 
         {!loading && downloads.length === 0 && (
           <div className="flex flex-col items-center text-center py-stack-xl gap-stack-sm">
-            <img src="/ViewINdownloads.png" alt="" className="w-full max-w-xs h-auto" />
+            <img src="/ViewINdownloads.png" alt="" className="w-36 h-36 object-contain" />
             <p className="font-body-md text-body-md font-semibold text-on-surface">Nothing here yet</p>
             <p className="font-body-sm text-body-sm text-on-surface-variant max-w-xs">
               Download materials while you're online and they'll be available here for offline reading.

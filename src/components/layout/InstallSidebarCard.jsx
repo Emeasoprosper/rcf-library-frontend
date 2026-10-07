@@ -28,9 +28,14 @@ function InstallSidebarCard() {
     return () => { cancelled = true }
   }, [installed, android])
 
+  const cardGradient = 'radial-gradient(circle at 15% 0%, rgba(168,85,247,0.22), transparent 55%), radial-gradient(circle at 100% 100%, rgba(249,115,22,0.16), transparent 50%), var(--color-surface-container-high)'
+
   if (installed) {
     return (
-      <div className="mx-3 mb-3 mt-auto rounded-xl border border-outline bg-surface-container-high px-3 py-2.5 flex items-center gap-2.5">
+      <div
+        className="mx-3 mb-3 mt-auto rounded-xl border border-outline px-3 py-2.5 flex items-center gap-2.5"
+        style={{ background: cardGradient }}
+      >
         <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
         <span className="font-label-sm text-label-sm text-on-surface-variant">App installed</span>
       </div>
@@ -67,15 +72,19 @@ function InstallSidebarCard() {
     <button
       onClick={handleClick}
       disabled={busy}
-      className="mx-3 mb-3 mt-auto rounded-xl border border-outline bg-surface-container-high hover:bg-surface-container px-3 py-2.5 flex items-center gap-2.5 text-left transition-colors disabled:opacity-60"
+      className="mx-3 mb-3 mt-auto rounded-xl border border-outline px-2.5 py-2.5 flex items-center gap-3 text-left transition-all hover:border-primary/40 hover:-translate-y-0.5 disabled:opacity-60 overflow-hidden relative"
+      style={{ background: cardGradient }}
     >
-      <span className="material-symbols-outlined text-primary text-[20px]">
-        {android && (status === 'current' || status === 'unknown') ? 'open_in_new' : 'install_mobile'}
-      </span>
-      <div className="min-w-0">
+      <div className="w-11 h-11 flex-none rounded-full overflow-hidden border border-white/10 bg-black/20 flex items-center justify-center">
+        <img src="/installApp.png" alt="" className="w-full h-full object-cover scale-150" />
+      </div>
+      <div className="min-w-0 flex-1">
         <p className="font-label-sm text-label-sm font-semibold text-on-surface truncate">{label}</p>
         <p className="font-label-sm text-[11px] text-on-surface-variant">Use RCF Library offline</p>
       </div>
+      <span className="material-symbols-outlined text-primary text-[18px] flex-none">
+        {android && (status === 'current' || status === 'unknown') ? 'open_in_new' : 'chevron_right'}
+      </span>
     </button>
   )
 }

@@ -533,7 +533,7 @@ function Home() {
 
         {!loading && !hasAnyContent && (
           <div className="px-margin-mobile py-stack-xl text-center flex flex-col items-center">
-            <img src="/noResourcesHere.png" alt="" className="w-full max-w-xs h-auto mb-stack-md" />
+            <img src="/noResourcesHere.png" alt="" className="w-36 h-36 object-contain mb-stack-md" />
             <p className="font-body-md text-body-md text-on-surface-variant">
               No resources yet — be the first to contribute one.
             </p>

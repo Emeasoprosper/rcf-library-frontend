@@ -180,7 +180,7 @@ function SignIn() {
       style={{ background: 'radial-gradient(circle at 50% 20%, #1a1a1a 0%, #000000 70%)' }}
     >
       <div className="flex-1 flex flex-col items-center justify-center text-center gap-stack-md max-w-sm w-full mx-auto">
-        <img src="/signIn.png" alt="RCF MOUAU Library" className="w-full max-w-xs h-auto" />
+        <img src="/signIn.png" alt="RCF MOUAU Library" className="w-40 h-40 object-contain" />
 
         <div className="flex flex-col gap-stack-sm">
           <h1 className="font-headline-lg text-headline-lg font-display text-white">

@@ -180,7 +180,7 @@ function Library() {
             <img
               src={searchInput ? '/searchNotFound.png' : '/noResourcesHere.png'}
               alt=""
-              className="w-full max-w-xs h-auto mb-stack-md"
+              className="w-36 h-36 object-contain mb-stack-md"
             />
             <p className="font-body-md text-body-md text-on-surface-variant">
               {searchInput ? 'No resources match your search.' : 'No resources here yet.'}
