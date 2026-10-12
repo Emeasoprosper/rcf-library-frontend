@@ -33,6 +33,7 @@ function NetworkStatusBanner() {
   useEffect(() => {
     if (!current || dismissedKey === current.key) return
     function handleClickOutside(e) {
+      if (e.target.closest?.('[data-priority-popup]')) return
       if (toastRef.current && !toastRef.current.contains(e.target)) {
         setDismissedKey(current.key)
       }

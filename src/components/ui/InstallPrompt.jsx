@@ -72,7 +72,7 @@ function InstallPrompt() {
     <div className="fixed inset-0 z-[120] bg-black/70 flex items-end sm:items-center justify-center p-4">
       <div
         className="w-full max-w-sm rounded-2xl border border-outline p-stack-lg overflow-hidden relative"
-        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(168,85,247,0.25), transparent 60%), radial-gradient(circle at 100% 100%, rgba(249,115,22,0.18), transparent 55%), var(--color-surface-container)' }}
+        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(168,85,247,0.25), transparent 60%), radial-gradient(circle at 100% 100%, rgba(249,115,22,0.18), transparent 55%), radial-gradient(circle at 0% 60%, rgba(59,130,246,0.28), transparent 55%), var(--color-surface-container)' }}
       >
         {apkDownloaded ? (
           <>
@@ -111,7 +111,7 @@ function InstallPrompt() {
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+                  className="w-full h-12 rounded-full bg-sky-500/15 text-sky-200 border border-sky-400/30 hover:bg-sky-500/25 font-label-lg text-label-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -134,7 +134,7 @@ function InstallPrompt() {
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+                  className="w-full h-12 rounded-full bg-sky-500/15 text-sky-200 border border-sky-400/30 hover:bg-sky-500/25 font-label-lg text-label-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -156,7 +156,7 @@ function InstallPrompt() {
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+                  className="w-full h-12 rounded-full bg-sky-500/15 text-sky-200 border border-sky-400/30 hover:bg-sky-500/25 font-label-lg text-label-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -177,7 +177,7 @@ function InstallPrompt() {
               </p>
             )}
 
-            <div className="mb-stack-md rounded-xl bg-surface-container-high p-3 flex flex-col gap-2">
+            <div className="mb-stack-md rounded-xl bg-sky-500/10 border border-sky-400/20 p-3 flex flex-col gap-2">
               <p className="font-label-sm text-label-sm text-on-surface-variant">
                 <span className="font-semibold text-on-surface">iPhone / iPad (Safari):</span> Tap the Share icon, then "Add to Home Screen".
               </p>
@@ -198,7 +198,7 @@ function InstallPrompt() {
               )}
               <button
                 onClick={handleCancel}
-                className="w-full h-12 rounded-full bg-surface-container-high text-on-surface font-label-lg text-label-lg"
+                className="w-full h-12 rounded-full bg-sky-500/15 text-sky-200 border border-sky-400/30 hover:bg-sky-500/25 font-label-lg text-label-lg transition-colors"
               >
                 Cancel
               </button>

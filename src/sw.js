@@ -1,10 +1,19 @@
-import { precacheAndRoute } from 'workbox-precaching'
+import { clientsClaim } from 'workbox-core'
+import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching'
+import { registerRoute, NavigationRoute } from 'workbox-routing'
 
-// Injected at build time by vite-plugin-pwa (injectManifest mode) —
-// this is what replaces the old fully-auto-generated sw.js, keeping
-// the same offline-caching behavior while giving us room to add real
-// push notification handling below.
+self.skipWaiting()
+clientsClaim()
+cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
+
+// Any page navigation (e.g. reloading /downloads offline) gets the app
+// shell instead of the browser's "no internet" error page.
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('/index.html'), {
+    denylist: [/^\/api\//],
+  })
+)
 
 self.addEventListener('push', (event) => {
   if (!event.data) return

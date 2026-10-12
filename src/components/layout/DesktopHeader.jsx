@@ -1,39 +1,22 @@
 // Desktop-only global header (hidden below md — TopAppBar + BottomNav
-// take over there instead). Never hides on scroll, unlike TopAppBar:
-// Part 4 of the brief requires the header to stay stable.
+// take over there instead). Never hides on scroll.
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { communityApi, newsApi } from '../../services/api'
-import { getDismissedNewsIds, addDismissedNewsId } from '../../lib/dismissedNews'
+import { getDismissedNewsIds } from '../../lib/dismissedNews'
 import logo from '../../assets/RCFmouau.svg'
-import NavIcon from './NavIcon'
+import DesktopNavIcon from './DesktopNavIcon'
 import { navItems, TOUR_NAV_IDS } from '../../lib/navItems'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
 
-const notificationIcon = {
-  announcement: 'campaign',
-  news: 'newspaper',
-  advert: 'ads_click',
-  resource_approved: 'check_circle',
-  resource_rejected: 'error',
-  request_resolved: 'inbox',
-}
-
-function timeAgo(dateString) {
-  const seconds = Math.floor((Date.now() - new Date(dateString)) / 1000)
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
-}
-
 function DesktopHeader() {
   const navigate = useNavigate()
-  const location = useLocation(); const isAdmin = location.pathname.startsWith('/admin')
+  const location = useLocation()
+  const isAdmin = location.pathname.startsWith('/admin')
   const { user } = useAuth()
   const [badgeCount, setBadgeCount] = useState(0)
+  const [clicked, setClicked] = useState({ to: null, n: 0 })
   const { openModal } = useNotificationsModal()
 
   const loadBadgeCount = useCallback(() => {
@@ -50,8 +33,26 @@ function DesktopHeader() {
 
   useEffect(() => { loadBadgeCount() }, [loadBadgeCount])
 
+  const handleNavClick = (to) => {
+    setClicked((c) => ({ to, n: c.n + 1 }))
+    navigate(to)
+  }
+
   return (
     <header style={{ left: 'var(--hd-left)' }} className="hidden md:flex fixed top-0 right-0 h-[72px] z-40 min-w-0 items-center gap-6 px-6 bg-surface border-b border-outline transition-[left] duration-300 ease-in-out">
+      <style>{`
+        @keyframes dnavHome { 0% { transform: translateY(0); } 30% { transform: translateY(-7px) scale(1.12); } 60% { transform: translateY(1px); } 100% { transform: translateY(0); } }
+        @keyframes dnavSearch { 0% { transform: scale(1) rotate(0); } 35% { transform: scale(1.28) rotate(-18deg); } 70% { transform: scale(0.95) rotate(8deg); } 100% { transform: scale(1) rotate(0); } }
+        @keyframes dnavLibrary { 0% { transform: rotate(0); } 25% { transform: rotate(-14deg) scale(1.1); } 55% { transform: rotate(10deg); } 100% { transform: rotate(0); } }
+        @keyframes dnavContribute { 0% { transform: rotate(0) scale(1); } 50% { transform: rotate(180deg) scale(1.25); } 100% { transform: rotate(360deg) scale(1); } }
+        @keyframes dnavProfile { 0% { transform: scale(1); } 40% { transform: scale(1.4); } 70% { transform: scale(0.92); } 100% { transform: scale(1); } }
+        .dnav-anim-home { animation: dnavHome 450ms ease-out; }
+        .dnav-anim-search { animation: dnavSearch 450ms ease-out; }
+        .dnav-anim-library { animation: dnavLibrary 500ms ease-out; }
+        .dnav-anim-contribute { animation: dnavContribute 600ms ease-in-out; }
+        .dnav-anim-profile { animation: dnavProfile 450ms ease-out; }
+      `}</style>
+
       <button onClick={() => navigate('/home')} className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-2.5 flex-none`} aria-label="Home">
         <img src={logo} alt="" className="h-9 w-9" />
       </button>
@@ -62,17 +63,15 @@ function DesktopHeader() {
           return (
             <button
               key={item.to}
-              onClick={() => navigate(item.to)}
+              onClick={() => handleNavClick(item.to)}
               aria-label={item.label}
               data-tour={TOUR_NAV_IDS[item.icon] ? `${TOUR_NAV_IDS[item.icon]}-desktop` : undefined}
               title={item.label}
-              className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors ${
+              className={`flex items-center justify-center w-11 h-11 rounded-full transition-all active:scale-90 ${
                 isActive ? 'text-orange-500 bg-orange-500/10' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
               }`}
             >
-              <span className="inline-flex scale-125">
-                <NavIcon icon={item.icon} active={isActive} />
-              </span>
+              <DesktopNavIcon icon={item.icon} active={isActive} playKey={clicked.to === item.to ? clicked.n : 0} />
             </button>
           )
         })}

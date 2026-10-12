@@ -177,24 +177,35 @@ function AppLoader({ children }) {
     }
 
     return (
-      <main className="flex flex-col min-h-screen w-full px-margin-mobile items-center justify-center gap-stack-md bg-surface-container-lowest text-on-surface text-center">
-        <img src={SplashLight} alt="" className="w-40 h-40 dark:hidden opacity-60" />
-        <img src={SplashDark} alt="" className="w-40 h-40 hidden dark:block opacity-60" />
-        <span className="material-symbols-outlined text-on-surface-variant text-4xl">wifi_off</span>
+      <main
+        className="flex flex-col min-h-screen w-full px-margin-mobile items-center justify-center gap-stack-md text-on-surface text-center"
+        style={{ background: 'radial-gradient(circle at 50% 0%, rgba(59,130,246,0.22), transparent 60%), radial-gradient(circle at 100% 100%, rgba(249,115,22,0.14), transparent 55%), var(--color-surface-container-lowest)' }}
+      >
+        <img src="/poorNetwork.png" alt="" className="w-44 h-44 object-contain" />
         <div className="flex flex-col gap-stack-sm max-w-xs">
           <h1 className="font-headline-md text-headline-md font-display text-on-surface">
             No Internet Connection
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Check your Wi-Fi or mobile data, then try again.
+            You can still open the materials you downloaded.
           </p>
         </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-stack-sm px-6 py-3 bg-primary text-on-primary rounded-lg font-headline-md text-headline-md active:scale-[0.98] hover:opacity-90 transition-all"
-        >
-          Reload
-        </button>
+        <div className="flex flex-col gap-2 w-full max-w-xs">
+          <button
+            onClick={() => navigate('/downloads')}
+            className="h-12 rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+          >
+            <span className="material-symbols-outlined text-[20px]">download_done</span>
+            Open my downloads
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="h-12 rounded-full bg-sky-500/15 text-sky-200 border border-sky-400/30 font-label-lg text-label-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+          >
+            <span className="material-symbols-outlined text-[20px]">refresh</span>
+            Try again
+          </button>
+        </div>
       </main>
     )
   }

@@ -61,6 +61,7 @@ export default defineConfig({
 
       injectManifest: {
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,jpg,jpeg,webp,ico,woff,woff2}'],
       },
       workbox: {
         // FIX (root cause of "This resource couldn't be opened" for
