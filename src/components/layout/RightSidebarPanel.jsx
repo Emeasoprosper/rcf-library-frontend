@@ -40,7 +40,11 @@ function RightSidebarPanel() {
 
   return (
     <aside
-      style={{ width: 'var(--sb-right)' }}
+      style={{
+        width: 'var(--sb-right)',
+        backgroundImage:
+          'radial-gradient(ellipse 130% 42% at 100% 100%, rgba(150, 90, 50, 0.22), transparent 70%), radial-gradient(ellipse 110% 28% at 0% 0%, rgba(249, 115, 22, 0.07), transparent 70%)',
+      }}
       className={`hidden lg:flex flex-col fixed top-[72px] right-0 h-[calc(100vh-72px)] z-30 bg-surface overflow-hidden transition-[width] duration-300 ease-in-out ${
         open ? 'border-l border-outline' : ''
       }`}

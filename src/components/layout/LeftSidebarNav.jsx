@@ -71,7 +71,13 @@ function LeftSidebarNav() {
 
   return (
     <aside
-      style={{ width: 'var(--sb-left)', top: 'var(--sb-top)', height: 'calc(100vh - var(--sb-top))' }}
+      style={{
+        width: 'var(--sb-left)',
+        top: 'var(--sb-top)',
+        height: 'calc(100vh - var(--sb-top))',
+        backgroundImage:
+          'radial-gradient(ellipse 130% 42% at 0% 100%, rgba(110, 80, 190, 0.22), transparent 70%), radial-gradient(ellipse 110% 28% at 100% 0%, rgba(59, 130, 246, 0.08), transparent 70%)',
+      }}
       className="hidden md:block fixed left-0 z-30 bg-surface border-r border-outline overflow-hidden transition-[width,top,height] duration-300 ease-in-out"
     >
       <div

@@ -122,7 +122,7 @@ function Library() {
 
       <main className="pb-24 pt-[68px] md:pt-24 px-margin-mobile md:pt-24 md:pb-12">
         <section
-          className={`sticky z-40 w-full bg-background pt-stack-sm pb-stack-sm transition-[top] duration-300 ease-in-out md:top-24 ${
+          className={`sticky z-40 w-full bg-background pt-stack-sm pb-stack-sm transition-[top] duration-300 ease-in-out md:top-[72px] ${
             headerHidden ? 'top-0' : 'top-[68px]'
           }`}
         >
