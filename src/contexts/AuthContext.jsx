@@ -59,28 +59,42 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    authApi
-      .me()
-      .then(({ user }) => {
-        setUser(user)
+    const AUTH_CHECK_TIMEOUT_MS = 4000
+
+    const applyUser = ({ user }) => {
+      setUser(user)
+      setOfflineAuthenticated(false)
+      writeOfflineAuthFlag(Boolean(user))
+    }
+
+    const applyFailure = (err) => {
+      if (isNetworkFailure(err) && readOfflineAuthFlag()) {
+        setOfflineAuthenticated(true)
+      } else {
+        setUser(null)
         setOfflineAuthenticated(false)
-        writeOfflineAuthFlag(Boolean(user))
-      })
-      .catch((err) => {
-        if (isNetworkFailure(err) && readOfflineAuthFlag()) {
-          // Can't reach the server, but this device was signed in the
-          // last time it could check — trust that for now rather than
-          // forcing a sign-out over a connectivity problem.
-          setOfflineAuthenticated(true)
-        } else {
-          // Either a real "not authenticated" response, or a network
-          // failure with no prior signed-in state to fall back on.
-          setUser(null)
-          setOfflineAuthenticated(false)
-          writeOfflineAuthFlag(false)
-        }
-      })
+        writeOfflineAuthFlag(false)
+      }
+    }
+
+    const meCall = authApi.me()
+    const racers = [meCall]
+    if (readOfflineAuthFlag()) {
+      racers.push(
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new TypeError('auth check timed out')), AUTH_CHECK_TIMEOUT_MS)
+        )
+      )
+    }
+
+    Promise.race(racers)
+      .then(applyUser)
+      .catch(applyFailure)
       .finally(() => setLoading(false))
+
+    meCall.then(applyUser).catch((err) => {
+      if (!isNetworkFailure(err)) applyFailure(err)
+    })
   }, [])
 
   // Reconciles the offline-trusted state once real connectivity returns,
