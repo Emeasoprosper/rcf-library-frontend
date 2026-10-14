@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useScrollDirection } from '../../hooks/useScrollDirection'
 import { useAuth } from '../../contexts/AuthContext'
 import { useHeaderAmbient } from '../../contexts/HeaderAmbientContext'
+import OnlinePill from './OnlinePill'
 
 // titleRef: optional ref forwarded to the <h1> so a page can measure its
 // real on-screen position (used by CollectionPage.jsx to land a moving
@@ -86,6 +87,7 @@ function TopAppBar({ title, rightIcons, showBack = false, titleRef, tabs, active
         </div>
 
         <div className="flex items-center gap-stack-sm md:hidden">
+          <OnlinePill />
           {rightIcons}
         </div>
       </div>

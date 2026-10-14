@@ -12,6 +12,7 @@ import { getDismissedNewsIds, addDismissedNewsId } from '../lib/dismissedNews'
 import { useNavigate } from 'react-router-dom'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 import { useNotificationsModal } from '../contexts/NotificationsModalContext'
+import { NotificationsSkeleton } from '../components/ui/PageSkeletons'
 
 const typeIcon = {
   announcement: 'campaign',
@@ -122,11 +123,7 @@ export function NotificationsContent() {
   return (
     <div className="w-full">
       <div className="px-margin-mobile pt-4">
-        {loading && (
-          <p className="font-body-md text-body-md text-on-surface-variant text-center py-stack-lg">
-            Loading…
-          </p>
-        )}
+        {loading && <NotificationsSkeleton />}
 
         {!loading && error && (
           <p className="font-body-md text-body-md text-error text-center py-stack-lg">{error}</p>

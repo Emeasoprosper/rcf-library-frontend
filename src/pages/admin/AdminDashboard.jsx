@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../../components/layout/TopAppBar'
 import AdminNav from '../../components/layout/AdminNav'
 import LibraryLoader from '../../components/ui/LibraryLoader'
-import { adminApi } from '../../services/api'
+import { adminApi, presenceApi } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import { useActiveResource } from '../../contexts/ActiveResourceContext'
+import { usePresence } from '../../contexts/PresenceContext'
 
 const quickLinks = [
   { to: '/admin/uploads', icon: 'upload', label: 'Review Uploads', gradient: 'from-blue-500 to-cyan-400' },
@@ -39,6 +40,21 @@ function AdminDashboard() {
   const { user } = useAuth()
   const { openInspector } = useActiveResource()
   const [loadingErrors, setLoadingErrors] = useState(false)
+  const presence = usePresence()
+  const [savingIndicator, setSavingIndicator] = useState(false)
+
+  async function toggleOnlineIndicator() {
+    if (!presence) return
+    setSavingIndicator(true)
+    try {
+      await presenceApi.setEnabled(!presence.enabled)
+      await presence.refresh()
+    } catch (err) {
+      setError(err.message || 'Could not change the online indicator.')
+    } finally {
+      setSavingIndicator(false)
+    }
+  }
 
   async function viewServerErrors() {
     setLoadingErrors(true)
@@ -145,6 +161,38 @@ function AdminDashboard() {
             </p>
           </div>
         </section>
+      <section className="mt-stack-lg">
+          <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-stack-sm">
+            Online Indicator
+          </h2>
+          <div className="flex items-center gap-4 p-stack-md rounded-xl bg-surface-container border border-outline">
+            <div className="flex-grow min-w-0">
+              <p className="font-body-md text-body-md font-semibold text-on-surface">
+                Show people online to everyone
+              </p>
+              <p className="font-label-sm text-label-sm text-on-surface-variant">
+                {presence?.online != null ? `${presence.online} online right now. ` : ''}
+                Admins always see it in the admin panel, whatever this is set to.
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={Boolean(presence?.enabled)}
+              onClick={toggleOnlineIndicator}
+              disabled={!presence || savingIndicator}
+              className={`relative w-12 h-7 flex-none rounded-full transition-colors disabled:opacity-50 ${
+                presence?.enabled ? 'bg-emerald-500' : 'bg-surface-container-highest border border-outline'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${
+                  presence?.enabled ? 'translate-x-5' : ''
+                }`}
+              />
+            </button>
+          </div>
+        </section>
+
       {user?.role === 'superadmin' && (
           <button
             onClick={viewServerErrors}

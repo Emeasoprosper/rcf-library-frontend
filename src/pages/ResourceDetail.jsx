@@ -10,6 +10,7 @@ import DownloadGateModal from '../components/ui/DownloadGateModal'
 import OfflineDownloadInfoModal from '../components/ui/OfflineDownloadInfoModal'
 import { hasSeenOfflineDownloadInfo, markOfflineDownloadInfoSeen } from '../lib/offlineDownloadInfo'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
+import { ResourceDetailSkeleton } from '../components/ui/PageSkeletons'
 
 function formatMinutes(mins) {
   if (!mins) return null
@@ -236,11 +237,7 @@ function ResourceDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <span className="material-symbols-outlined text-on-surface-variant text-3xl animate-spin">
-          progress_activity
-        </span>
-      </div>
+      <ResourceDetailSkeleton />
     )
   }
 

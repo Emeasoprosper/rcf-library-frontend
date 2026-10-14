@@ -13,6 +13,7 @@ import { useActiveResource } from '../contexts/ActiveResourceContext'
 import { useHeaderAmbient } from '../contexts/HeaderAmbientContext'
 import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
+import { CollectionSkeleton } from '../components/ui/PageSkeletons'
 
 const TABS = ['Sections', 'About', 'More Like This']
 // Fallback only, used until the real positions have been measured.
@@ -203,6 +204,9 @@ function CollectionPage() {
   // TIMING: 0 -> 1 fade values for the title and tabs shown in the nav.
   const [titleFade, setTitleFade] = useState(0)
   const [tabsFade, setTabsFade] = useState(0)
+  // Makes sure even a short collection can scroll far enough for the
+  // header title/tabs transition to finish.
+  const [minPageHeight, setMinPageHeight] = useState(null)
 
   // Real on-screen positions of the moving hero title and its landing
   // spot (the real header title), measured via getBoundingClientRect —
@@ -244,6 +248,8 @@ function CollectionPage() {
     if (tabsEl && bar) {
       tabsDock = tabsEl.getBoundingClientRect().top + window.scrollY - bar.getBoundingClientRect().bottom
     }
+
+    setMinPageHeight(Math.ceil(window.innerHeight + Math.max(titleDock, tabsDock, 0) + FADE_DISTANCE + 24))
 
     titleTransformRef.current = {
       dx: targetRect.left - heroRect.left,
@@ -385,9 +391,7 @@ function CollectionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <span className="w-6 h-6 border-2 border-outline border-t-primary rounded-full animate-spin" />
-      </div>
+      <CollectionSkeleton />
     )
   }
 
@@ -406,7 +410,7 @@ function CollectionPage() {
   const resourceCount = sections.reduce((sum, s) => sum + s.resources.length, 0)
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
+    <div style={minPageHeight ? { minHeight: minPageHeight } : undefined} className="min-h-screen bg-background text-on-surface font-body-md pb-24 md:pl-80 lg:pr-80">
       <TopAppBar
         title={collection.title}
         showBack

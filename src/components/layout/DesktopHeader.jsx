@@ -7,6 +7,7 @@ import { communityApi, newsApi } from '../../services/api'
 import { getDismissedNewsIds } from '../../lib/dismissedNews'
 import logo from '../../assets/RCFmouau.svg'
 import DesktopNavIcon from './DesktopNavIcon'
+import OnlinePill from './OnlinePill'
 import { navItems, TOUR_NAV_IDS } from '../../lib/navItems'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
 
@@ -80,6 +81,7 @@ function DesktopHeader() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-4 flex-none">
+        <OnlinePill />
         <button
           data-tour="tour-notifications-desktop"
           onClick={() => { setBadgeCount(0); openModal() }}

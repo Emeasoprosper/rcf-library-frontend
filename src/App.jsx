@@ -15,6 +15,7 @@ import { LanguageProvider } from './contexts/LanguageContext'
 import SpotlightTour from './components/tour/SpotlightTour'
 import MissingDetailsPrompt from './components/ui/MissingDetailsPrompt'
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner'
+import { PresenceProvider } from './contexts/PresenceContext'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
       <ActiveResourceProvider>
         <HeaderAmbientProvider>
           <NotificationsModalProvider>
+          <PresenceProvider>
             <LayoutModeSync />
             <NetworkStatusBanner />
             <DesktopHeader />
@@ -35,6 +37,7 @@ function App() {
             <SpotlightTour />
             <MissingDetailsPrompt />
             <NotificationsModal />
+          </PresenceProvider>
           </NotificationsModalProvider>
         </HeaderAmbientProvider>
       </ActiveResourceProvider>

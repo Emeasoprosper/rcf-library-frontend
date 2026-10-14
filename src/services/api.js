@@ -395,6 +395,13 @@ export const adminApi = {
   },
 }
 
+export const presenceApi = {
+  heartbeat: () => apiFetch('/presence/heartbeat', { method: 'POST' }),
+  get: () => apiFetch('/presence'),
+  setEnabled: (enabled) =>
+    apiFetch('/admin/settings/online-indicator', { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+}
+
 export const newsApi = {
   latest: () => apiFetch('/news'),
   get: (id) => apiFetch(`/news/${id}`),
