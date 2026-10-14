@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import SplashLight from '../../assets/SplahLightMode.svg'
 import SplashDark from '../../assets/SplashDarkMode.svg'
 import AppOfflineShell from './AppOfflineShell'
+import { HeaderAmbientProvider } from '../../contexts/HeaderAmbientContext'
 import { isRunningAsInstalledApp } from '../../lib/pwaInstall'
 
 // Full-app boot gate. Sits inside AuthProvider (see App.jsx) so it can
@@ -173,7 +174,11 @@ function AppLoader({ children }) {
 
   if (!isOnline && isBlockedRoute) {
     if (isRunningAsInstalledApp()) {
-      return <AppOfflineShell onContinue={() => navigate('/downloads')} />
+      return (
+        <HeaderAmbientProvider>
+          <AppOfflineShell onContinue={() => navigate('/downloads')} />
+        </HeaderAmbientProvider>
+      )
     }
 
     return (
