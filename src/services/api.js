@@ -381,6 +381,18 @@ export const adminApi = {
   deleteHomeRail: (id) => apiFetch(`/admin/home-rails/${id}`, { method: 'DELETE' }),
   addHomeRailItem: (id, resourceId) => apiFetch(`/admin/home-rails/${id}/items`, { method: 'POST', body: JSON.stringify({ resourceId }) }),
   removeHomeRailItem: (id, resourceId) => apiFetch(`/admin/home-rails/${id}/items/${resourceId}`, { method: 'DELETE' }),
+  uploadHomeRailImage: async (id, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`${API_BASE}/admin/home-rails/${id}/image`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(body.error || `Image upload failed (${res.status})`)
+    return body
+  },
 }
 
 export const newsApi = {
