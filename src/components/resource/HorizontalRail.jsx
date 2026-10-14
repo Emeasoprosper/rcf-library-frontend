@@ -1,4 +1,5 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/components/resource/HorizontalRail.jsx
+import { useState } from 'react'
 import { getMediaKind, MEDIA_KIND_STYLE } from '../../lib/mediaKind'
 
 function splitProgress(subtitle) {
@@ -24,12 +25,22 @@ function Waveform() {
   )
 }
 
-function HorizontalRail({ title, items }) {
+function HorizontalRail({ title, items, imageUrl }) {
+  const [imageFailed, setImageFailed] = useState(false)
   if (!items || items.length === 0) return null
 
   return (
     <section className="mb-stack-lg">
-      <div className="px-margin-mobile mb-stack-sm">
+      <div className="px-margin-mobile mb-stack-sm flex items-center gap-3">
+        {imageUrl && !imageFailed && (
+          <img
+            src={imageUrl}
+            alt=""
+            loading="lazy"
+            onError={() => setImageFailed(true)}
+            className="w-10 h-10 flex-none rounded-full object-cover border border-outline"
+          />
+        )}
         <h2 className="font-headline-lg text-headline-lg font-display text-on-surface">{title}</h2>
       </div>
       <div className="relative">

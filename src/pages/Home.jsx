@@ -452,6 +452,7 @@ function Home() {
               <HorizontalRail
                 key={rail.id}
                 title={rail.title}
+                imageUrl={rail.image_url}
                 items={rail.items.map((r) => ({
                   id: r.id,
                   title: r.title,
