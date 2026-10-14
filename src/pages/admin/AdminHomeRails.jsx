@@ -177,14 +177,7 @@ function AdminHomeRails() {
 
   return (
     <div className="relative min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
-      <div
-        aria-hidden="true"
-        className="fixed inset-0 z-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(circle at 100% 100%, rgba(249,115,22,0.13), transparent 52%), radial-gradient(circle at 0% 100%, rgba(59,130,246,0.08), transparent 48%)',
-        }}
-      />
+
 
       <TopAppBar title="Home Rails" showBack />
 
