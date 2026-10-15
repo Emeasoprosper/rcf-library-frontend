@@ -8,6 +8,7 @@ import { getDismissedNewsIds } from '../../lib/dismissedNews'
 import logo from '../../assets/RCFmouau.svg'
 import DesktopNavIcon from './DesktopNavIcon'
 import OnlinePill from './OnlinePill'
+import HeaderExtras from './HeaderExtras'
 import { navItems, TOUR_NAV_IDS } from '../../lib/navItems'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
 
@@ -81,6 +82,7 @@ function DesktopHeader() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-4 flex-none">
+        <HeaderExtras />
         <OnlinePill />
         <button
           data-tour="tour-notifications-desktop"
