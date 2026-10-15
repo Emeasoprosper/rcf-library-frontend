@@ -194,18 +194,18 @@ function AdminHomeRails() {
           )}
         </div>
 
-        <div className="flex gap-2 mb-stack-lg p-stack-sm rounded-2xl bg-surface-container border border-outline">
+        <div className="flex flex-col sm:flex-row gap-2 mb-stack-lg p-stack-sm rounded-2xl bg-surface-container border border-outline">
           <input
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleCreate() }}
             placeholder="New rail title, e.g. Christian Living"
-            className="flex-grow h-11 px-4 bg-surface-container-low border border-outline rounded-full text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all"
+            className="w-full sm:flex-grow min-w-0 h-11 px-4 bg-surface-container-low border border-outline rounded-full text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all"
           />
           <button
             onClick={handleCreate}
             disabled={creating || !newTitle.trim()}
-            className="px-5 h-11 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-label-md text-label-md font-semibold disabled:opacity-40 active:scale-95 transition-transform"
+            className="w-full sm:w-auto flex-none whitespace-nowrap px-5 h-11 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-label-md text-label-md font-semibold disabled:opacity-40 active:scale-95 transition-transform"
           >
             {creating ? '…' : 'Create'}
           </button>

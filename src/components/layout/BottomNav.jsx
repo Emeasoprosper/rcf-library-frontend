@@ -1,9 +1,32 @@
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import NavIcon from './NavIcon'
 import { navItems, TOUR_NAV_IDS } from '../../lib/navItems'
 
 function BottomNav() {
   const location = useLocation()
+  const [keyboardOpen, setKeyboardOpen] = useState(false)
+
+  useEffect(() => {
+    const isTextField = (el) => {
+      if (!el) return false
+      if (el.isContentEditable) return true
+      const tag = el.tagName
+      if (tag === 'TEXTAREA') return true
+      if (tag !== 'INPUT') return false
+      return !['button', 'checkbox', 'radio', 'file', 'submit', 'range', 'color'].includes(el.type)
+    }
+    const onFocusIn = (e) => { if (isTextField(e.target)) setKeyboardOpen(true) }
+    const onFocusOut = () => setKeyboardOpen(false)
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+    return () => {
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('focusout', onFocusOut)
+    }
+  }, [])
+
+  if (keyboardOpen) return null
 
   return (
     <nav

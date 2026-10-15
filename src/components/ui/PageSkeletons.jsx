@@ -194,3 +194,76 @@ export function HomeContentSkeleton() {
     </div>
   )
 }
+
+export function HomeContentSkeletonDesktop() {
+  return (
+    <div aria-hidden="true">
+      <SkeletonStyles />
+      <section className="mb-stack-lg">
+        <div className="px-margin-mobile flex justify-between items-end mb-stack-sm">
+          <Block className="h-7 w-20" />
+          <Block className="h-4 w-14" />
+        </div>
+        <div className="px-margin-mobile">
+          <Block className="h-44 w-full rounded-2xl" />
+        </div>
+      </section>
+
+      <section className="mb-stack-lg">
+        <div className="px-margin-mobile mb-stack-sm">
+          <Block className="h-7 w-44" />
+        </div>
+        <div className="px-margin-mobile">
+          <Block className="h-36 w-full rounded-2xl" />
+        </div>
+      </section>
+
+      <RailSkeleton titleWidth="w-40" cardWidth="w-40" cardAspect="aspect-[2/3]" count={4} />
+    </div>
+  )
+}
+
+export function HomeDesktopSkeleton() {
+  return (
+    <div className="min-h-screen bg-background" aria-hidden="true">
+      <SkeletonStyles />
+      <div className="fixed top-0 left-0 z-50 w-full h-20 px-6 flex items-center justify-between bg-surface/80 backdrop-blur-md border-b border-outline">
+        <div className="flex items-center gap-4">
+          <Block className="w-10 h-10 rounded-lg" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Block key={i} className="w-10 h-10 rounded-full" />
+          ))}
+        </div>
+        <div className="flex items-center gap-4">
+          <Block className="w-10 h-10 rounded-full" />
+          <Block className="w-11 h-11 rounded-full" />
+        </div>
+      </div>
+
+      <div className="pt-20 flex min-h-screen">
+        <aside className="w-80 flex-none border-r border-outline p-6">
+          <div className="flex justify-between items-end mb-4">
+            <Block className="h-8 w-28" />
+            <Block className="h-4 w-14" />
+          </div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 mb-4">
+              <Block className="w-14 h-14 flex-none rounded-lg" />
+              <div className="flex-grow min-w-0">
+                <Block className="h-4 w-3/4 mb-2" />
+                <Block className="h-3 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </aside>
+        <main className="flex-grow min-w-0 pt-6">
+          <HomeContentSkeletonDesktop />
+        </main>
+        <aside className="w-80 flex-none border-l border-outline flex flex-col items-center justify-center gap-4 p-6">
+          <Block className="w-52 h-52 rounded-full" />
+          <Block className="h-6 w-40" />
+        </aside>
+      </div>
+    </div>
+  )
+}

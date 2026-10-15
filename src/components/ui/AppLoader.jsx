@@ -6,6 +6,8 @@ import SplashDark from '../../assets/SplashDarkMode.svg'
 import AppOfflineShell from './AppOfflineShell'
 import { HeaderAmbientProvider } from '../../contexts/HeaderAmbientContext'
 import { isRunningAsInstalledApp } from '../../lib/pwaInstall'
+import { useIsDesktopViewport } from '../../hooks/useIsDesktopViewport'
+import { HomeDesktopSkeleton } from './PageSkeletons'
 
 // Full-app boot gate. Sits inside AuthProvider (see App.jsx) so it can
 // read the real auth-check-in-flight signal instead of inventing its own
@@ -151,6 +153,7 @@ function AppLoader({ children }) {
   const { loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const isDesktop = useIsDesktopViewport()
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
 
@@ -216,7 +219,7 @@ function AppLoader({ children }) {
   }
 
   if (authLoading || !minTimeElapsed) {
-    return <HomeSkeleton />
+    return isDesktop ? <HomeDesktopSkeleton /> : <HomeSkeleton />
   }
 
   return children

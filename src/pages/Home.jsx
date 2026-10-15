@@ -8,7 +8,7 @@ import HorizontalRail from '../components/resource/HorizontalRail'
 import CollectionCard from '../components/resource/CollectionCard'
 import AdvertBanner from '../components/ui/AdvertBanner'
 import UpdatesList from '../components/ui/UpdatesList'
-import { HomeContentSkeleton } from '../components/ui/PageSkeletons'
+import { HomeContentSkeleton, HomeContentSkeletonDesktop } from '../components/ui/PageSkeletons'
 import NewsCarousel from '../components/ui/NewsCarousel'
 import NewsPopupModal from '../components/ui/NewsPopupModal'
 import { useScrollDirection } from '../hooks/useScrollDirection'
@@ -403,7 +403,7 @@ function Home() {
 
         <AdvertBanner ads={ads} />
 
-        {loading && <HomeContentSkeleton />}
+        {loading && (isDesktop ? <HomeContentSkeletonDesktop /> : <HomeContentSkeleton />)}
 
         {newsCarouselItems.length > 0 && (
           <section className="mb-stack-lg">
