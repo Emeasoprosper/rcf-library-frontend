@@ -42,15 +42,17 @@ function AdminDashboard() {
   const [loadingErrors, setLoadingErrors] = useState(false)
   const presence = usePresence()
   const [savingIndicator, setSavingIndicator] = useState(false)
+  const [indicatorError, setIndicatorError] = useState('')
 
   async function toggleOnlineIndicator() {
     if (!presence) return
     setSavingIndicator(true)
+    setIndicatorError('')
     try {
       await presenceApi.setEnabled(!presence.enabled)
       await presence.refresh()
     } catch (err) {
-      setError(err.message || 'Could not change the online indicator.')
+      setIndicatorError(err.message || 'Could not change the online indicator.')
     } finally {
       setSavingIndicator(false)
     }
@@ -174,6 +176,9 @@ function AdminDashboard() {
                 {presence?.online != null ? `${presence.online} online right now. ` : ''}
                 Admins always see it in the admin panel, whatever this is set to.
               </p>
+              {indicatorError && (
+                <p className="font-label-sm text-label-sm text-error mt-1">{indicatorError}</p>
+              )}
             </div>
             <button
               role="switch"
