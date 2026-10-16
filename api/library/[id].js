@@ -84,6 +84,7 @@ export default async function handler(req, res) {
     backendStatus = backendResp.status
     backendHtml = await backendResp.text()
   } catch {
+    if (req.query.debug) { res.status(200).send('FALLBACK: backend fetch failed or timed out'); return }
     // Backend unreachable/slow — serve the plain app shell so the human
     // visitor still gets a working page; the React app will do its own
     // fetch and show its own loading/error state. No cache, so the
@@ -95,6 +96,7 @@ export default async function handler(req, res) {
   }
 
   if (backendStatus === 404) {
+    if (req.query.debug) { res.status(200).send('FALLBACK: backend answered 404'); return }
     // Resource doesn't exist or isn't approved. Serve the real app
     // shell (ResourceDetail.jsx already renders a proper "couldn't be
     // found" state), but with a 404 status so this never gets indexed.
@@ -108,6 +110,7 @@ export default async function handler(req, res) {
   const frontendCanonical = `${FRONTEND_ORIGIN}/library/${id}`
 
   const titleTag = extractTag(backendHtml, /<title>[\s\S]*?<\/title>/)
+  if (req.query.debug) { res.status(200).send('BACKEND STATUS ' + backendStatus + ' | TITLE: ' + titleTag + ' | LENGTH: ' + backendHtml.length); return }
   const canonicalTag = extractTag(backendHtml, /<link rel="canonical"[^>]*>/)
   const descriptionTag = extractTag(backendHtml, /<meta name="description"[^>]*>/)
   const ogTags = extractAllTags(backendHtml, /<meta property="og:[^"]*"[^>]*>/g)
