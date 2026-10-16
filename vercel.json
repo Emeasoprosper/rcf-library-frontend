@@ -5,7 +5,7 @@
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/robots.txt", "destination": "/api/robots" },
-    { "source": "/library/:id", "destination": "/api/library/:id" },
+    { "source": "/library/:id", "destination": "/api/book?id=:id" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
