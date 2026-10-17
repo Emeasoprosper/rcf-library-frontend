@@ -199,6 +199,8 @@ export const authApi = {
   refresh: () => apiFetch('/auth/refresh', { method: 'POST' }),
   completeProfile: (payload) =>
     apiFetch('/auth/profile', { method: 'PATCH', body: JSON.stringify(payload) }),
+  saveBirthdayContact: (payload) =>
+    apiFetch('/auth/birthday-contact', { method: 'PATCH', body: JSON.stringify(payload) }),
   updateProfileExtra: (payload) =>
     apiFetch('/auth/profile-extra', { method: 'PATCH', body: JSON.stringify(payload) }),
   updateMe: (payload) =>
@@ -402,6 +404,53 @@ export const adminAnalyticsApi = {
   events: (params = {}) => apiFetch(`/admin/analytics/events?${new URLSearchParams(params).toString()}`),
   activity: (params = {}) => apiFetch(`/admin/analytics/activity?${new URLSearchParams(params).toString()}`),
   insights: () => apiFetch('/admin/analytics/insights'),
+}
+
+export function uploadAnnouncementMusic(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${API_BASE}/admin/announcement-music/upload`)
+    xhr.withCredentials = true
+
+    xhr.onload = async () => {
+      if (xhr.status === 401) {
+        try {
+          await rawFetchOk('/auth/refresh', { method: 'POST' })
+          uploadAnnouncementMusic(file).then(resolve).catch(reject)
+          return
+        } catch {
+          window.dispatchEvent(new Event('auth:expired'))
+          reject(new Error('Your session expired — please sign in again.'))
+          return
+        }
+      }
+      let body = {}
+      try {
+        body = JSON.parse(xhr.responseText || '{}')
+      } catch {
+        // fall through to status check below
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body)
+      else reject(new Error(body.error || `Music upload failed (${xhr.status})`))
+    }
+
+    xhr.onerror = () => reject(new Error('Network error during music upload'))
+    xhr.send(formData)
+  })
+}
+
+export const announcementMusicApi = {
+  upload: (file) => uploadAnnouncementMusic(file),
+  attach: (id, payload) =>
+    apiFetch(`/admin/announcement-music/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  list: () => apiFetch('/admin/announcement-music'),
+}
+
+export const birthdaysApi = {
+  today: () => apiFetch('/birthdays/today'),
 }
 
 export const presenceApi = {

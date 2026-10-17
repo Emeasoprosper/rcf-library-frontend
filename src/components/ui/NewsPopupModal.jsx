@@ -5,7 +5,10 @@
 //    full detail page via onViewAll.
 //  - 'rich' (default): existing card with title + message + optional
 //    attachment, "Read Full Detail" button navigates to the detail page.
-function NewsPopupModal({ news, onClose, onViewAll }) {
+import usePopupMusic from '../../hooks/usePopupMusic'
+import PopupMusicButton from './PopupMusicButton'
+
+function NewsPopupModalBody({ news, onClose, onViewAll }) {
   if (!news) return null
 
   const categoryLabel = news.type === 'announcement' ? 'Announcement' : 'News'
@@ -92,6 +95,22 @@ function NewsPopupModal({ news, onClose, onViewAll }) {
         )}
       </div>
     </div>
+  )
+}
+
+// Wraps the popup so an announcement with a music track plays it while
+// the popup is on screen and stops it as soon as the popup is closed.
+function NewsPopupModal(props) {
+  const { news } = props
+  const music = usePopupMusic(news?.music_url, {
+    active: Boolean(news?.music_url),
+    loop: news?.music_loop !== false,
+  })
+  return (
+    <>
+      <NewsPopupModalBody {...props} />
+      {news?.music_url && <PopupMusicButton music={music} />}
+    </>
   )
 }
 

@@ -3,6 +3,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
+import BirthdayContactFields, {
+  emptyBirthdayContact,
+  validateBirthdayContact,
+  toBirthdayContactPayload,
+} from '../components/ui/BirthdayContactForm'
 
 const LEVELS = ['100', '200', '300', '400', '500', 'PG']
 const HEARD_FROM_OPTIONS = ['A friend', 'RCF fellowship meeting', 'Social media', 'Flyer/poster on campus', 'Church announcement', 'Other']
@@ -18,6 +23,7 @@ function CompleteProfile() {
   const [isRcfMember, setIsRcfMember] = useState(null)
   const [joinReason, setJoinReason] = useState('')
   const [heardFrom, setHeardFrom] = useState('')
+  const [bc, setBc] = useState(emptyBirthdayContact)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -30,9 +36,17 @@ function CompleteProfile() {
       return
     }
 
+    const bcProblem = validateBirthdayContact(bc)
+    if (bcProblem) {
+      setError(bcProblem)
+      return
+    }
+
     setSubmitting(true)
     try {
       await authApi.completeProfile({
+        affiliation: 'mouau',
+        category: 'student',
         department: department.trim(),
         level,
         studentId: studentId.trim(),
@@ -41,6 +55,14 @@ function CompleteProfile() {
         joinReason: joinReason || null,
         heardFrom: heardFrom || null,
       })
+      const bcPayload = toBirthdayContactPayload(bc)
+      if (bcPayload) {
+        try {
+          await authApi.saveBirthdayContact(bcPayload)
+        } catch {
+          // The profile itself is saved. The birthday can be added later under Profile.
+        }
+      }
       await refreshUser()
       navigate('/home')
     } catch (err) {
@@ -171,6 +193,8 @@ function CompleteProfile() {
             ))}
           </select>
         </div>
+
+        <BirthdayContactFields value={bc} onChange={setBc} />
 
         {error && <p className="font-label-sm text-label-sm text-error text-center">{error}</p>}
 

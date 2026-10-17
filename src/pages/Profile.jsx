@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import { useAuth } from '../contexts/AuthContext'
+import BirthdayContactSheet from '../components/ui/BirthdayContactSheet'
 
 const menuItems = [
   { icon: 'bookmark', label: 'Saved Resources', to: '/saved' },
@@ -45,6 +47,7 @@ function affiliationDetail(user) {
 function Profile() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const [showBirthdaySheet, setShowBirthdaySheet] = useState(false)
 
   const handleSignOut = async () => {
     await logout()
@@ -119,6 +122,15 @@ function Profile() {
             </button>
           )}
 
+          <button
+            onClick={() => setShowBirthdaySheet(true)}
+            className="flex items-center gap-4 py-stack-sm rounded-lg hover:bg-surface-container-high transition-colors"
+          >
+            <span className="material-symbols-outlined text-on-surface-variant">cake</span>
+            <span className="font-body-md text-body-md text-on-surface flex-grow text-left">Birthday &amp; contact</span>
+            <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+          </button>
+
           {menuItems.map((item) => (
             <button
               key={item.label}
@@ -141,6 +153,7 @@ function Profile() {
       </main>
 
       <BottomNav />
+      <BirthdayContactSheet open={showBirthdaySheet} onClose={() => setShowBirthdaySheet(false)} />
     </div>
   )
 }

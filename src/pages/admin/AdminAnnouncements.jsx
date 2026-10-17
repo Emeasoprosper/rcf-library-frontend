@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import TopAppBar from '../../components/layout/TopAppBar'
 import AdminNav from '../../components/layout/AdminNav'
-import { adminApi } from '../../services/api'
+import { adminApi, announcementMusicApi } from '../../services/api'
 import { formatBytes } from '../../lib/formatBytes'
 import PreviewEditModal from '../../components/ui/PreviewEditModal'
 
@@ -29,12 +29,34 @@ function AdminAnnouncements() {
   const [hiddenDetail, setHiddenDetail] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
   const [sentLog, setSentLog] = useState([])
+  const [musicFile, setMusicFile] = useState(null)
+  const [musicPreviewUrl, setMusicPreviewUrl] = useState(null)
+  const [musicLoop, setMusicLoop] = useState(true)
+  const [musicError, setMusicError] = useState('')
+  const [musicById, setMusicById] = useState({})
+  const musicInputRef = useRef(null)
   const [loadingSentLog, setLoadingSentLog] = useState(true)
   const [sending, setSending] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState('')
   const [editorOpen, setEditorOpen] = useState(false)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    let cancelled = false
+    announcementMusicApi
+      .list()
+      .then((res) => {
+        if (cancelled) return
+        const map = {}
+        for (const row of res.items || []) map[row.id] = { loop: row.music_loop }
+        setMusicById(map)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => () => { if (musicPreviewUrl) URL.revokeObjectURL(musicPreviewUrl) }, [musicPreviewUrl])
 
   useEffect(() => {
     let cancelled = false
@@ -69,6 +91,30 @@ function AdminAnnouncements() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
+  const handleMusicChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setMusicError('')
+    if (!file.type.startsWith('audio/')) {
+      setMusicError('Please choose an audio file (MP3, M4A, WAV or OGG).')
+      return
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setMusicError('That track is larger than 8 MB. Choose a shorter or smaller file.')
+      return
+    }
+    setMusicFile(file)
+    setMusicPreviewUrl(URL.createObjectURL(file))
+  }
+
+  const removeMusic = () => {
+    setMusicFile(null)
+    setMusicPreviewUrl(null)
+    setMusicError('')
+    setMusicLoop(true)
+    if (musicInputRef.current) musicInputRef.current.value = ''
+  }
+
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) return
     setSending(true)
@@ -86,6 +132,11 @@ function AdminAnnouncements() {
         uploadedMime = mime
       }
 
+      let uploadedMusic = null
+      if (musicFile && type !== 'advert') {
+        uploadedMusic = await announcementMusicApi.upload(musicFile)
+      }
+
       const { id } = await adminApi.createAnnouncement({
         type,
         title: title.trim(),
@@ -101,6 +152,15 @@ function AdminAnnouncements() {
         hiddenDetail: hiddenDetail.trim() || null,
         linkUrl: linkUrl.trim() || null,
       })
+
+      if (uploadedMusic) {
+        try {
+          await announcementMusicApi.attach(id, { fileId: uploadedMusic.fileId, mime: uploadedMusic.mime, loop: musicLoop })
+          setMusicById((prev) => ({ ...prev, [id]: { loop: musicLoop } }))
+        } catch {
+          setError('Sent, but the music could not be attached. Delete this announcement and try again.')
+        }
+      }
 
       setSentLog((prev) => [
         {
@@ -132,6 +192,7 @@ function AdminAnnouncements() {
       setPopupStyle('rich')
       setHiddenDetail('')
       setLinkUrl('')
+      removeMusic()
       removeAttachment()
     } catch (err) {
       setError(err.message || 'Failed to send. Please try again.')
@@ -384,6 +445,69 @@ function AdminAnnouncements() {
             </label>
           )}
 
+          {type !== 'advert' && (
+            <div className="rounded-2xl border border-outline bg-gradient-to-br from-pink-500/10 via-surface-container to-orange-500/10 p-stack-md">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center flex-none">
+                  <span className="material-symbols-outlined text-white text-[22px]">music_note</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-body-md text-body-md font-semibold text-on-surface">Background music</p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">
+                    Plays while the popup is on screen and stops when it is closed. Optional.
+                  </p>
+                </div>
+              </div>
+
+              {!musicFile ? (
+                <label className="flex flex-col items-center justify-center gap-1 min-h-[96px] rounded-xl border border-dashed border-outline bg-surface-container-low cursor-pointer hover:border-pink-400 transition-colors text-center px-3 py-3">
+                  <span className="material-symbols-outlined text-on-surface-variant text-2xl">library_music</span>
+                  <span className="font-label-md text-label-md text-on-surface">Tap to choose a track</span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    MP3, M4A, WAV or OGG, up to 8 MB. Use music you have the right to play.
+                  </span>
+                  <input ref={musicInputRef} type="file" accept="audio/*" onChange={handleMusicChange} className="hidden" />
+                </label>
+              ) : (
+                <div className="rounded-xl bg-surface-container-low border border-outline p-3 flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-pink-400">audio_file</span>
+                    <div className="min-w-0 flex-grow">
+                      <p className="font-body-md text-body-md font-semibold text-on-surface truncate">{musicFile.name}</p>
+                      <p className="font-label-sm text-label-sm text-on-surface-variant">{formatBytes(musicFile.size)}</p>
+                    </div>
+                    <button
+                      onClick={removeMusic}
+                      aria-label="Remove music"
+                      className="w-8 h-8 flex-none rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[22px]">cancel</span>
+                    </button>
+                  </div>
+
+                  <audio controls src={musicPreviewUrl} className="w-full h-10" />
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-body-md text-body-md text-on-surface">Repeat while the popup is open</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={musicLoop}
+                      onClick={() => setMusicLoop((v) => !v)}
+                      className={`relative w-12 h-7 flex-none rounded-full transition-colors ${
+                        musicLoop ? 'bg-emerald-500' : 'bg-surface-container-highest border border-outline'
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${musicLoop ? 'translate-x-5' : ''}`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {musicError && <p className="font-label-sm text-label-sm text-error mt-2">{musicError}</p>}
+            </div>
+          )}
+
           {error && (
             <div className="p-stack-md rounded-xl bg-error/10 border border-error/30">
               <p className="font-body-md text-body-md text-error">{error}</p>
@@ -424,6 +548,12 @@ function AdminAnnouncements() {
                         {typeConfig[item.type].icon}
                       </span>
                       <p className="font-body-md text-body-md font-semibold text-on-surface truncate">{item.title}</p>
+                      {musicById[item.id] && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-pink-500/15 text-pink-400 text-[9px] uppercase tracking-wide flex-none inline-flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[11px]">music_note</span>
+                          Music
+                        </span>
+                      )}
                       {item.type === 'announcement' && item.popup_style === 'image_only' && (
                         <span className="px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] uppercase tracking-wide flex-none">
                           Image only

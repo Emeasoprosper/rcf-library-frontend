@@ -14,6 +14,7 @@ import { TourProvider } from './contexts/TourContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import SpotlightTour from './components/tour/SpotlightTour'
 import MissingDetailsPrompt from './components/ui/MissingDetailsPrompt'
+import BirthdayCelebration from './components/ui/BirthdayCelebration'
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner'
 import { PresenceProvider } from './contexts/PresenceContext'
 
@@ -36,6 +37,7 @@ function App() {
             <ApkUpdateBanner />
             <SpotlightTour />
             <MissingDetailsPrompt />
+            <BirthdayCelebration />
             <NotificationsModal />
           </PresenceProvider>
           </NotificationsModalProvider>
