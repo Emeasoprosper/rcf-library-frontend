@@ -238,10 +238,15 @@ function ResourceDetail() {
     setSharing(true)
     try {
       const { shareUrl } = await resourcesApi.createShareLink(id)
-      if (navigator.share) {
+      if (!isDesktop && navigator.share) {
         await navigator.share({ title: resource?.title, url: shareUrl })
       } else {
-        await navigator.clipboard.writeText(shareUrl)
+        try {
+          await navigator.clipboard.writeText(shareUrl)
+        } catch {
+          window.prompt('Copy this link:', shareUrl)
+          return
+        }
         alert('Link copied!')
       }
     } catch (err) {

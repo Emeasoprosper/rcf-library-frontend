@@ -6,6 +6,7 @@ import { navItems, TOUR_NAV_IDS } from '../../lib/navItems'
 function BottomNav() {
   const location = useLocation()
   const [keyboardOpen, setKeyboardOpen] = useState(false)
+  const [viewportShrunk, setViewportShrunk] = useState(false)
 
   useEffect(() => {
     const isTextField = (el) => {
@@ -26,7 +27,27 @@ function BottomNav() {
     }
   }, [])
 
-  if (keyboardOpen) return null
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    let maxHeight = Math.max(window.innerHeight, vv.height)
+    const check = () => {
+      maxHeight = Math.max(maxHeight, window.innerHeight, vv.height)
+      setViewportShrunk(vv.scale <= 1.05 && vv.height < maxHeight - 120)
+    }
+    const onOrientation = () => {
+      maxHeight = 0
+      setTimeout(check, 400)
+    }
+    vv.addEventListener('resize', check)
+    window.addEventListener('orientationchange', onOrientation)
+    return () => {
+      vv.removeEventListener('resize', check)
+      window.removeEventListener('orientationchange', onOrientation)
+    }
+  }, [])
+
+  if (keyboardOpen || viewportShrunk) return null
 
   return (
     <nav
