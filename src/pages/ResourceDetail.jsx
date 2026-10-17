@@ -322,7 +322,7 @@ function ResourceDetail() {
             aria-label="Share"
           >
             <span className="material-symbols-outlined text-white">
-              {sharing ? 'progress_activity' : 'share'}
+              {sharing ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : 'share'}
             </span>
           </button>
           <button
@@ -332,7 +332,7 @@ function ResourceDetail() {
             aria-label={saved ? 'Remove from saved' : 'Save for later'}
           >
             <span className="material-symbols-outlined text-white">
-              {savingBookmark ? 'progress_activity' : saved ? 'bookmark' : 'bookmark_border'}
+              {savingBookmark ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : saved ? <span className="material-symbols-outlined text-orange-500" style={{ fontVariationSettings: "'FILL' 1" }}>bookmark</span> : 'bookmark_border'}
             </span>
           </button>
         </div>
@@ -404,11 +404,11 @@ function ResourceDetail() {
         <button
           onClick={handleDownload}
           disabled={downloading || downloaded}
-          className="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center disabled:opacity-60"
+          className="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center"
           aria-label="Download for offline"
         >
           <span className="material-symbols-outlined text-orange-500">
-            {downloading ? 'progress_activity' : downloaded ? 'download_done' : 'download'}
+            {downloading ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : downloaded ? <span className="material-symbols-outlined text-green-500" style={{ fontVariationSettings: "'FILL' 1" }}>download_done</span> : 'download'}
           </span>
         </button>
       </div>
