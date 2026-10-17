@@ -180,7 +180,12 @@ function toRailResourceItem(resource, navigate) {
 function CollectionPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
+  const goSignInFirst = () => {
+    if (authLoading || isAuthenticated) return false
+    navigate('/signin', { state: { from: `/collections/${id}` } })
+    return true
+  }
   const { openResource } = useActiveResource()
   const isDesktop = useIsDesktopViewport()
   const { setAmbient, clearAmbient } = useHeaderAmbient()
@@ -363,6 +368,7 @@ function CollectionPage() {
   }
 
   const handleToggleSave = async (resource, currentlySaved) => {
+    if (goSignInFirst()) return
     if (currentlySaved) {
       await resourcesApi.unbookmark(resource.id).catch(() => {})
     } else {
@@ -371,6 +377,7 @@ function CollectionPage() {
   }
 
   const handleDownload = async (resource) => {
+    if (goSignInFirst()) return false
     if (!isRunningAsInstalledApp()) {
       setShowGate(true)
       return false
@@ -553,7 +560,10 @@ function CollectionPage() {
                       onMove={setMovingResource}
                       onDownload={handleDownload}
                       onToggleSave={handleToggleSave}
-                      onOpen={(resource) => openReaderFor(resource, { isDesktop, openResource, navigate })}
+                      onOpen={(resource) => {
+                        if (goSignInFirst()) return
+                        openReaderFor(resource, { isDesktop, openResource, navigate })
+                      }}
                     />
                   ))}
                 </div>

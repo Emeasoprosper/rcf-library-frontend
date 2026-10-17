@@ -6,6 +6,7 @@
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/robots.txt", "destination": "/api/robots" },
     { "source": "/library/:id", "destination": "/api/book?id=:id" },
+    { "source": "/collections/:id", "destination": "/api/collection?id=:id" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

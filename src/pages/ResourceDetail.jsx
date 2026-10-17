@@ -10,6 +10,7 @@ import DownloadGateModal from '../components/ui/DownloadGateModal'
 import OfflineDownloadInfoModal from '../components/ui/OfflineDownloadInfoModal'
 import { hasSeenOfflineDownloadInfo, markOfflineDownloadInfoSeen } from '../lib/offlineDownloadInfo'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
+import { useAuth } from '../contexts/AuthContext'
 import { ResourceDetailSkeleton } from '../components/ui/PageSkeletons'
 
 function formatMinutes(mins) {
@@ -98,6 +99,13 @@ function ResourceDetail() {
   const navigate = useNavigate()
   const { openResource } = useActiveResource()
   const isDesktop = useIsDesktopViewport()
+  const { isAuthenticated, loading: authLoading } = useAuth()
+
+  function goSignInFirst() {
+    if (authLoading || isAuthenticated) return false
+    navigate('/signin', { state: { from: `/library/${id}` } })
+    return true
+  }
 
   const [resource, setResource] = useState(null)
   const [youMayLike, setYouMayLike] = useState([])
@@ -165,6 +173,7 @@ function ResourceDetail() {
   // tab is currently running inside the installed PWA. If not, block
   // here and show the gate popup — the fetch/save flow below never runs.
   const handleDownload = async () => {
+    if (goSignInFirst()) return
     if (!isRunningAsInstalledApp()) {
       setShowGate(true)
       return
@@ -207,6 +216,7 @@ function ResourceDetail() {
   }
 
   const handleToggleSave = async () => {
+    if (goSignInFirst()) return
     setSavingBookmark(true)
     try {
       if (saved) {
@@ -224,6 +234,7 @@ function ResourceDetail() {
   }
 
   const handleShare = async () => {
+    if (goSignInFirst()) return
     setSharing(true)
     try {
       const { shareUrl } = await resourcesApi.createShareLink(id)
@@ -260,6 +271,7 @@ function ResourceDetail() {
   const action = KIND_ACTION[kind]
 
   function handleReadClick() {
+    if (goSignInFirst()) return
     if (isDesktop) {
       openResource(resource)
       return

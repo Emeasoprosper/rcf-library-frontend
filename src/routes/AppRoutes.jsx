@@ -92,13 +92,13 @@ function AppRoutes() {
       <Route path="/admin/requests" element={<AdminRoute><AdminRequests /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
       <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
-      <Route path="/resources/:id/read" element={<ResourceReader />} />
+      <Route path="/resources/:id/read" element={<ProtectedRoute><ResourceReader /></ProtectedRoute>} />
       <Route path="/s/:token" element={<ProtectedRoute><ShareRedirect /></ProtectedRoute>} />
       <Route path="/admin/resources" element={<AdminRoute><AdminResources /></AdminRoute>} />
       <Route path="/admin/organize" element={<AdminRoute><OrganizeResources /></AdminRoute>} />
       <Route path="/admin/home-rails" element={<AdminRoute><AdminHomeRails /></AdminRoute>} />
       <Route path="/library/:id" element={<ResourceDetail />} />
-      <Route path="/collections/:id" element={<ProtectedRoute><CollectionPage /></ProtectedRoute>} />
+      <Route path="/collections/:id" element={<CollectionPage />} />
     </Routes>
   )
 }
