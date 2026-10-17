@@ -126,7 +126,12 @@ function ResourceDetail() {
         // Pull a wider pool (30, not 8) so there's enough same-kind
         // material to actually rank by topic match instead of just
         // taking whatever happened to be popular.
-        const related = await resourcesApi.list({ sort: 'popular', pageSize: 30 })
+        let related = { items: [] }
+        try {
+          related = await resourcesApi.list({ sort: 'popular', pageSize: 30 }).catch(() => ({ items: [] }))
+        } catch {
+          // related rail is optional, never let it break the page
+        }
         if (cancelled) return
 
         const currentCategories = res.resource.categories || []
