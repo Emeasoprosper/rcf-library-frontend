@@ -1,13 +1,13 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/pages/admin/AdminAnalytics.jsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import TopAppBar from '../../components/layout/TopAppBar'
 import AdminNav from '../../components/layout/AdminNav'
 import LibraryLoader from '../../components/ui/LibraryLoader'
-import { adminAnalyticsApi } from '../../services/api'
+import { adminAnalyticsApi, adminApi } from '../../services/api'
 
 const TZ = 'Africa/Lagos'
 const COLORS = { orange: '#f97316', blue: '#3b82f6', green: '#22c55e', violet: '#8b5cf6', rose: '#f43f5e' }
-const TABS = ['Overview', 'Resources', 'Health']
+const TABS = ['Checkup', 'Overview', 'Resources', 'Health']
 const EVENT_LABELS = {
   api_error: 'API errors',
   upload_failed: 'Failed uploads',
@@ -250,6 +250,232 @@ function DualBars({ rows }) {
   )
 }
 
+const PIE_COLORS = ['#f97316', '#3b82f6', '#22c55e', '#8b5cf6', '#f43f5e', '#eab308', '#14b8a6', '#94a3b8']
+
+function PieChart({ items, emptyText }) {
+  const clean = (items || []).filter((i) => i.value > 0)
+  if (clean.length === 0) return <Empty text={emptyText} />
+  const sorted = [...clean].sort((a, b) => b.value - a.value)
+  const rest = sorted.slice(7).reduce((s, i) => s + i.value, 0)
+  const slices = rest > 0 ? [...sorted.slice(0, 7), { label: 'Other', value: rest }] : sorted.slice(0, 7)
+  const total = slices.reduce((s, i) => s + i.value, 0)
+  const R = 30
+  const C = 2 * Math.PI * R
+  let offset = 0
+  return (
+    <div className="flex flex-col sm:flex-row items-center gap-5">
+      <svg viewBox="0 0 160 160" className="w-44 h-44 flex-none -rotate-90">
+        {slices.map((s, i) => {
+          const len = (s.value / total) * C
+          const node = (
+            <circle
+              key={s.label}
+              cx="80" cy="80" r={R} fill="none"
+              stroke={PIE_COLORS[i % PIE_COLORS.length]} strokeWidth="60"
+              strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset}
+            >
+              <title>{`${s.label}: ${fmt(s.value)}`}</title>
+            </circle>
+          )
+          offset += len
+          return node
+        })}
+      </svg>
+      <div className="flex flex-col gap-2 min-w-0 w-full">
+        {slices.map((s, i) => (
+          <div key={s.label} className="flex items-center gap-2 font-label-sm text-label-sm text-on-surface">
+            <span className="w-3 h-3 rounded-full flex-none" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+            <span className="truncate">{s.label}</span>
+            <span className="ml-auto flex-none text-on-surface-variant">
+              {fmt(s.value)} · {Math.round((s.value / total) * 1000) / 10}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function HeardFromPie() {
+  const { data, error, loading } = useApi(() => adminApi.registrationStats(), [])
+  return (
+    <Section title="How people heard about the app">
+      {loading ? (
+        <Empty text="Loading…" />
+      ) : error ? (
+        <Empty text={error} />
+      ) : (
+        <PieChart
+          items={(data.heardFrom || []).map((r) => ({ label: r.heard_from, value: r.count }))}
+          emptyText="No answers yet."
+        />
+      )}
+    </Section>
+  )
+}
+
+function TapKpi({ onTap, ...props }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onTap}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onTap() }}
+      className="cursor-pointer rounded-xl hover:ring-1 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+      <Kpi {...props} />
+    </div>
+  )
+}
+
+const HISTORY_TABS = [['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly']]
+const HISTORY_STEP = { daily: 14, weekly: 12, monthly: 12 }
+const HISTORY_MAX = { daily: 60, weekly: 52, monthly: 24 }
+const HISTORY_HELP = {
+  daily: 'People who opened the app on each day, newest first.',
+  weekly: 'People who opened the app at least once in each week (Monday to Sunday).',
+  monthly: 'People who opened the app at least once in each month.',
+}
+
+function historyLabel(g, it) {
+  const asDate = (s) => new Date(`${s}T00:00:00Z`)
+  if (g === 'daily') {
+    return asDate(it.start).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' })
+  }
+  if (g === 'weekly') return `Mon ${fmtDate(it.start)} to Sun ${fmtDate(it.finish)}`
+  return asDate(it.start).toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
+
+function ActivityHistory({ granularity, onGranularity }) {
+  const [count, setCount] = useState(HISTORY_STEP[granularity])
+  const { data, error, loading } = useApi(() => adminAnalyticsApi.activity({ granularity, count }), [granularity, count])
+  const items = data ? [...data.items].reverse() : []
+  const max = Math.max(1, ...items.map((i) => i.activeUsers))
+  const canShowMore = data && data.items.length >= count && count < HISTORY_MAX[granularity]
+
+  return (
+    <Section
+      title="Activity history"
+      action={
+        <CsvButton
+          onClick={() => downloadCsv(`activity-${granularity}.csv`, items.map((i) => ({
+            period_start: i.start, period_end: i.finish, active_users: i.activeUsers,
+            new_registrations: i.registrations, downloads: i.downloads, views: i.views,
+          })))}
+        />
+      }
+    >
+      <div className="flex gap-2 mb-3">
+        {HISTORY_TABS.map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => onGranularity(key)}
+            className={`px-4 h-9 rounded-full font-label-sm text-label-sm ${granularity === key ? 'bg-primary text-on-primary' : 'border border-outline text-on-surface'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="font-label-sm text-label-sm text-on-surface-variant mb-3">{HISTORY_HELP[granularity]}</p>
+
+      {loading && <Empty text="Loading…" />}
+      {error && <p className="font-label-sm text-label-sm text-error">{error}</p>}
+      {!loading && !error && (
+        <div className="flex flex-col divide-y divide-outline">
+          {items.map((i) => (
+            <div key={i.start} className="py-2">
+              <div className="flex justify-between gap-3 font-label-sm text-label-sm text-on-surface">
+                <span className="truncate">
+                  {historyLabel(granularity, i)}
+                  {i.inProgress && <span className="ml-2 text-on-surface-variant">(so far)</span>}
+                </span>
+                <span className="flex-none font-semibold">{fmt(i.activeUsers)} active</span>
+              </div>
+              <div className="h-2 rounded-full bg-surface-container-highest overflow-hidden mt-1">
+                <div className="h-full rounded-full" style={{ width: `${(i.activeUsers / max) * 100}%`, background: COLORS.orange }} />
+              </div>
+              <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">
+                {fmt(i.registrations)} new · {fmt(i.downloads)} downloads · {fmt(i.views)} views
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      {canShowMore && (
+        <button
+          onClick={() => setCount((c) => Math.min(c + HISTORY_STEP[granularity], HISTORY_MAX[granularity]))}
+          className="mt-3 px-4 h-9 rounded-full border border-outline text-on-surface font-label-sm text-label-sm"
+        >
+          Show more
+        </button>
+      )}
+    </Section>
+  )
+}
+
+const LEVEL_STYLE = {
+  critical: { label: 'Fix soon', dot: 'bg-red-500', box: 'border-red-500/40 bg-red-500/10', bar: '#ef4444' },
+  watch: { label: 'Keep an eye on', dot: 'bg-amber-400', box: 'border-amber-400/40 bg-amber-400/10', bar: '#eab308' },
+  good: { label: 'Going well', dot: 'bg-emerald-500', box: 'border-emerald-500/40 bg-emerald-500/10', bar: '#22c55e' },
+  info: { label: 'Good to know', dot: 'bg-sky-400', box: 'border-outline bg-surface-container', bar: '#38bdf8' },
+}
+const AREA_LABEL = { growth: 'Growth', engagement: 'Engagement', health: 'Health', capacity: 'Limits' }
+
+function CheckupTab() {
+  const [nonce, setNonce] = useState(0)
+  const { data, error, loading } = useApi(() => adminAnalyticsApi.insights(), [nonce])
+  if (loading) return <div className="flex justify-center py-stack-lg"><LibraryLoader size={80} /></div>
+  if (error) return <p className="font-body-md text-body-md text-error">{error}</p>
+
+  const s = LEVEL_STYLE[data.summary.level]
+  const groups = ['critical', 'watch', 'good', 'info']
+    .map((level) => ({ level, list: data.items.filter((i) => i.level === level) }))
+    .filter((g) => g.list.length > 0)
+
+  return (
+    <>
+      <div className={`mb-stack-lg p-stack-md rounded-xl border ${s.box}`}>
+        <div className="flex items-center gap-2">
+          <span className={`w-3 h-3 rounded-full ${s.dot}`} />
+          <h2 className="font-headline-sm text-headline-sm font-display text-on-surface">{data.summary.headline}</h2>
+        </div>
+        <p className="font-body-md text-body-md text-on-surface mt-1">{data.summary.detail}</p>
+        {data.summary.praise && <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">{data.summary.praise}</p>}
+        <div className="flex items-center justify-between gap-3 mt-3">
+          <span className="font-label-sm text-label-sm text-on-surface-variant">Checked {new Date(data.generatedAt).toLocaleString()}</span>
+          <button onClick={() => setNonce((n) => n + 1)} className="px-3 h-8 rounded-full border border-outline text-on-surface font-label-sm text-label-sm">
+            Check again
+          </button>
+        </div>
+      </div>
+
+      {groups.map((g) => (
+        <section key={g.level} className="mb-stack-lg">
+          <h2 className="font-headline-sm text-headline-sm font-display text-on-surface mb-stack-sm">{LEVEL_STYLE[g.level].label}</h2>
+          <div className="flex flex-col gap-3">
+            {g.list.map((item, i) => (
+              <div key={`${item.title}-${i}`} className={`p-stack-md rounded-xl border ${LEVEL_STYLE[g.level].box}`}>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">{AREA_LABEL[item.area] || item.area}</p>
+                <p className="font-body-md text-body-md font-semibold text-on-surface">{item.title}</p>
+                <p className="font-label-sm text-label-sm text-on-surface-variant mt-1 break-words">{item.detail}</p>
+                {typeof item.percent === 'number' && (
+                  <div className="h-2 rounded-full bg-surface-container-highest overflow-hidden mt-2">
+                    <div className="h-full rounded-full" style={{ width: `${Math.min(item.percent, 100)}%`, background: LEVEL_STYLE[g.level].bar }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <p className="font-label-sm text-label-sm text-on-surface-variant mb-stack-lg">
+        These verdicts use rules of thumb on your real data, not guarantees. Limits assume {data.limits.dbMb} MB of database, {data.limits.memMb} MB of server memory and {data.limits.driveGb} GB of file storage.
+      </p>
+    </>
+  )
+}
+
 function DateFilter({ range, onChange }) {
   const [from, setFrom] = useState(range.from)
   const [to, setTo] = useState(range.to)
@@ -288,6 +514,12 @@ function DateFilter({ range, onChange }) {
 
 function OverviewTab({ range }) {
   const { data: ov, error, loading } = useApi(() => adminAnalyticsApi.overview({ from: range.from, to: range.to }), [range.from, range.to])
+  const [gran, setGran] = useState('daily')
+  const historyRef = useRef(null)
+  const openHistory = (g) => {
+    setGran(g)
+    setTimeout(() => historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }
   if (loading) return <div className="flex justify-center py-stack-lg"><LibraryLoader size={80} /></div>
   if (error) return <p className="font-body-md text-body-md text-error">{error}</p>
   const k = ov.kpis
@@ -311,9 +543,9 @@ function OverviewTab({ range }) {
         <Kpi label="New registrations" value={fmt(k.newRegistrations.current)} growth={k.newRegistrations.growthPct} />
         <Kpi label="Active users (unique)" value={fmt(k.activeUsers.current)} growth={k.activeUsers.growthPct} />
         <Kpi label="Returning users" value={fmt(k.returningUsers.current)} growth={k.returningUsers.growthPct} note="Active, and signed up before this period" />
-        <Kpi label="Daily active (end date)" value={fmt(k.dau.current)} growth={k.dau.growthPct} />
-        <Kpi label="Weekly active" value={fmt(k.wau.current)} growth={k.wau.growthPct} note="7 days to the end date" />
-        <Kpi label="Monthly active" value={fmt(k.mau.current)} growth={k.mau.growthPct} note="30 days to the end date" />
+        <TapKpi label="Daily active (end date)" value={fmt(k.dau.current)} growth={k.dau.growthPct} note="Tap to see every day" onTap={() => openHistory('daily')} />
+        <TapKpi label="Weekly active" value={fmt(k.wau.current)} growth={k.wau.growthPct} note="Tap to see every week" onTap={() => openHistory('weekly')} />
+        <TapKpi label="Monthly active" value={fmt(k.mau.current)} growth={k.mau.growthPct} note="Tap to see every month" onTap={() => openHistory('monthly')} />
         <Kpi label="Stickiness" value={k.stickinessPct == null ? '–' : `${k.stickinessPct}%`} note="Daily active ÷ monthly active" />
         <Kpi label="Downloads" value={fmt(k.downloads.current)} growth={k.downloads.growthPct} />
         <Kpi label="Unique downloaders" value={fmt(k.uniqueDownloaders.current)} growth={k.uniqueDownloaders.growthPct} />
@@ -338,6 +570,12 @@ function OverviewTab({ range }) {
       </Section>
 
       <Section title="Downloads per day"><ColumnChart rows={ov.series} yKey="downloads" color={COLORS.blue} /></Section>
+
+      <div ref={historyRef}>
+        <ActivityHistory key={gran} granularity={gran} onGranularity={setGran} />
+      </div>
+
+      <HeardFromPie />
 
       <Section title="Compared with the previous period">
         <div className="flex flex-col divide-y divide-outline">
@@ -438,6 +676,13 @@ function ResourcesTab() {
 
       <Section title="Share of library vs share of downloads"><DualBars rows={dual} /></Section>
 
+      <Section title="Pie: what the library is made of">
+        <PieChart items={rs.byType.filter((t) => t.total > 0).map((t) => ({ label: t.label, value: t.total }))} emptyText="No resources yet." />
+      </Section>
+      <Section title="Pie: what people download">
+        <PieChart items={rs.downloadsByType.map((t) => ({ label: t.label, value: t.downloads }))} emptyText="No downloads yet." />
+      </Section>
+
       <Section title="Downloads by type"><HBars items={rs.downloadsByType} labelKey="label" valueKey="downloads" color={COLORS.blue} emptyText="No downloads yet." /></Section>
       <Section title="Downloads by category"><HBars items={rs.downloadsByCategory} labelKey="name" valueKey="downloads" color={COLORS.violet} emptyText="No downloads yet." /></Section>
 
@@ -518,7 +763,7 @@ function HealthTab({ range }) {
 }
 
 function AdminAnalytics() {
-  const [tab, setTab] = useState('Overview')
+  const [tab, setTab] = useState('Checkup')
   const [range, setRange] = useState(() => {
     const t = todayLagos()
     return { from: addDays(t, -29), to: t }
@@ -540,8 +785,9 @@ function AdminAnalytics() {
           ))}
         </div>
 
-        {tab !== 'Resources' && <DateFilter range={range} onChange={setRange} />}
+        {(tab === 'Overview' || tab === 'Health') && <DateFilter range={range} onChange={setRange} />}
 
+        {tab === 'Checkup' && <CheckupTab />}
         {tab === 'Overview' && <OverviewTab range={range} />}
         {tab === 'Resources' && <ResourcesTab />}
         {tab === 'Health' && <HealthTab range={range} />}

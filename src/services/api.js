@@ -400,6 +400,8 @@ export const adminAnalyticsApi = {
   resources: () => apiFetch('/admin/analytics/resources'),
   system: () => apiFetch('/admin/analytics/system'),
   events: (params = {}) => apiFetch(`/admin/analytics/events?${new URLSearchParams(params).toString()}`),
+  activity: (params = {}) => apiFetch(`/admin/analytics/activity?${new URLSearchParams(params).toString()}`),
+  insights: () => apiFetch('/admin/analytics/insights'),
 }
 
 export const presenceApi = {
