@@ -395,6 +395,13 @@ export const adminApi = {
   },
 }
 
+export const adminAnalyticsApi = {
+  overview: (params = {}) => apiFetch(`/admin/analytics/overview?${new URLSearchParams(params).toString()}`),
+  resources: () => apiFetch('/admin/analytics/resources'),
+  system: () => apiFetch('/admin/analytics/system'),
+  events: (params = {}) => apiFetch(`/admin/analytics/events?${new URLSearchParams(params).toString()}`),
+}
+
 export const presenceApi = {
   heartbeat: () => apiFetch('/presence/heartbeat', { method: 'POST' }),
   get: () => apiFetch('/presence'),

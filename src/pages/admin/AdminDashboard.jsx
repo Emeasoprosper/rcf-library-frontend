@@ -16,6 +16,7 @@ const quickLinks = [
   { to: '/admin/requests', icon: 'inbox', label: 'Open Requests', gradient: 'from-amber-500 to-orange-400' },
   { to: '/admin/users', icon: 'group', label: 'Manage Users', gradient: 'from-violet-500 to-purple-400' },
   { to: '/admin/announcements', icon: 'campaign', label: 'Announce / News', gradient: 'from-pink-500 to-rose-400' },
+  { to: '/admin/analytics', icon: 'bar_chart', label: 'Analytics', gradient: 'from-orange-500 to-amber-400' },
 ]
 
 const statGradients = {

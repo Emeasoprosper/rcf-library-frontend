@@ -39,6 +39,7 @@ import ShareRedirect from '../pages/ShareRedirect'
 import AdminResources from '../pages/admin/AdminResources'
 import OrganizeResources from '../pages/admin/OrganizeResources'
 import AdminHomeRails from '../pages/admin/AdminHomeRails'
+import AdminAnalytics from '../pages/admin/AdminAnalytics'
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth()
@@ -97,6 +98,7 @@ function AppRoutes() {
       <Route path="/admin/resources" element={<AdminRoute><AdminResources /></AdminRoute>} />
       <Route path="/admin/organize" element={<AdminRoute><OrganizeResources /></AdminRoute>} />
       <Route path="/admin/home-rails" element={<AdminRoute><AdminHomeRails /></AdminRoute>} />
+      <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
       <Route path="/library/:id" element={<ResourceDetail />} />
       <Route path="/collections/:id" element={<CollectionPage />} />
     </Routes>
