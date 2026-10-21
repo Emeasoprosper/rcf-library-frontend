@@ -16,6 +16,7 @@ import ReadingHistory from '../pages/ReadingHistory'
 import HelpSupport from '../pages/HelpSupport'
 import SavedResources from '../pages/SavedResources'
 import Settings from '../pages/Settings'
+import NotificationSettings from '../pages/NotificationSettings'
 import GettingStarted from '../pages/GettingStarted'
 import Licensing from '../pages/Licensing'
 import CitationTools from '../pages/CitationTools'
@@ -91,6 +92,7 @@ function AppRoutes() {
       <Route path="/help" element={<ProtectedRoute><HelpSupport /></ProtectedRoute>} />
       <Route path="/saved" element={<ProtectedRoute><SavedResources /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
       <Route path="/help/getting-started" element={<ProtectedRoute><GettingStarted /></ProtectedRoute>} />
       <Route path="/help/licensing" element={<ProtectedRoute><Licensing /></ProtectedRoute>} />
       <Route path="/help/citation-tools" element={<ProtectedRoute><CitationTools /></ProtectedRoute>} />

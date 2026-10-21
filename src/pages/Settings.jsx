@@ -6,7 +6,7 @@ import ToggleSwitch from '../components/ui/ToggleSwitch'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
 import { TOUR_FORCE_START_KEY } from '../contexts/TourContext'
-import { subscribeToPush, unsubscribeFromPush } from '../lib/pushNotifications'
+
 import { useLanguage, AVAILABLE_LANGUAGES } from '../contexts/LanguageContext'
 
 function Settings() {
@@ -33,11 +33,7 @@ function Settings() {
     }
   }, [user])
 
-  const [notifications, setNotifications] = useState({
-    push: true,
-    email: false,
-    newResources: true,
-  })
+
 
   const [privacy, setPrivacy] = useState({
     showProfile: true,
@@ -237,63 +233,14 @@ function Settings() {
             Preferences
           </h2>
           <div className="flex flex-col gap-gutter">
-            <div className="rounded-xl bg-surface-container border border-outline overflow-hidden">
-              <button
-                onClick={() => toggleSection('notifications')}
-                className="w-full flex items-center gap-4 p-stack-md text-left"
-              >
-                <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
-                <span className="font-body-md text-body-md text-on-surface flex-grow">Notification Preferences</span>
-                <span
-                  className={`material-symbols-outlined text-on-surface-variant text-[18px] transition-transform ${
-                    openSection === 'notifications' ? 'rotate-180' : ''
-                  }`}
-                >
-                  expand_more
-                </span>
-              </button>
-              {openSection === 'notifications' && (
-                <div className="px-stack-md pb-stack-md flex flex-col gap-4 border-t border-outline/30 pt-stack-md">
-                  <div className="flex items-center justify-between">
-                    <span className="font-body-md text-body-md text-on-surface">Push Notifications</span>
-                    <ToggleSwitch
-                      checked={notifications.push}
-                      onChange={async (v) => {
-                        setNotifications((n) => ({ ...n, push: v }))
-                        try {
-                          if (v) await subscribeToPush()
-                          else await unsubscribeFromPush()
-                        } catch (err) {
-                          setNotifications((n) => ({ ...n, push: !v }))
-                          alert(err.message)
-                        }
-                      }}
-                      label="Push Notifications"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-body-md text-body-md text-on-surface">Email Updates</span>
-                    <ToggleSwitch
-                      checked={notifications.email}
-                      onChange={(v) => setNotifications((n) => ({ ...n, email: v }))}
-                      label="Email Updates"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-body-md text-body-md text-on-surface">New Resource Alerts</span>
-                    <ToggleSwitch
-                      checked={notifications.newResources}
-                      onChange={(v) => setNotifications((n) => ({ ...n, newResources: v }))}
-                      label="New Resource Alerts"
-                    />
-                  </div>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant pt-2 border-t border-outline/30">
-                    Push Notifications is live. Email Updates and New Resource Alerts aren't
-                    wired to the backend yet — changes to those two won't persist on refresh.
-                  </p>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => navigate('/settings/notifications')}
+              className="flex items-center gap-4 p-stack-md rounded-xl bg-surface-container border border-outline text-left"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
+              <span className="font-body-md text-body-md text-on-surface flex-grow">Notification Preferences</span>
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+            </button>
 
             <div className="rounded-xl bg-surface-container border border-outline overflow-hidden">
               <button

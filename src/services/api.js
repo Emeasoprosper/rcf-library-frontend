@@ -298,6 +298,9 @@ export const communityApi = {
   myUploads: () => apiFetch('/me/uploads'),
   deleteMyUpload: (id) => apiFetch(`/me/uploads/${id}`, { method: 'DELETE' }),
   leaderboard: () => apiFetch('/leaderboard'),
+  pushPreferences: () => apiFetch('/push/preferences'),
+  savePushPreferences: (prefs) =>
+    apiFetch('/push/preferences', { method: 'PUT', body: JSON.stringify({ prefs }) }),
   subscribePush: (subscription) =>
     apiFetch('/push/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
   unsubscribePush: (payload) =>
