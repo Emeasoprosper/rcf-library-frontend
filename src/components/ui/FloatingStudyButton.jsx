@@ -99,13 +99,15 @@ function FloatingStudyButton() {
       onPointerCancel={onPointerCancel}
       className="fixed z-40 md:hidden w-14 h-14 rounded-full flex items-center justify-center touch-none select-none"
     >
-      <span className="pointer-events-none absolute inset-0 rounded-full bg-orange-500/40 animate-ping motion-reduce:hidden" />
-      <span
-        className="pointer-events-none absolute inset-0 rounded-full bg-orange-500/30 animate-ping motion-reduce:hidden"
-        style={{ animationDelay: '0.8s' }}
-      />
+      <style>{`
+        @keyframes studyWave { 0% { transform: scale(1); opacity: 0.5; } 5% { transform: scale(1.8); opacity: 0; } 5.01% { transform: scale(1); opacity: 0.5; } 10% { transform: scale(1.8); opacity: 0; } 10.01%, 100% { transform: scale(1); opacity: 0; } }
+        @keyframes studyWiggle { 0% { transform: rotate(0); } 1% { transform: rotate(-14deg); } 2% { transform: rotate(12deg); } 3% { transform: rotate(-8deg); } 4% { transform: rotate(6deg); } 5%, 100% { transform: rotate(0); } }
+        .study-wave { animation: studyWave 33s ease-out infinite; opacity: 0; }
+        .study-wiggle { animation: studyWiggle 33s ease-in-out infinite; }
+      `}</style>
+      <span className="study-wave pointer-events-none absolute inset-0 rounded-full bg-orange-500 motion-reduce:hidden" />
       <span className="pointer-events-none relative w-14 h-14 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/40 border border-white/20">
-        <span className="material-symbols-outlined text-[28px]">auto_stories</span>
+        <span className="study-wiggle material-symbols-outlined text-[28px]">auto_stories</span>
       </span>
     </button>
   )
