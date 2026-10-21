@@ -489,6 +489,8 @@ export const birthdaysApi = {
 }
 
 export const presenceApi = {
+  setStudyEnabled: (enabled) =>
+    apiFetch('/presence/study-space', { method: 'PATCH', body: JSON.stringify({ enabled }) }),
   heartbeat: () => apiFetch('/presence/heartbeat', { method: 'POST' }),
   get: () => apiFetch('/presence'),
   setEnabled: (enabled) =>

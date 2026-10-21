@@ -13,7 +13,7 @@ export function PresenceProvider({ children }) {
   const { user } = useAuth()
   const signedIn = Boolean(user)
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
-  const [state, setState] = useState({ enabled: false, online: null })
+  const [state, setState] = useState({ enabled: false, online: null, studyEnabled: false })
 
   const refresh = useCallback(async () => {
     if (!signedIn) return
@@ -26,6 +26,7 @@ export function PresenceProvider({ children }) {
       const res = await presenceApi.get()
       setState({
         enabled: Boolean(res.enabled),
+        studyEnabled: Boolean(res.studyEnabled),
         online: typeof res.online === 'number' ? res.online : null,
       })
     } catch {
@@ -35,7 +36,7 @@ export function PresenceProvider({ children }) {
 
   useEffect(() => {
     if (!signedIn) {
-      setState({ enabled: false, online: null })
+      setState({ enabled: false, online: null, studyEnabled: false })
       return
     }
     refresh()
@@ -52,7 +53,10 @@ export function PresenceProvider({ children }) {
     }
   }, [signedIn, refresh])
 
-  const value = useMemo(() => ({ ...state, isAdmin, refresh }), [state, isAdmin, refresh])
+  const value = useMemo(
+    () => ({ ...state, isAdmin, studyVisible: state.studyEnabled || isAdmin, refresh }),
+    [state, isAdmin, refresh]
+  )
   return <PresenceContext.Provider value={value}>{children}</PresenceContext.Provider>
 }
 

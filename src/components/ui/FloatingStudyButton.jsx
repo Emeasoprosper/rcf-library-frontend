@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { usePresence } from '../../contexts/PresenceContext'
 
 const HIDDEN_PREFIXES = ['/reading-space', '/signin', '/splash', '/complete-profile', '/admin']
 const STORAGE_KEY = 'rcf_study_btn_pos'
@@ -28,6 +29,7 @@ function FloatingStudyButton() {
   const { isAuthenticated } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const presence = usePresence()
   const [pos, setPos] = useState(loadPos)
   const [drag, setDrag] = useState(null)
   const gesture = useRef(null)
@@ -79,7 +81,7 @@ function FloatingStudyButton() {
     setDrag(null)
   }
 
-  if (!isAuthenticated) return null
+  if (!isAuthenticated || !presence?.studyVisible) return null
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null
   if (/^\/resources\/[^/]+\/read/.test(pathname)) return null
 

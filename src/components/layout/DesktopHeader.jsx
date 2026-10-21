@@ -12,6 +12,7 @@ import StudyHeaderButton from './StudyHeaderButton'
 import HeaderExtras from './HeaderExtras'
 import { navItems, TOUR_NAV_IDS } from '../../lib/navItems'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
+import { usePresence } from '../../contexts/PresenceContext'
 
 function DesktopHeader() {
   const navigate = useNavigate()
@@ -21,6 +22,7 @@ function DesktopHeader() {
   const [badgeCount, setBadgeCount] = useState(0)
   const [clicked, setClicked] = useState({ to: null, n: 0 })
   const { openModal } = useNotificationsModal()
+  const presence = usePresence()
 
   const loadBadgeCount = useCallback(() => {
     Promise.all([
@@ -82,12 +84,12 @@ function DesktopHeader() {
 
       <div className="flex-1" />
 
-      {!isAdmin && (
+      {!isAdmin && presence?.studyVisible && (
         <StudyHeaderButton className="hidden xl:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
       )}
 
       <div className="flex items-center gap-4 flex-none">
-        {!isAdmin && <StudyHeaderButton className="flex xl:hidden" />}
+        {!isAdmin && presence?.studyVisible && <StudyHeaderButton className="flex xl:hidden" />}
         <HeaderExtras />
         <OnlinePill />
         <button

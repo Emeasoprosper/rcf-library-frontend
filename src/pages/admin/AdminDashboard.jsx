@@ -44,6 +44,22 @@ function AdminDashboard() {
   const presence = usePresence()
   const [savingIndicator, setSavingIndicator] = useState(false)
   const [indicatorError, setIndicatorError] = useState('')
+  const [savingStudy, setSavingStudy] = useState(false)
+  const [studyError, setStudyError] = useState('')
+
+  async function toggleStudySpace() {
+    if (!presence) return
+    setSavingStudy(true)
+    setStudyError('')
+    try {
+      await presenceApi.setStudyEnabled(!presence.studyEnabled)
+      await presence.refresh()
+    } catch (err) {
+      setStudyError(err.message || 'Could not change the Study space switch.')
+    } finally {
+      setSavingStudy(false)
+    }
+  }
 
   async function toggleOnlineIndicator() {
     if (!presence) return
@@ -146,9 +162,6 @@ function AdminDashboard() {
               {link.to === '/admin/requests' && stats?.openRequests > 0 && (
                 <span className="text-label-sm font-label-sm text-primary">{stats.openRequests} waiting</span>
               )}
-              {link.to === '/admin/requests' && stats?.openRequests > 0 && (
-                <span className="text-label-sm font-label-sm text-primary">{stats.openRequests} waiting</span>
-              )}
             </button>
           ))}
         </section>
@@ -164,7 +177,8 @@ function AdminDashboard() {
             </p>
           </div>
         </section>
-      <section className="mt-stack-lg">
+
+        <section className="mt-stack-lg">
           <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-stack-sm">
             Online Indicator
           </h2>
@@ -199,7 +213,41 @@ function AdminDashboard() {
           </div>
         </section>
 
-      {user?.role === 'superadmin' && (
+        <section className="mt-stack-lg">
+          <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-stack-sm">
+            Study Space
+          </h2>
+          <div className="flex items-center gap-4 p-stack-md rounded-xl bg-surface-container border border-outline">
+            <div className="flex-grow min-w-0">
+              <p className="font-body-md text-body-md font-semibold text-on-surface">
+                Show Study space to students
+              </p>
+              <p className="font-label-sm text-label-sm text-on-surface-variant">
+                Hidden from students while you finish it. Admins always see it, whatever this is set to.
+              </p>
+              {studyError && (
+                <p className="font-label-sm text-label-sm text-error mt-1">{studyError}</p>
+              )}
+            </div>
+            <button
+              role="switch"
+              aria-checked={Boolean(presence?.studyEnabled)}
+              onClick={toggleStudySpace}
+              disabled={!presence || savingStudy}
+              className={`relative w-12 h-7 flex-none rounded-full transition-colors disabled:opacity-50 ${
+                presence?.studyEnabled ? 'bg-emerald-500' : 'bg-surface-container-highest border border-outline'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${
+                  presence?.studyEnabled ? 'translate-x-5' : ''
+                }`}
+              />
+            </button>
+          </div>
+        </section>
+
+        {user?.role === 'superadmin' && (
           <button
             onClick={viewServerErrors}
             disabled={loadingErrors}
