@@ -22,6 +22,10 @@ import CitationTools from '../pages/CitationTools'
 import Notifications from '../pages/Notifications'
 import NewsDetail from '../pages/NewsDetail'
 import HeadsUp from '../pages/HeadsUp'
+import ReadingSpace from '../pages/ReadingSpace'
+import StudySaved from '../pages/StudySaved'
+import StudyNotes from '../pages/StudyNotes'
+import StudyPractice from '../pages/StudyPractice'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import AdminUploads from '../pages/admin/AdminUploads'
 import AdminRequests from '../pages/admin/AdminRequests'
@@ -79,6 +83,11 @@ function AppRoutes() {
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/downloads" element={<ProtectedRoute><Downloads /></ProtectedRoute>} />
       <Route path="/reading-history" element={<ProtectedRoute><ReadingHistory /></ProtectedRoute>} />
+      <Route path="/reading-space" element={<ProtectedRoute><ReadingSpace /></ProtectedRoute>} />
+      <Route path="/reading-space/saved" element={<ProtectedRoute><StudySaved /></ProtectedRoute>} />
+      <Route path="/reading-space/notes" element={<ProtectedRoute><StudyNotes /></ProtectedRoute>} />
+      <Route path="/reading-space/practice" element={<ProtectedRoute><StudyPractice /></ProtectedRoute>} />
+      <Route path="/reading-space/practice/:setId" element={<ProtectedRoute><StudyPractice /></ProtectedRoute>} />
       <Route path="/help" element={<ProtectedRoute><HelpSupport /></ProtectedRoute>} />
       <Route path="/saved" element={<ProtectedRoute><SavedResources /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

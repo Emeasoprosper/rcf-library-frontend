@@ -449,6 +449,39 @@ export const announcementMusicApi = {
   list: () => apiFetch('/admin/announcement-music'),
 }
 
+export const studyApi = {
+  saved: () => apiFetch('/study/saved'),
+  notes: (resourceId) =>
+    apiFetch(`/study/notes${resourceId ? `?resourceId=${encodeURIComponent(resourceId)}` : ''}`),
+  createNote: (payload) => apiFetch('/study/notes', { method: 'POST', body: JSON.stringify(payload) }),
+  updateNote: (id, payload) => apiFetch(`/study/notes/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteNote: (id) => apiFetch(`/study/notes/${id}`, { method: 'DELETE' }),
+  sets: () => apiFetch('/study/question-sets'),
+  generate: (payload) =>
+    apiFetch('/study/question-sets/generate', { method: 'POST', body: JSON.stringify(payload) }),
+  getSet: (id) => apiFetch(`/study/question-sets/${id}`),
+  submitAttempt: (id, answers, durationSeconds) =>
+    apiFetch(`/study/question-sets/${id}/attempt`, {
+      method: 'POST',
+      body: JSON.stringify({ answers, durationSeconds }),
+    }),
+  deleteSet: (id) => apiFetch(`/study/question-sets/${id}`, { method: 'DELETE' }),
+}
+
+export const readingSpaceApi = {
+  overview: () => apiFetch('/reading-space/overview'),
+  startSession: (resourceId, page) =>
+    apiFetch('/reading-space/sessions', { method: 'POST', body: JSON.stringify({ resourceId, page }) }),
+  heartbeat: (id, activeSeconds, page) =>
+    apiFetch(`/reading-space/sessions/${id}`, { method: 'PATCH', body: JSON.stringify({ activeSeconds, page }) }),
+  plans: () => apiFetch('/reading-space/plans'),
+  createPlan: (payload) =>
+    apiFetch('/reading-space/plans', { method: 'POST', body: JSON.stringify(payload) }),
+  setPlanDone: (id, completed) =>
+    apiFetch(`/reading-space/plans/${id}`, { method: 'PATCH', body: JSON.stringify({ completed }) }),
+  deletePlan: (id) => apiFetch(`/reading-space/plans/${id}`, { method: 'DELETE' }),
+}
+
 export const birthdaysApi = {
   today: () => apiFetch('/birthdays/today'),
 }
