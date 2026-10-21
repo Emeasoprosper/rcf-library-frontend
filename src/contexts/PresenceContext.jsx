@@ -54,7 +54,7 @@ export function PresenceProvider({ children }) {
   }, [signedIn, refresh])
 
   const value = useMemo(
-    () => ({ ...state, isAdmin, studyVisible: state.studyEnabled || isAdmin, refresh }),
+    () => ({ ...state, isAdmin, studyVisible: state.studyEnabled, refresh }),
     [state, isAdmin, refresh]
   )
   return <PresenceContext.Provider value={value}>{children}</PresenceContext.Provider>

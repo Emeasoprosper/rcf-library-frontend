@@ -55,7 +55,7 @@ function AdminDashboard() {
       await presenceApi.setStudyEnabled(!presence.studyEnabled)
       await presence.refresh()
     } catch (err) {
-      setStudyError(err.message || 'Could not change the Study space switch.')
+      setStudyError(err.message || 'Could not change the Reserved: Study Space switch.')
     } finally {
       setSavingStudy(false)
     }
@@ -215,15 +215,15 @@ function AdminDashboard() {
 
         <section className="mt-stack-lg">
           <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-stack-sm">
-            Study Space
+            Reserved: Study Space
           </h2>
           <div className="flex items-center gap-4 p-stack-md rounded-xl bg-surface-container border border-outline">
             <div className="flex-grow min-w-0">
               <p className="font-body-md text-body-md font-semibold text-on-surface">
-                Show Study space to students
+                Show Reserved: Study Space to students
               </p>
               <p className="font-label-sm text-label-sm text-on-surface-variant">
-                Hidden from students while you finish it. Admins always see it, whatever this is set to.
+                Reserved while it is being finished. Only the super admin can turn it on for students. Admins can open it below to test.
               </p>
               {studyError && (
                 <p className="font-label-sm text-label-sm text-error mt-1">{studyError}</p>
@@ -233,7 +233,7 @@ function AdminDashboard() {
               role="switch"
               aria-checked={Boolean(presence?.studyEnabled)}
               onClick={toggleStudySpace}
-              disabled={!presence || savingStudy}
+              disabled={!presence || savingStudy || user?.role !== 'superadmin'}
               className={`relative w-12 h-7 flex-none rounded-full transition-colors disabled:opacity-50 ${
                 presence?.studyEnabled ? 'bg-emerald-500' : 'bg-surface-container-highest border border-outline'
               }`}
@@ -246,6 +246,15 @@ function AdminDashboard() {
             </button>
           </div>
         </section>
+
+        <button
+          onClick={() => navigate('/reading-space')}
+          className="mt-stack-md w-full flex items-center gap-3 p-stack-md rounded-xl bg-surface-container border border-outline hover:border-orange-500/50 transition-colors text-left"
+        >
+          <span className="material-symbols-outlined text-orange-400">auto_stories</span>
+          <span className="flex-grow font-body-md text-body-md text-on-surface">Open Study space (admin preview)</span>
+          <span className="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+        </button>
 
         {user?.role === 'superadmin' && (
           <button
