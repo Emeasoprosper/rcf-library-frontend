@@ -29,7 +29,7 @@ const CATEGORY_GRADIENTS = [
 const resourceDetailPath = (id) => `/library/${id}`
 
 const RECENTS_KEY = 'recentSearches'
-const RECENTS_VERSION = 2 // bumped: old entries were {term, category} text-only
+const RECENTS_VERSION = 3 // bumped: v2 could save entries with lost thumbnails
 
 // Debounce delay for live search-as-you-type, and the minimum characters
 // before we bother hitting the backend at all. 1 (not 2) since the
@@ -281,9 +281,9 @@ function Search() {
     const stub = {
       id: resource.id,
       title: resource.title,
-      thumbnailUrl: resource.thumbnail_url,
-      thumbnailStatus: resource.thumbnail_status,
-      fileType: resource.file_type,
+      thumbnailUrl: resource.thumbnail_url ?? resource.thumbnailUrl,
+      thumbnailStatus: resource.thumbnail_status ?? resource.thumbnailStatus,
+      fileType: resource.file_type ?? resource.fileType,
     }
     const next = [stub, ...recents.filter((r) => r.id !== stub.id)].slice(0, 10)
     setRecents(next)
@@ -299,8 +299,7 @@ function Search() {
   const openResource = (resource) => {
     addRecent(resource)
     setHistoryOpen(false)
-    const kind = getMediaKind(resource.file_type)
-    navigate(kind === 'book' ? resourceDetailPath(resource.id) : `/resources/${resource.id}/read`)
+    navigate(resourceDetailPath(resource.id))
   }
 
   const showIdleContent = query.trim().length < MIN_SEARCH_LENGTH
@@ -407,7 +406,7 @@ function Search() {
               </div>
             )}
 
-            <div className="flex flex-col gap-stack-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-gutter">
               {results.map((resource) => {
                 const props = toCardProps(resource, openResource)
                 const tags = []
