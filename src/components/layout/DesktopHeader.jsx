@@ -8,6 +8,7 @@ import { getDismissedNewsIds } from '../../lib/dismissedNews'
 import logo from '../../assets/RCFmouau.svg'
 import DesktopNavIcon from './DesktopNavIcon'
 import OnlinePill from './OnlinePill'
+import StudyHeaderButton from './StudyHeaderButton'
 import HeaderExtras from './HeaderExtras'
 import { navItems, TOUR_NAV_IDS } from '../../lib/navItems'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
@@ -84,6 +85,10 @@ function DesktopHeader() {
       </nav>
 
       <div className="flex-1" />
+
+      {!isAdmin && (
+        <StudyHeaderButton className="hidden xl:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+      )}
 
       <div className="flex items-center gap-4 flex-none">
         {!isAdmin && (
