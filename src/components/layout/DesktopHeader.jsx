@@ -82,6 +82,18 @@ function DesktopHeader() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-4 flex-none">
+        {!isAdmin && (
+          <button
+            onClick={() => navigate('/reading-space')}
+            aria-label="Open Reading Space"
+            title="Study space"
+            className="relative flex items-center gap-2 h-10 pl-3 pr-4 rounded-full bg-orange-500 text-white font-label-md text-label-md shadow-lg shadow-orange-500/30 active:scale-95 transition-transform"
+          >
+            <span className="pointer-events-none absolute inset-0 rounded-full bg-orange-500/40 animate-ping motion-reduce:hidden" />
+            <span className="relative material-symbols-outlined text-[22px]">auto_stories</span>
+            <span className="relative">Study</span>
+          </button>
+        )}
         <HeaderExtras />
         <OnlinePill />
         <button
