@@ -17,6 +17,7 @@ import MissingDetailsPrompt from './components/ui/MissingDetailsPrompt'
 import BirthdayCelebration from './components/ui/BirthdayCelebration'
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner'
 import { PresenceProvider } from './contexts/PresenceContext'
+import FloatingStudyButton from './components/ui/FloatingStudyButton'
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <MissingDetailsPrompt />
             <BirthdayCelebration />
             <NotificationsModal />
+            <FloatingStudyButton />
           </PresenceProvider>
           </NotificationsModalProvider>
         </HeaderAmbientProvider>

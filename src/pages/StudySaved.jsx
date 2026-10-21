@@ -34,6 +34,7 @@ function StudySaved() {
   const [pageFrom, setPageFrom] = useState('')
   const [pageTo, setPageTo] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [pastByResource, setPastByResource] = useState({})
 
   useEffect(() => {
     studyApi
@@ -42,6 +43,15 @@ function StudySaved() {
       .catch((err) => setError(err.message || 'Could not load your saved material.'))
       .finally(() => setLoading(false))
   }, [])
+
+  const togglePanel = (id, isOpen) => {
+    setOpenId(isOpen ? null : id)
+    if (isOpen || pastByResource[id]) return
+    studyApi
+      .pastQuestions(id)
+      .then((res) => setPastByResource((prev) => ({ ...prev, [id]: res.items || [] })))
+      .catch(() => setPastByResource((prev) => ({ ...prev, [id]: [] })))
+  }
 
   const handleGenerate = async (resourceId) => {
     setGenerating(true)
@@ -127,7 +137,7 @@ function StudySaved() {
                     Notes
                   </Link>
                   <button
-                    onClick={() => setOpenId(open ? null : item.id)}
+                    onClick={() => togglePanel(item.id, open)}
                     disabled={blocked}
                     className={`flex-1 py-2 rounded-lg font-label-md text-label-md bg-primary text-on-primary ${blocked ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
@@ -137,6 +147,33 @@ function StudySaved() {
 
                 {open && !blocked && (
                   <div className="mt-3 flex flex-col gap-3 pt-3 border-t border-outline">
+                    {(pastByResource[item.id] || []).length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        <p className="font-label-md text-label-md text-on-surface-variant">
+                          Past questions for {item.course_code} are already in the library
+                        </p>
+                        {pastByResource[item.id].map((pq) => (
+                          <Link
+                            key={pq.id}
+                            to={`/resources/${pq.id}/read`}
+                            className="flex items-center gap-3 p-2 rounded-lg bg-surface-container-low border border-outline active:scale-[0.98] transition-transform"
+                          >
+                            <div className="w-10 h-12 flex-none rounded bg-surface-container-highest overflow-hidden flex items-center justify-center border border-outline/50">
+                              {pq.thumbnail_url ? (
+                                <img src={pq.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                              ) : (
+                                <span className="material-symbols-outlined text-primary">quiz</span>
+                              )}
+                            </div>
+                            <p className="flex-grow min-w-0 font-body-md text-body-md text-on-surface line-clamp-2">{pq.title}</p>
+                            <span className="material-symbols-outlined text-on-surface-variant text-[20px]">chevron_right</span>
+                          </Link>
+                        ))}
+                        <p className="font-label-sm text-label-sm text-on-surface-variant">
+                          Or let AI write fresh questions from this material:
+                        </p>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       {MODES.map((m) => (
                         <button key={m.key} onClick={() => setMode(m.key)} className={pill(mode === m.key)}>

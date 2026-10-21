@@ -466,6 +466,8 @@ export const studyApi = {
       body: JSON.stringify({ answers, durationSeconds }),
     }),
   deleteSet: (id) => apiFetch(`/study/question-sets/${id}`, { method: 'DELETE' }),
+  pastQuestions: (resourceId) =>
+    apiFetch(`/study/past-questions?resourceId=${encodeURIComponent(resourceId)}`),
 }
 
 export const readingSpaceApi = {
