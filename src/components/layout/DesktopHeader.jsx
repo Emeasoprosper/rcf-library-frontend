@@ -54,10 +54,6 @@ function DesktopHeader() {
         .dnav-anim-library { animation: dnavLibrary 500ms ease-out; }
         .dnav-anim-contribute { animation: dnavContribute 600ms ease-in-out; }
         .dnav-anim-profile { animation: dnavProfile 450ms ease-out; }
-        @keyframes studyWave { 0% { transform: scale(1); opacity: 0.5; } 5% { transform: scale(1.5); opacity: 0; } 5.01% { transform: scale(1); opacity: 0.5; } 10% { transform: scale(1.5); opacity: 0; } 10.01%, 100% { transform: scale(1); opacity: 0; } }
-        @keyframes studyWiggle { 0% { transform: rotate(0); } 1% { transform: rotate(-14deg); } 2% { transform: rotate(12deg); } 3% { transform: rotate(-8deg); } 4% { transform: rotate(6deg); } 5%, 100% { transform: rotate(0); } }
-        .study-wave { animation: studyWave 33s ease-out infinite; opacity: 0; }
-        .study-wiggle { animation: studyWiggle 33s ease-in-out infinite; }
       `}</style>
 
       <button onClick={() => navigate('/home')} className={`${isAdmin ? 'hidden' : 'flex'} items-center gap-2.5 flex-none`} aria-label="Home">
@@ -91,18 +87,7 @@ function DesktopHeader() {
       )}
 
       <div className="flex items-center gap-4 flex-none">
-        {!isAdmin && (
-          <button
-            onClick={() => navigate('/reading-space')}
-            aria-label="Open Reading Space"
-            title="Study space"
-            className="relative flex items-center gap-2 h-10 pl-3 pr-4 rounded-full bg-orange-500 text-white font-label-md text-label-md shadow-lg shadow-orange-500/30 active:scale-95 transition-transform"
-          >
-            <span className="study-wiggle relative material-symbols-outlined text-[22px]">auto_stories</span>
-            <span className="relative material-symbols-outlined text-[22px]">auto_stories</span>
-            <span className="relative">Study</span>
-          </button>
-        )}
+        {!isAdmin && <StudyHeaderButton className="flex xl:hidden" />}
         <HeaderExtras />
         <OnlinePill />
         <button

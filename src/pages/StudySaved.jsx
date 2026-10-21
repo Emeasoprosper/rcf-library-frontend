@@ -91,7 +91,7 @@ function StudySaved() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Saved material" showBack />
 
-      <main className="pb-24 pt-[68px] md:pt-24 md:max-w-4xl md:mx-auto px-margin-mobile">
+      <main className="pb-24 pt-[68px] md:pt-36 md:max-w-4xl md:mx-auto px-margin-mobile">
         <section className="relative overflow-hidden rounded-2xl border border-outline bg-gradient-to-br from-orange-500/15 via-surface-container to-surface-container p-5 mb-stack-md">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -212,26 +212,26 @@ function StudySaved() {
                 <div className="grid grid-cols-3 gap-2 px-4 pb-4">
                   <Link
                     to={`/resources/${item.id}/read`}
-                    className="flex items-center justify-center gap-1.5 h-11 rounded-xl bg-surface-container-low border border-outline font-label-md text-label-md text-on-surface active:scale-95 transition-transform"
+                    className="min-w-0 flex flex-col items-center justify-center gap-0.5 h-14 rounded-xl bg-surface-container-low border border-outline text-[13px] font-medium leading-none text-on-surface active:scale-95 transition-transform"
                   >
-                    <span className="material-symbols-outlined text-[18px]">menu_book</span>
+                    <span className="material-symbols-outlined text-[22px]">menu_book</span>
                     Read
                   </Link>
                   <Link
                     to={`/reading-space/notes?resource=${item.id}`}
-                    className="flex items-center justify-center gap-1.5 h-11 rounded-xl bg-surface-container-low border border-outline font-label-md text-label-md text-on-surface active:scale-95 transition-transform"
+                    className="min-w-0 flex flex-col items-center justify-center gap-0.5 h-14 rounded-xl bg-surface-container-low border border-outline text-[13px] font-medium leading-none text-on-surface active:scale-95 transition-transform"
                   >
-                    <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                    <span className="material-symbols-outlined text-[22px]">edit_note</span>
                     Notes
                   </Link>
                   <button
                     onClick={() => togglePanel(item.id, open)}
                     disabled={blocked}
-                    className={`flex items-center justify-center gap-1.5 h-11 rounded-xl font-label-md text-label-md font-semibold text-white bg-gradient-to-r from-orange-500 to-amber-500 transition-transform ${
+                    className={`min-w-0 flex flex-col items-center justify-center gap-0.5 h-14 rounded-xl text-[13px] font-semibold leading-none text-white bg-gradient-to-r from-orange-500 to-amber-500 transition-transform ${
                       blocked ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[18px]">{open ? 'expand_less' : 'quiz'}</span>
+                    <span className="material-symbols-outlined text-[22px]">{open ? 'expand_less' : 'quiz'}</span>
                     Questions
                   </button>
                 </div>
