@@ -203,6 +203,8 @@ export const authApi = {
     apiFetch('/auth/birthday-contact', { method: 'PATCH', body: JSON.stringify(payload) }),
   updateProfileExtra: (payload) =>
     apiFetch('/auth/profile-extra', { method: 'PATCH', body: JSON.stringify(payload) }),
+  updatePrivacy: (payload) =>
+    apiFetch('/auth/privacy', { method: 'PATCH', body: JSON.stringify(payload) }),
   updateMe: (payload) =>
     apiFetch('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),
 }
