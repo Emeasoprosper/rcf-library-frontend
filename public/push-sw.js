@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body || '',
     icon: '/android-chrome-192x192.png',
-    badge: '/favicon-32x32.png',
+    badge: '/badge-96x96.png',
     vibrate: [200, 100, 200],
     data: { url: payload.url || '/notifications' },
     actions: [{ action: 'open', title: 'Open Library' }],
@@ -23,7 +23,20 @@ self.addEventListener('push', (event) => {
     options.renotify = true
   }
 
-  event.waitUntil(self.registration.showNotification(payload.title || 'RCF Library', options))
+  event.waitUntil(
+    (async () => {
+      // App is open and visible: the page plays the RCF sound, so the
+      // phone's own sound is silenced to avoid two sounds at once.
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      const appVisible = windows.some((c) => c.visibilityState === 'visible')
+      if (appVisible) {
+        windows.forEach((c) => c.postMessage({ type: 'rcf-push-sound' }))
+        options.silent = true
+        delete options.vibrate // silent notifications must not set vibrate
+      }
+      await self.registration.showNotification(payload.title || 'RCF Library', options)
+    })()
+  )
 })
 
 self.addEventListener('notificationclick', (event) => {

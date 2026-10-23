@@ -61,7 +61,7 @@ export default defineConfig({
         // pulled into the generated service worker from here, so the
         // offline caching below stays exactly as it was.
         importScripts: ['push-sw.js'],
-        globPatterns: ['**/*.{js,mjs,css,html,svg,png,jpg,jpeg,webp,ico,woff,woff2}'],
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,jpg,jpeg,webp,ico,woff,woff2}', 'RcfNotificationfx.wav'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
