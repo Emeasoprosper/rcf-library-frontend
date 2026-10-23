@@ -86,6 +86,17 @@ function NotificationSettings() {
     }
   }
 
+  const [testMsg, setTestMsg] = useState('')
+  const handleTest = async () => {
+    setTestMsg('Sending…')
+    try {
+      const res = await communityApi.testPush()
+      setTestMsg(res.sent > 0 ? 'Sent. Check your notification bar.' : 'The push service did not accept it. Check the Render logs.')
+    } catch (err) {
+      setTestMsg(err.message || 'Could not send the test.')
+    }
+  }
+
   const on = status === 'subscribed'
 
   return (
@@ -140,6 +151,18 @@ function NotificationSettings() {
         {error && (
           <div className="mb-stack-md p-stack-md rounded-xl bg-error/10 border border-error/30">
             <p className="font-body-md text-body-md text-error">{error}</p>
+          </div>
+        )}
+
+        {on && (
+          <div className="mb-stack-md">
+            <button
+              onClick={handleTest}
+              className="w-full h-12 rounded-xl bg-surface-container border border-outline font-label-md text-label-md text-on-surface active:scale-[0.98] transition-transform"
+            >
+              Send me a test notification
+            </button>
+            {testMsg && <p className="font-label-sm text-label-sm text-on-surface-variant mt-2">{testMsg}</p>}
           </div>
         )}
 
