@@ -149,6 +149,27 @@ function SpotifyTile({ title, icon, gradient, onClick, height = 'h-32', imageUrl
   )
 }
 
+// Cover from archive.org's own thumbnail service. If it can't load (slow campus
+// network, no cover), a book icon is shown instead so the card never looks broken.
+function ExternalCover({ identifier }) {
+  const [failed, setFailed] = useState(false)
+  return (
+    <div className="w-16 h-20 flex-none rounded-md bg-surface-container-high border border-outline overflow-hidden flex items-center justify-center">
+      {failed ? (
+        <span className="material-symbols-outlined text-on-surface-variant text-[24px]">menu_book</span>
+      ) : (
+        <img
+          src={`https://archive.org/services/img/${encodeURIComponent(identifier)}`}
+          alt=""
+          loading="lazy"
+          className="w-full h-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  )
+}
+
 function Search() {
   const navigate = useNavigate()
   const { isAuthenticated, loading: authLoading } = useAuth()
@@ -504,11 +525,22 @@ function Search() {
                             key={item.identifier}
                             className="p-4 rounded-xl bg-surface-container border border-outline flex flex-col gap-2"
                           >
-                            <p className="font-body-md text-body-md font-semibold text-on-surface">{item.title}</p>
+                            <div className="flex gap-3">
+                              <ExternalCover identifier={item.identifier} />
+                              <p className="font-body-md text-body-md font-semibold text-on-surface">{item.title}</p>
+                            </div>
                             <p className="font-label-sm text-label-sm text-on-surface-variant">
                               {[item.author, item.year, item.sizeMB ? `${item.sizeMB} MB` : null].filter(Boolean).join(' · ')}
                             </p>
                             <p className="font-label-sm text-label-sm text-on-surface-variant">Licence: {item.licence}</p>
+                            <a
+                              href={item.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="self-start font-label-sm text-label-sm text-primary underline"
+                            >
+                              Preview on archive.org
+                            </a>
                             {state?.state === 'error' && (
                               <p className="font-label-sm text-label-sm text-red-400">{state.message}</p>
                             )}
