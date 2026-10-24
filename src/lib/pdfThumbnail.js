@@ -7,7 +7,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 // preview, generated in the browser before upload even starts.
 export async function renderPdfFirstPage(file) {
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, wasmUrl: '/wasm/' }).promise
   const page = await pdf.getPage(1)
   const viewport = page.getViewport({ scale: 0.6 })
 

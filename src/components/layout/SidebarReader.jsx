@@ -193,7 +193,7 @@ function PdfMiniReader({ resource }) {
           arrayBuffer = await res.arrayBuffer()
         }
         if (cancelled) return
-        const pdf = await getDocument({ data: arrayBuffer }).promise
+        const pdf = await getDocument({ data: arrayBuffer, wasmUrl: '/wasm/' }).promise
         if (cancelled) return
         pdfRef.current = pdf
         setNumPages(pdf.numPages)

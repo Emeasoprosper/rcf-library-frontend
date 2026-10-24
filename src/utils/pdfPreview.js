@@ -22,7 +22,7 @@ async function getPdfjs() {
 export async function renderPdfFirstPageThumbnail(file, maxWidth = 500) {
   const pdfjsLib = await getPdfjs()
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, wasmUrl: '/wasm/' }).promise
   const page = await pdf.getPage(1)
 
   const unscaled = page.getViewport({ scale: 1 })
