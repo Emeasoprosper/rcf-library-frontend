@@ -209,6 +209,13 @@ export const authApi = {
     apiFetch('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),
 }
 
+export const externalApi = {
+  search: (q) => apiFetch(`/external/search?q=${encodeURIComponent(q)}`),
+  startImport: (identifier) =>
+    apiFetch('/external/import', { method: 'POST', body: JSON.stringify({ identifier }) }),
+  importStatus: (jobId) => apiFetch(`/external/import/${jobId}`),
+}
+
 export const resourceCollectionsApi = {
   list: () => apiFetch('/resource-collections'),
   get: (id) => apiFetch(`/resource-collections/${id}`),

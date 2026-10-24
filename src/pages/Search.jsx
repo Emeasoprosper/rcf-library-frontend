@@ -4,7 +4,7 @@ import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import ResourceCard from '../components/resource/ResourceCard'
-import { resourcesApi, analyticsApi } from '../services/api'
+import { resourcesApi, analyticsApi, externalApi } from '../services/api'
 import { getMediaKind, MEDIA_KIND_STYLE } from '../lib/mediaKind'
 import { extractAccentGradient } from '../lib/extractAccentColor'
 import { useAuth } from '../contexts/AuthContext'
@@ -170,6 +170,12 @@ function Search() {
   const [categorySamples, setCategorySamples] = useState({})
   const [liveSessionSample, setLiveSessionSample] = useState(null)
 
+  // Open-access fallback (Internet Archive). extResults === null means "not searched yet".
+  const [extResults, setExtResults] = useState(null)
+  const [extSearching, setExtSearching] = useState(false)
+  const [extError, setExtError] = useState(null)
+  const [importing, setImporting] = useState({})
+
   useEffect(() => {
     setRecents(loadRecents())
   }, [])
@@ -302,6 +308,56 @@ function Search() {
     navigate(resourceDetailPath(resource.id))
   }
 
+  useEffect(() => {
+    setExtResults(null)
+    setExtError(null)
+  }, [query])
+
+  const searchOpenBooks = async () => {
+    const q = query.trim()
+    if (q.length < 3) return
+    setExtSearching(true)
+    setExtError(null)
+    try {
+      const data = await externalApi.search(q)
+      setExtResults(data.items || [])
+    } catch (err) {
+      setExtError(err.message || 'Could not search open books right now')
+      setExtResults([])
+    } finally {
+      setExtSearching(false)
+    }
+  }
+
+  const getExternalBook = async (item) => {
+    if (!isAuthenticated) {
+      navigate('/signin', { state: { from: '/search' } })
+      return
+    }
+    setImporting((prev) => ({ ...prev, [item.identifier]: { state: 'working' } }))
+    try {
+      const start = await externalApi.startImport(item.identifier)
+      if (start.alreadyInLibrary) {
+        navigate(resourceDetailPath(start.resourceId))
+        return
+      }
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 4000))
+        const job = await externalApi.importStatus(start.jobId)
+        if (job.state === 'done') {
+          navigate(resourceDetailPath(job.resourceId))
+          return
+        }
+        if (job.state === 'failed') {
+          throw new Error('We could not add this book. Please try another one or request it.')
+        }
+      }
+      throw new Error('This is taking too long. Please try again in a minute.')
+    } catch (err) {
+      setImporting((prev) => ({ ...prev, [item.identifier]: { state: 'error', message: err.message } }))
+    }
+  }
+
   const showIdleContent = query.trim().length < MIN_SEARCH_LENGTH
   const showHistoryDropdown = historyOpen && query.trim().length === 0 && recents.length > 0
 
@@ -404,6 +460,75 @@ function Search() {
                   Request this material
                 </button>
               </div>
+            )}
+
+            {!searching && !searchError && hasSearched && results.length === 0 && query.trim().length >= 3 && (
+              <section className="mb-stack-lg">
+                {extResults === null && (
+                  <button
+                    onClick={searchOpenBooks}
+                    disabled={extSearching}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-outline bg-surface-container text-on-surface font-label-md text-label-md disabled:opacity-60"
+                  >
+                    <span className={`material-symbols-outlined text-[18px] ${extSearching ? 'animate-spin' : ''}`}>
+                      {extSearching ? 'progress_activity' : 'travel_explore'}
+                    </span>
+                    {extSearching ? 'Searching open books…' : 'Search free open-access books online'}
+                  </button>
+                )}
+
+                {extError && (
+                  <p className="font-label-md text-label-md text-red-400 mt-stack-sm">{extError}</p>
+                )}
+
+                {extResults !== null && !extError && extResults.length === 0 && (
+                  <p className="font-label-md text-label-md text-on-surface-variant text-center">
+                    No free open-access books found for "{query.trim()}". You can still request it above.
+                  </p>
+                )}
+
+                {extResults !== null && extResults.length > 0 && (
+                  <>
+                    <h2 className="font-headline-md text-headline-md font-display text-on-surface mb-1">
+                      Free open-access books
+                    </h2>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant mb-stack-sm">
+                      From the Internet Archive. Older public-domain or openly licensed books only.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      {extResults.map((item) => {
+                        const state = importing[item.identifier]
+                        const working = state?.state === 'working'
+                        return (
+                          <div
+                            key={item.identifier}
+                            className="p-4 rounded-xl bg-surface-container border border-outline flex flex-col gap-2"
+                          >
+                            <p className="font-body-md text-body-md font-semibold text-on-surface">{item.title}</p>
+                            <p className="font-label-sm text-label-sm text-on-surface-variant">
+                              {[item.author, item.year, item.sizeMB ? `${item.sizeMB} MB` : null].filter(Boolean).join(' · ')}
+                            </p>
+                            <p className="font-label-sm text-label-sm text-on-surface-variant">Licence: {item.licence}</p>
+                            {state?.state === 'error' && (
+                              <p className="font-label-sm text-label-sm text-red-400">{state.message}</p>
+                            )}
+                            <button
+                              onClick={() => getExternalBook(item)}
+                              disabled={working}
+                              className="self-start inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-60"
+                            >
+                              <span className={`material-symbols-outlined text-[16px] ${working ? 'animate-spin' : ''}`}>
+                                {working ? 'progress_activity' : 'download'}
+                              </span>
+                              {working ? 'Adding to library…' : 'Get this book'}
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+              </section>
             )}
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-gutter">
