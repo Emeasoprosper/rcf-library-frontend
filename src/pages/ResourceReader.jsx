@@ -262,7 +262,7 @@ function ResourceReader() {
           }
           if (cancelled) return
 
-          const pdf = await getDocument({ data: arrayBuffer }).promise
+          const pdf = await getDocument({ data: arrayBuffer, wasmUrl: '/wasm/' }).promise
           if (cancelled) return
 
           pdfRef.current = pdf
