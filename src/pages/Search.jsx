@@ -151,12 +151,12 @@ function SpotifyTile({ title, icon, gradient, onClick, height = 'h-32', imageUrl
 
 // Cover from archive.org's own thumbnail service. If it can't load (slow campus
 // network, no cover), a book icon is shown instead so the card never looks broken.
-function ExternalCover({ identifier }) {
+function ExternalCover({ identifier, icon = 'menu_book' }) {
   const [failed, setFailed] = useState(false)
   return (
-    <div className="w-16 h-20 flex-none rounded-md bg-surface-container-high border border-outline overflow-hidden flex items-center justify-center">
+    <div className="w-20 h-28 flex-none rounded-lg bg-surface-container-high border border-outline shadow-md overflow-hidden flex items-center justify-center">
       {failed ? (
-        <span className="material-symbols-outlined text-on-surface-variant text-[24px]">menu_book</span>
+        <span className="material-symbols-outlined text-on-surface-variant text-[32px]">{icon}</span>
       ) : (
         <img
           src={`https://archive.org/services/img/${encodeURIComponent(identifier)}`}
@@ -167,6 +167,112 @@ function ExternalCover({ identifier }) {
         />
       )}
     </div>
+  )
+}
+
+// "Public domain (published 1900)" -> "Public domain"; CC URLs -> "CC BY-SA", etc.
+function shortLicence(label = '') {
+  if (/public domain|cc0/i.test(label)) return 'Public domain'
+  const m = /licenses\/([a-z-]+)\//i.exec(label)
+  if (m) return `CC ${m[1].toUpperCase()}`
+  return label || 'Open licence'
+}
+
+function InfoStat({ label, value }) {
+  return (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">{label}</span>
+      <span className="font-label-md text-label-md font-semibold text-on-surface truncate">{value}</span>
+    </div>
+  )
+}
+
+// One open-access result: cover, type badge, key facts, licence, preview link, add button.
+function ExternalBookCard({ item, state, onGet }) {
+  const isAudio = item.kind === 'audio'
+  const working = state?.state === 'working'
+  const size = item.sizeMB ?? item.approxMB
+  const sizeLabel = size ? `${item.sizeMB ? '' : '~'}${size} MB` : '—'
+  const isLarge = Number(size) >= 20
+
+  const stats = isAudio
+    ? [
+        { label: 'Format', value: 'Audio · Listen' },
+        { label: 'Length', value: item.totalTime || '—' },
+        { label: 'Size', value: sizeLabel },
+      ]
+    : [
+        { label: 'Format', value: 'PDF · Read' },
+        { label: 'Size', value: sizeLabel },
+        { label: 'Published', value: item.year || '—' },
+      ]
+
+  return (
+    <article className="rounded-2xl bg-surface-container border border-outline overflow-hidden">
+      <div className="flex gap-4 p-4">
+        <ExternalCover identifier={item.identifier} icon={isAudio ? 'headphones' : 'menu_book'} />
+        <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+          <span className="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold uppercase tracking-wide">
+            <span className="material-symbols-outlined text-[13px]">{isAudio ? 'headphones' : 'picture_as_pdf'}</span>
+            {isAudio ? 'Audiobook' : 'Book'}
+          </span>
+          <h3 className="font-body-md text-body-md font-semibold text-on-surface leading-snug line-clamp-3">
+            {item.title}
+          </h3>
+          {item.author && (
+            <p className="font-label-sm text-label-sm text-on-surface-variant line-clamp-1">{item.author}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 px-4 py-3 border-y border-outline bg-surface-container-low">
+        {stats.map((s) => (
+          <InfoStat key={s.label} label={s.label} value={s.value} />
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between gap-3 px-4 pt-3">
+        <span className="inline-flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm">
+          <span className="material-symbols-outlined text-[16px]">public</span>
+          {shortLicence(item.licence)}
+        </span>
+        <a
+          href={item.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-primary font-label-sm text-label-sm"
+        >
+          Preview on archive.org
+          <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+        </a>
+      </div>
+
+      {isLarge && !working && (
+        <p className="px-4 pt-2 flex items-center gap-1 font-label-sm text-label-sm text-amber-400">
+          <span className="material-symbols-outlined text-[14px]">wifi</span>
+          Large file. Reading it uses about {size} MB of data.
+        </p>
+      )}
+
+      {state?.state === 'error' && (
+        <p className="mx-4 mt-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 font-label-sm text-label-sm">
+          {state.message}
+        </p>
+      )}
+
+      <div className="p-4">
+        <button
+          onClick={onGet}
+          disabled={working}
+          className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-full bg-primary text-on-primary font-label-md text-label-md disabled:opacity-60"
+        >
+          <span className={`material-symbols-outlined text-[18px] ${working ? 'animate-spin' : ''}`}>
+            {working ? 'progress_activity' : 'add_circle'}
+          </span>
+          {working ? 'Adding to library… about 20 seconds' : isAudio ? 'Get this audiobook' : 'Get this book'}
+        </button>
+      </div>
+    </article>
   )
 }
 
@@ -514,49 +620,17 @@ function Search() {
                       Free open-access books
                     </h2>
                     <p className="font-label-sm text-label-sm text-on-surface-variant mb-stack-sm">
-                      From the Internet Archive. Older public-domain or openly licensed books only.
+                      Open licences listed by the Internet Archive. Tap Preview to look first, then add the ones you want.
                     </p>
-                    <div className="flex flex-col gap-3">
-                      {extResults.map((item) => {
-                        const state = importing[item.identifier]
-                        const working = state?.state === 'working'
-                        return (
-                          <div
-                            key={item.identifier}
-                            className="p-4 rounded-xl bg-surface-container border border-outline flex flex-col gap-2"
-                          >
-                            <div className="flex gap-3">
-                              <ExternalCover identifier={item.identifier} />
-                              <p className="font-body-md text-body-md font-semibold text-on-surface">{item.title}</p>
-                            </div>
-                            <p className="font-label-sm text-label-sm text-on-surface-variant">
-                              {[item.author, item.year, item.sizeMB ? `${item.sizeMB} MB` : null].filter(Boolean).join(' · ')}
-                            </p>
-                            <p className="font-label-sm text-label-sm text-on-surface-variant">Licence: {item.licence}</p>
-                            <a
-                              href={item.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="self-start font-label-sm text-label-sm text-primary underline"
-                            >
-                              Preview on archive.org
-                            </a>
-                            {state?.state === 'error' && (
-                              <p className="font-label-sm text-label-sm text-red-400">{state.message}</p>
-                            )}
-                            <button
-                              onClick={() => getExternalBook(item)}
-                              disabled={working}
-                              className="self-start inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-60"
-                            >
-                              <span className={`material-symbols-outlined text-[16px] ${working ? 'animate-spin' : ''}`}>
-                                {working ? 'progress_activity' : 'download'}
-                              </span>
-                              {working ? 'Adding to library…' : 'Get this book'}
-                            </button>
-                          </div>
-                        )
-                      })}
+                    <div className="flex flex-col gap-4">
+                      {extResults.map((item) => (
+                        <ExternalBookCard
+                          key={item.identifier}
+                          item={item}
+                          state={importing[item.identifier]}
+                          onGet={() => getExternalBook(item)}
+                        />
+                      ))}
                     </div>
                   </>
                 )}
