@@ -357,6 +357,18 @@ export const adminApi = {
   relinkWhatsappBot: () => apiFetch('/admin/whatsapp/relink', { method: 'POST' }),
   setWhatsappGroup: (jid, enabled) =>
     apiFetch(`/admin/whatsapp/groups/${encodeURIComponent(jid)}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+  getWhatsappSettings: () => apiFetch('/admin/whatsapp/settings'),
+  saveWhatsappSettings: (settings) =>
+    apiFetch('/admin/whatsapp/settings', { method: 'PUT', body: JSON.stringify({ settings }) }),
+  listWhatsappFacts: () => apiFetch('/admin/whatsapp/facts'),
+  addWhatsappFact: (fact) => apiFetch('/admin/whatsapp/facts', { method: 'POST', body: JSON.stringify(fact) }),
+  updateWhatsappFact: (id, fact) =>
+    apiFetch(`/admin/whatsapp/facts/${id}`, { method: 'PATCH', body: JSON.stringify(fact) }),
+  deleteWhatsappFact: (id) => apiFetch(`/admin/whatsapp/facts/${id}`, { method: 'DELETE' }),
+  sendWhatsappMessage: (jid, text) =>
+    apiFetch('/admin/whatsapp/send', { method: 'POST', body: JSON.stringify({ jid, text }) }),
+  listWhatsappOutbox: () => apiFetch('/admin/whatsapp/outbox'),
+  listWhatsappActivity: () => apiFetch('/admin/whatsapp/activity'),
   setAnnouncementWhatsapp: (id, postToWhatsapp) =>
     apiFetch(`/admin/announcements/${id}/whatsapp`, { method: 'PATCH', body: JSON.stringify({ postToWhatsapp }) }),
   uploadAnnouncementAttachment: (file) => uploadAnnouncementAttachment(file),

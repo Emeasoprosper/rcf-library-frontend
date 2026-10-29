@@ -7,6 +7,15 @@ import TopAppBar from '../../components/layout/TopAppBar'
 import AdminNav from '../../components/layout/AdminNav'
 import { adminApi } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
+import { SettingsTab, FactsTab, SendTab, ActivityTab } from './WhatsAppControlTabs'
+
+const TABS = [
+  { key: 'groups', label: 'Groups', icon: 'groups' },
+  { key: 'settings', label: 'Settings', icon: 'tune' },
+  { key: 'facts', label: 'RCF Facts', icon: 'verified' },
+  { key: 'send', label: 'Send', icon: 'send' },
+  { key: 'activity', label: 'Activity', icon: 'history' },
+]
 
 const stateConfig = {
   online: { label: 'Online', dot: 'bg-emerald-500', text: 'Bro Paul is connected and chatting.' },
@@ -21,6 +30,7 @@ function AdminWhatsApp() {
   const [error, setError] = useState('')
   const [relinking, setRelinking] = useState(false)
   const [togglingJid, setTogglingJid] = useState(null)
+  const [tab, setTab] = useState('groups')
 
   const load = useCallback(
     () =>
@@ -134,6 +144,30 @@ function AdminWhatsApp() {
           )}
         </section>
 
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1" role="tablist" aria-label="Bro Paul Control Center">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.key}
+              onClick={() => setTab(t.key)}
+              className={`rcf-press flex-none flex items-center gap-1.5 px-4 py-2.5 rounded-full font-label-md text-label-md transition-colors ${
+                tab === t.key ? 'bg-emerald-500 text-white shadow-md' : 'bg-surface-container border border-outline text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'settings' && <SettingsTab />}
+        {tab === 'facts' && <FactsTab />}
+        {tab === 'send' && <SendTab groups={data?.groups || []} />}
+        {tab === 'activity' && <ActivityTab />}
+
+        {tab === 'groups' && (
         <section>
           <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-stack-sm">
             Groups
@@ -177,6 +211,7 @@ function AdminWhatsApp() {
             ))}
           </div>
         </section>
+        )}
       </main>
 
       <AdminNav />
