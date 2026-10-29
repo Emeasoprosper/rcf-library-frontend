@@ -353,6 +353,12 @@ export const adminApi = {
     }),
   createAnnouncement: (payload) =>
     apiFetch('/admin/announcements', { method: 'POST', body: JSON.stringify(payload) }),
+  getWhatsappBot: () => apiFetch('/admin/whatsapp'),
+  relinkWhatsappBot: () => apiFetch('/admin/whatsapp/relink', { method: 'POST' }),
+  setWhatsappGroup: (jid, enabled) =>
+    apiFetch(`/admin/whatsapp/groups/${encodeURIComponent(jid)}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+  setAnnouncementWhatsapp: (id, postToWhatsapp) =>
+    apiFetch(`/admin/announcements/${id}/whatsapp`, { method: 'PATCH', body: JSON.stringify({ postToWhatsapp }) }),
   uploadAnnouncementAttachment: (file) => uploadAnnouncementAttachment(file),
   listAnnouncements: (params = {}) => {
     const query = new URLSearchParams(params).toString()

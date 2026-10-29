@@ -1,4 +1,6 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/components/ui/BirthdayContactForm.jsx
+import { useState } from 'react'
+
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
@@ -78,6 +80,98 @@ function Toggle({ checked, onChange, label, hint, disabled = false }) {
       >
         <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : ''}`} />
       </button>
+    </div>
+  )
+}
+
+const chipBase = 'rcf-press rounded-xl font-label-md text-label-md transition-colors border'
+const chipOff = 'bg-surface-container-low border-outline text-on-surface hover:border-on-surface-variant'
+const chipOn = 'bg-gradient-to-br from-pink-500 to-orange-400 border-transparent text-white shadow-md'
+
+// The short, tap-only version for the step-by-step screens: month, day,
+// and an optional WhatsApp number tucked behind a button.
+export function BirthdayQuickFields({ value, onChange }) {
+  const [showContact, setShowContact] = useState(Boolean(value.whatsapp))
+  const set = (patch) => onChange({ ...value, ...patch })
+  const monthNum = Number(value.month)
+  const maxDay = monthNum ? DAYS_IN_MONTH[monthNum - 1] : 31
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-4 gap-2">
+        {MONTHS.map((name, i) => {
+          const m = String(i + 1)
+          return (
+            <button
+              key={name}
+              type="button"
+              onClick={() => set({ month: m, day: Number(value.day) > DAYS_IN_MONTH[i] ? '' : value.day })}
+              className={`${chipBase} py-2.5 ${value.month === m ? chipOn : chipOff}`}
+            >
+              {name.slice(0, 3)}
+            </button>
+          )
+        })}
+      </div>
+
+      {value.month && (
+        <div className="rcf-step">
+          <p className="font-label-sm text-label-sm text-on-surface-variant mb-2">Which day in {MONTHS[monthNum - 1]}?</p>
+          <div className="grid grid-cols-7 gap-1.5">
+            {Array.from({ length: maxDay }, (_, i) => String(i + 1)).map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => set({ day: d })}
+                className={`${chipBase} aspect-square text-[13px] ${value.day === d ? chipOn : chipOff}`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!showContact ? (
+        <button
+          type="button"
+          onClick={() => setShowContact(true)}
+          className="self-start flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant hover:text-on-surface"
+        >
+          <span className="material-symbols-outlined text-[18px]">add_circle</span>
+          Add your WhatsApp (optional)
+        </button>
+      ) : (
+        <div className="rcf-step flex flex-col gap-3">
+          <input
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={value.whatsapp}
+            onChange={(e) => set({ whatsapp: e.target.value, sameAsPhone: false })}
+            placeholder="WhatsApp, e.g. +234 801 234 5678"
+            className={inputClass}
+          />
+          {value.whatsapp.trim() && (
+            <Toggle
+              checked={value.contactPublic}
+              onChange={(contactPublic) => set({ contactPublic })}
+              label="Let members wish me on WhatsApp"
+              hint="Shown only on your birthday, only to signed-in members."
+            />
+          )}
+        </div>
+      )}
+
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={value.birthdayPublic}
+          onChange={(e) => set({ birthdayPublic: e.target.checked })}
+          className="w-4 h-4 accent-pink-500"
+        />
+        <span className="font-label-sm text-label-sm text-on-surface-variant">Celebrate me in the app on my birthday 🎉</span>
+      </label>
     </div>
   )
 }

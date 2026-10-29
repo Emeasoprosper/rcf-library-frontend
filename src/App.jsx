@@ -15,6 +15,7 @@ import { LanguageProvider } from './contexts/LanguageContext'
 import SpotlightTour from './components/tour/SpotlightTour'
 import MissingDetailsPrompt from './components/ui/MissingDetailsPrompt'
 import BirthdayCelebration from './components/ui/BirthdayCelebration'
+import NewMonthCelebration from './components/ui/NewMonthCelebration'
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner'
 import { PresenceProvider } from './contexts/PresenceContext'
 import FloatingStudyButton from './components/ui/FloatingStudyButton'
@@ -39,6 +40,7 @@ function App() {
             <SpotlightTour />
             <MissingDetailsPrompt />
             <BirthdayCelebration />
+            <NewMonthCelebration />
             <NotificationsModal />
             <FloatingStudyButton />
           </PresenceProvider>

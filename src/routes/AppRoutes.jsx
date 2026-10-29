@@ -1,5 +1,6 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/routes/AppRoutes.jsx
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Splash from '../pages/Splash'
 import SignIn from '../pages/SignIn'
 import Home from '../pages/Home'
@@ -45,6 +46,7 @@ import AdminResources from '../pages/admin/AdminResources'
 import OrganizeResources from '../pages/admin/OrganizeResources'
 import AdminHomeRails from '../pages/admin/AdminHomeRails'
 import AdminAnalytics from '../pages/admin/AdminAnalytics'
+import AdminWhatsApp from '../pages/admin/AdminWhatsApp'
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth()
@@ -63,8 +65,27 @@ function RootRedirect() {
   return <Navigate to="/signin" replace />
 }
 
+// Page entrance animation: on every route change, <html> gets
+// .rcf-route-enter for a moment, and index.css fades the new page in and
+// rises its sections one after another. No wrapper element, so page
+// layouts are untouched.
+function RouteMotion() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.remove('rcf-route-enter')
+    void root.offsetWidth // restart the animation
+    root.classList.add('rcf-route-enter')
+    const timer = setTimeout(() => root.classList.remove('rcf-route-enter'), 900)
+    return () => clearTimeout(timer)
+  }, [pathname])
+  return null
+}
+
 function AppRoutes() {
   return (
+    <>
+    <RouteMotion />
     <Routes>
       <Route path="/" element={<RootRedirect />} />
       <Route path="/splash" element={<Splash />} />
@@ -110,9 +131,11 @@ function AppRoutes() {
       <Route path="/admin/organize" element={<AdminRoute><OrganizeResources /></AdminRoute>} />
       <Route path="/admin/home-rails" element={<AdminRoute><AdminHomeRails /></AdminRoute>} />
       <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+      <Route path="/admin/whatsapp" element={<AdminRoute><AdminWhatsApp /></AdminRoute>} />
       <Route path="/library/:id" element={<ResourceDetail />} />
       <Route path="/collections/:id" element={<CollectionPage />} />
     </Routes>
+    </>
   )
 }
 

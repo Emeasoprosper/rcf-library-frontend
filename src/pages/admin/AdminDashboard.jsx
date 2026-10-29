@@ -17,6 +17,7 @@ const quickLinks = [
   { to: '/admin/users', icon: 'group', label: 'Manage Users', gradient: 'from-violet-500 to-purple-400' },
   { to: '/admin/announcements', icon: 'campaign', label: 'Announce / News', gradient: 'from-pink-500 to-rose-400' },
   { to: '/admin/analytics', icon: 'bar_chart', label: 'Analytics', gradient: 'from-orange-500 to-amber-400' },
+  { to: '/admin/whatsapp', icon: 'smart_toy', label: 'WhatsApp Bot', gradient: 'from-emerald-500 to-green-400', superadminOnly: true },
 ]
 
 const statGradients = {
@@ -146,7 +147,7 @@ function AdminDashboard() {
         )}
 
         <section className="grid grid-cols-2 xl:grid-cols-3 gap-gutter mb-stack-lg">
-          {quickLinks.map((link) => (
+          {quickLinks.filter((link) => !link.superadminOnly || user?.role === 'superadmin').map((link) => (
             <button
               key={link.to}
               onClick={() => navigate(link.to)}

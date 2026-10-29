@@ -28,6 +28,10 @@ function AdminAnnouncements() {
   const [popupStyle, setPopupStyle] = useState('rich') // 'rich' | 'image_only'
   const [hiddenDetail, setHiddenDetail] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
+  // Bro Paul (the WhatsApp bot) posts these in the group when ticked.
+  const [postToWhatsapp, setPostToWhatsapp] = useState(false)
+  const [whatsappRepeatHours, setWhatsappRepeatHours] = useState('')
+  const [togglingWhatsappId, setTogglingWhatsappId] = useState(null)
   const [sentLog, setSentLog] = useState([])
   const [musicFile, setMusicFile] = useState(null)
   const [musicPreviewUrl, setMusicPreviewUrl] = useState(null)
@@ -151,6 +155,8 @@ function AdminAnnouncements() {
         popupStyle: type === 'announcement' ? popupStyle : 'rich',
         hiddenDetail: hiddenDetail.trim() || null,
         linkUrl: linkUrl.trim() || null,
+        postToWhatsapp,
+        whatsappRepeatHours: postToWhatsapp && whatsappRepeatHours ? Number(whatsappRepeatHours) : null,
       })
 
       if (uploadedMusic) {
@@ -179,6 +185,9 @@ function AdminAnnouncements() {
           popup_style: type === 'announcement' ? popupStyle : 'rich',
           hidden_detail: hiddenDetail.trim() || null,
           link_url: linkUrl.trim() || null,
+          post_to_whatsapp: postToWhatsapp,
+          whatsapp_repeat_hours: postToWhatsapp && whatsappRepeatHours ? Math.max(Number(whatsappRepeatHours), 6) : null,
+          whatsapp_posted_at: null,
         },
         ...prev,
       ])
@@ -192,6 +201,8 @@ function AdminAnnouncements() {
       setPopupStyle('rich')
       setHiddenDetail('')
       setLinkUrl('')
+      setPostToWhatsapp(false)
+      setWhatsappRepeatHours('')
       removeMusic()
       removeAttachment()
     } catch (err) {
@@ -210,6 +221,18 @@ function AdminAnnouncements() {
       setError(err.message || 'Failed to delete. Please try again.')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleToggleWhatsapp = async (item) => {
+    setTogglingWhatsappId(item.id)
+    try {
+      const updated = await adminApi.setAnnouncementWhatsapp(item.id, !item.post_to_whatsapp)
+      setSentLog((prev) => prev.map((row) => (row.id === item.id ? { ...row, post_to_whatsapp: updated.post_to_whatsapp } : row)))
+    } catch (err) {
+      setError(err.message || 'Failed to update WhatsApp posting. Please try again.')
+    } finally {
+      setTogglingWhatsappId(null)
     }
   }
 
@@ -445,6 +468,54 @@ function AdminAnnouncements() {
             </label>
           )}
 
+          <div className="rounded-2xl border border-outline bg-gradient-to-br from-emerald-500/10 via-surface-container to-green-500/10 p-stack-md">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-400 flex items-center justify-center flex-none">
+                <span className="material-symbols-outlined text-white text-[22px]">forum</span>
+              </div>
+              <div className="min-w-0 flex-grow">
+                <p className="font-body-md text-body-md font-semibold text-on-surface">Also post to WhatsApp group</p>
+                <p className="font-label-sm text-label-sm text-on-surface-variant">
+                  Bro Paul posts the title, message and image in the group when it goes live.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={postToWhatsapp}
+                aria-label="Also post to WhatsApp group"
+                onClick={() => setPostToWhatsapp((v) => !v)}
+                className={`relative w-12 h-7 flex-none rounded-full transition-colors ${
+                  postToWhatsapp ? 'bg-emerald-500' : 'bg-surface-container-highest border border-outline'
+                }`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${postToWhatsapp ? 'translate-x-5' : ''}`} />
+              </button>
+            </div>
+
+            {postToWhatsapp && (
+              <div className="mt-3">
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block">Repeat in the group</label>
+                <select
+                  value={whatsappRepeatHours}
+                  onChange={(e) => setWhatsappRepeatHours(e.target.value)}
+                  className="w-full h-11 px-3 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 font-body-md"
+                >
+                  <option value="">Post once</option>
+                  <option value="12">Every 12 hours</option>
+                  <option value="24">Every day</option>
+                  <option value="72">Every 3 days</option>
+                  <option value="168">Every week</option>
+                </select>
+                {whatsappRepeatHours && (
+                  <p className="font-label-sm text-label-sm text-on-surface-variant mt-1.5">
+                    Keeps repeating until the end date above, or until you switch it off in the Sent list.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           {type !== 'advert' && (
             <div className="rounded-2xl border border-outline bg-gradient-to-br from-pink-500/10 via-surface-container to-orange-500/10 p-stack-md">
               <div className="flex items-center gap-3 mb-3">
@@ -586,6 +657,29 @@ function AdminAnnouncements() {
                   {formatSchedule(item) && (
                     <p className="font-label-sm text-label-sm text-primary mt-1">{formatSchedule(item)}</p>
                   )}
+                  <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-outline">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 min-w-0">
+                      <span className="material-symbols-outlined text-[14px] text-emerald-500">forum</span>
+                      <span className="truncate">
+                        WhatsApp group
+                        {item.post_to_whatsapp && item.whatsapp_repeat_hours ? ` • every ${item.whatsapp_repeat_hours}h` : ''}
+                        {item.whatsapp_posted_at ? ` • last posted ${new Date(item.whatsapp_posted_at).toLocaleString()}` : item.post_to_whatsapp ? ' • waiting for Bro Paul' : ''}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!!item.post_to_whatsapp}
+                      aria-label="Post this to the WhatsApp group"
+                      disabled={togglingWhatsappId === item.id}
+                      onClick={() => handleToggleWhatsapp(item)}
+                      className={`relative w-10 h-6 flex-none rounded-full transition-colors disabled:opacity-50 ${
+                        item.post_to_whatsapp ? 'bg-emerald-500' : 'bg-surface-container-highest border border-outline'
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${item.post_to_whatsapp ? 'translate-x-4' : ''}`} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

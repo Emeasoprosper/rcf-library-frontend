@@ -240,6 +240,55 @@ body {
   --sb-right: 28rem;
 }
 
+/*
+  Motion system. Page entrance: each page's <main> only fades (opacity never
+  breaks position:fixed navs), while the page's own sections rise in one
+  after another. Every end state is transform:none for the same reason.
+*/
+@keyframes rcfPageFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rcfRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes rcfPop { 0% { opacity: 0; transform: scale(0.9) translateY(10px); } 60% { opacity: 1; transform: scale(1.02); } 100% { opacity: 1; transform: none; } }
+@keyframes rcfSlideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes rcfFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes rcfBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes rcfFlicker { 0%, 100% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.15) rotate(3deg); } }
+@keyframes rcfFall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate3d(var(--drift, 0px), 110vh, 0) rotate(var(--spin, 540deg)); opacity: 0.9; }
+}
+@keyframes rcfGradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+.rcf-route-enter main { animation: rcfPageFade 0.35s ease-out both; }
+.rcf-route-enter main > * { animation: rcfRise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.rcf-route-enter main > *:nth-child(2) { animation-delay: 0.05s; }
+.rcf-route-enter main > *:nth-child(3) { animation-delay: 0.1s; }
+.rcf-route-enter main > *:nth-child(4) { animation-delay: 0.15s; }
+.rcf-route-enter main > *:nth-child(5) { animation-delay: 0.2s; }
+.rcf-route-enter main > *:nth-child(n + 6) { animation-delay: 0.25s; }
+
+.rcf-pop { animation: rcfPop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.rcf-step { animation: rcfSlideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.rcf-float { animation: rcfFloat 4s ease-in-out infinite; }
+.rcf-blink { animation: rcfBlink 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.rcf-flicker { animation: rcfFlicker 0.6s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
+.rcf-confetti { position: absolute; top: 0; animation: rcfFall var(--dur, 6s) cubic-bezier(0.3, 0.5, 0.6, 1) var(--delay, 0s) both; will-change: transform; }
+.rcf-gradient { background-size: 200% 200%; animation: rcfGradient 8s ease-in-out infinite; }
+
+/* Cards and buttons lift a little under the pointer (desktop only). */
+@media (hover: hover) {
+  .rcf-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  .rcf-lift:hover { transform: translateY(-3px); box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.45); }
+}
+.rcf-press { transition: transform 0.15s ease; }
+.rcf-press:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rcf-page, .rcf-route-enter main > *, .rcf-pop, .rcf-step, .rcf-float, .rcf-blink, .rcf-flicker, .rcf-gradient { animation: none !important; }
+  .rcf-confetti { display: none; }
+  .rcf-lift:hover { transform: none; }
+}
+
 /* Soft corner glow behind every screen — pointer-events none, so it never blocks taps. */
 body::after {
   content: '';

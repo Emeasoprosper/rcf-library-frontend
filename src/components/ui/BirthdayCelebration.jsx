@@ -5,23 +5,10 @@ import { birthdaysApi } from '../../services/api'
 import usePopupMusic from '../../hooks/usePopupMusic'
 import PopupMusicButton from './PopupMusicButton'
 
+import { Confetti, CakeArt } from './Celebrate'
+
 const SEEN_KEY = 'rcf_birthday_seen'
 const MUSIC_SRC = '/birthday-music.mp3'
-const CONFETTI_COLORS = ['#f97316', '#ec4899', '#8b5cf6', '#22c55e', '#eab308', '#3b82f6']
-const CONFETTI = Array.from({ length: 30 }, (_, i) => ({
-  left: `${(i * 37 + 11) % 100}%`,
-  delay: `${((i * 53) % 45) / 10}s`,
-  duration: `${4 + ((i * 29) % 30) / 10}s`,
-  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-}))
-
-const CSS = `
-@keyframes bdFall { 0% { transform: translateY(-12vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: .9; } }
-@keyframes bdPop { 0% { transform: scale(.92); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-.bd-confetti { position: absolute; top: 0; width: 8px; height: 14px; border-radius: 2px; animation: bdFall linear infinite; }
-.bd-card { animation: bdPop .28s ease-out both; }
-@media (prefers-reduced-motion: reduce) { .bd-confetti { display: none; } .bd-card { animation: none; } }
-`
 
 const lagosDate = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' })
 const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || 'friend'
@@ -107,52 +94,41 @@ function BirthdayCelebration() {
       role="dialog"
       aria-modal="true"
       aria-label="Birthday celebration"
-      className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-hidden"
+      data-celebration="birthday"
+      className="fixed inset-0 z-[250] flex items-end md:items-center justify-center md:p-6 bg-black/70 backdrop-blur-sm overflow-hidden"
       onClick={close}
     >
-      <style>{CSS}</style>
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        {CONFETTI.map((c, i) => (
-          <span
-            key={i}
-            className="bd-confetti"
-            style={{ left: c.left, background: c.color, animationDelay: c.delay, animationDuration: c.duration }}
-          />
-        ))}
-      </div>
+      <Confetti key={`confetti-${person.id}`} />
 
       <div
         key={person.id}
-        className="bd-card relative w-full max-w-sm max-h-[92vh] overflow-y-auto rounded-3xl bg-surface-container border border-outline shadow-2xl"
+        className="rcf-pop relative w-full max-h-[94vh] overflow-hidden rounded-t-[28px] md:rounded-[32px] md:max-w-4xl bg-surface-container border border-outline shadow-2xl flex flex-col md:grid md:grid-cols-[0.95fr_1.05fr]"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        <div className="relative bg-gradient-to-br from-orange-500 via-pink-500 to-purple-600 px-5 pt-4 pb-14 text-white">
+        {/* Picture: top on mobile, left on desktop */}
+        <div className="rcf-gradient relative bg-gradient-to-br from-[#f97316] via-[#ec4899] to-[#8b5cf6] flex flex-col items-center justify-center flex-none h-[34vh] min-h-[220px] md:h-auto md:min-h-[520px] overflow-hidden text-white">
+          <span className="absolute -top-12 -left-12 w-44 h-44 rounded-full bg-white/10" aria-hidden="true" />
+          <span className="absolute bottom-10 -right-6 w-24 h-24 rounded-full bg-white/10" aria-hidden="true" />
           {data.items.length > 1 && (
-            <div className="flex gap-1.5 mb-3">
+            <div className="absolute top-4 left-5 right-16 flex gap-1.5">
               {data.items.map((p, i) => (
-                <span key={p.id} className={`h-1 flex-1 rounded-full ${i <= index ? 'bg-white' : 'bg-white/30'}`} />
+                <span key={p.id} className={`h-1 flex-1 rounded-full transition-colors ${i <= index ? 'bg-white' : 'bg-white/30'}`} />
               ))}
             </div>
           )}
-          <div className="flex items-center justify-between gap-3">
-            <span className="font-label-sm text-label-sm uppercase tracking-wide">
-              {data.total > 1 ? `${data.total} people are celebrating today` : 'Birthday today'}
-            </span>
-            <button
-              onClick={close}
-              aria-label="Close"
-              className="w-9 h-9 flex-none rounded-full bg-black/30 flex items-center justify-center active:scale-95"
-            >
-              <span className="material-symbols-outlined text-[20px]">close</span>
-            </button>
-          </div>
-        </div>
+          <button
+            onClick={close}
+            aria-label="Close"
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/25 flex items-center justify-center active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
 
-        <div className="px-5 -mt-12 pb-5 flex flex-col items-center text-center">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-full p-[3px] bg-gradient-to-br from-orange-400 to-pink-500 ring-4 ring-surface-container">
+          <CakeArt className="w-[46%] max-w-[200px] md:w-[62%] md:max-w-[300px] drop-shadow-2xl" />
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 md:static md:translate-x-0 md:mt-2">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-[3px] bg-white/80 shadow-xl">
               <div className="w-full h-full rounded-full overflow-hidden bg-surface-container-highest flex items-center justify-center">
                 {person.avatarUrl ? (
                   <img src={person.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -161,11 +137,17 @@ function BirthdayCelebration() {
                 )}
               </div>
             </div>
-            <span className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-xl">🎂</span>
           </div>
+        </div>
 
-          <h2 className="font-headline-md text-headline-md font-display text-on-surface mt-3 break-words">{title}</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-1">{subtitle}</p>
+        <div className="rcf-step overflow-y-auto px-6 pt-6 pb-6 md:px-10 md:py-10 flex flex-col">
+          <span className="self-start px-3 py-1 rounded-full bg-pink-500/15 text-pink-500 font-label-sm text-label-sm uppercase tracking-wide">
+            {data.total > 1 ? `${data.total} people celebrating today` : 'Birthday today 🎉'}
+          </span>
+          <h2 className="font-display text-[30px] md:text-[42px] leading-[1.05] font-extrabold tracking-tight text-on-surface mt-3 break-words">
+            {title}
+          </h2>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-2">{subtitle}</p>
           {!person.isYou && <p className="font-label-md text-label-md text-on-surface mt-1 truncate max-w-full">{person.name}</p>}
 
           {hasContact && !person.isYou && (
@@ -197,7 +179,7 @@ function BirthdayCelebration() {
                 href={waLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3.5 rounded-lg bg-[#25D366] text-white font-label-md text-label-md font-semibold text-center active:scale-[0.98] transition-transform"
+                className="w-full py-3.5 rounded-2xl bg-[#25D366] rcf-press text-white font-label-md text-label-md font-semibold text-center active:scale-[0.98] transition-transform"
               >
                 Send wishes on WhatsApp
               </a>
@@ -206,13 +188,13 @@ function BirthdayCelebration() {
             {data.items.length > 1 ? (
               <div className="flex gap-2">
                 {index > 0 && (
-                  <button onClick={prev} className="flex-1 py-3.5 rounded-lg border border-outline text-on-surface font-label-md text-label-md">
+                  <button onClick={prev} className="flex-1 py-3.5 rounded-2xl border border-outline rcf-press text-on-surface font-label-md text-label-md">
                     Back
                   </button>
                 )}
                 <button
                   onClick={index < last ? next : close}
-                  className="flex-1 py-3.5 rounded-lg bg-orange-500 text-white font-label-md text-label-md font-semibold active:scale-[0.98] transition-transform"
+                  className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-lg rcf-press font-label-md text-label-md font-semibold active:scale-[0.98] transition-transform"
                 >
                   {index < last ? `Next (${index + 1} of ${data.items.length})` : 'Close'}
                 </button>
@@ -220,7 +202,7 @@ function BirthdayCelebration() {
             ) : (
               <button
                 onClick={close}
-                className="w-full py-3.5 rounded-lg bg-orange-500 text-white font-label-md text-label-md font-semibold active:scale-[0.98] transition-transform"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-lg rcf-press font-label-md text-label-md font-semibold active:scale-[0.98] transition-transform"
               >
                 Join the celebration 🎉
               </button>
