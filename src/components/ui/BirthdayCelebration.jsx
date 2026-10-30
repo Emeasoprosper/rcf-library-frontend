@@ -8,7 +8,9 @@ import PopupMusicButton from './PopupMusicButton'
 import { Confetti, CakeArt } from './Celebrate'
 
 const SEEN_KEY = 'rcf_birthday_seen'
-const MUSIC_SRC = '/birthday-music.mp3'
+// The happy-birthday song in /public. (The old path pointed at a file that
+// was never added, so the popup played nothing.)
+const MUSIC_SRC = '/sub_clair-happy-birthday-592177.mp3'
 
 const lagosDate = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' })
 const firstName = (name) => String(name || '').trim().split(/\s+/)[0] || 'friend'
@@ -148,24 +150,50 @@ function BirthdayCelebration() {
             {title}
           </h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-2">{subtitle}</p>
-          {!person.isYou && <p className="font-label-md text-label-md text-on-surface mt-1 truncate max-w-full">{person.name}</p>}
-
-          {hasContact && !person.isYou && (
-            <div className="w-full mt-4 rounded-2xl border border-outline bg-surface-container-low p-3 text-left flex flex-col gap-2">
-              {person.phone && (
-                <a href={`tel:+${digitsOnly(person.phone)}`} className="flex items-center gap-3 text-on-surface">
-                  <span className="material-symbols-outlined text-primary text-[20px]">call</span>
-                  <span className="font-body-md text-body-md">{person.phone}</span>
-                </a>
-              )}
-              {person.whatsapp && (
-                <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-on-surface">
-                  <span className="material-symbols-outlined text-emerald-500 text-[20px]">chat</span>
-                  <span className="font-body-md text-body-md">{person.whatsapp} (WhatsApp)</span>
-                </a>
-              )}
+          {/* Celebrant card: photo, full name, and the contacts they chose to share */}
+          <div className="w-full mt-5 rounded-2xl border border-outline bg-surface-container-low overflow-hidden">
+            <div className="flex items-center gap-3 p-3">
+              <div className="w-12 h-12 flex-none rounded-full p-[2px] bg-gradient-to-br from-pink-500 to-orange-400">
+                <div className="w-full h-full rounded-full overflow-hidden bg-surface-container-highest flex items-center justify-center">
+                  {person.avatarUrl ? (
+                    <img src={person.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="font-body-md font-bold text-on-surface">{first.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+              </div>
+              <div className="min-w-0 flex-grow">
+                <p className="font-body-md text-body-md font-semibold text-on-surface truncate">{person.name}{person.isYou ? ' (you)' : ''}</p>
+                <p className="font-label-sm text-label-sm text-pink-500">🎂 Celebrating today</p>
+              </div>
             </div>
-          )}
+            {hasContact && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-outline/60 border-t border-outline/60">
+                {person.phone && (
+                  <a href={`tel:+${digitsOnly(person.phone)}`} className="flex items-center gap-2.5 px-3 py-3 bg-surface-container-low hover:bg-surface-container-high transition-colors min-w-0">
+                    <span className="w-8 h-8 flex-none rounded-full bg-blue-500/15 text-blue-500 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[18px]">call</span>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[10px] uppercase tracking-wider text-on-surface-variant">Phone</span>
+                      <span className="block font-label-md text-label-md text-on-surface truncate">{person.phone}</span>
+                    </span>
+                  </a>
+                )}
+                {person.whatsapp && (
+                  <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 px-3 py-3 bg-surface-container-low hover:bg-surface-container-high transition-colors min-w-0">
+                    <span className="w-8 h-8 flex-none rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[18px]">chat</span>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[10px] uppercase tracking-wider text-on-surface-variant">WhatsApp</span>
+                      <span className="block font-label-md text-label-md text-on-surface truncate">{person.whatsapp}</span>
+                    </span>
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
 
           {person.isYou && hasContact && (
             <p className="font-label-sm text-label-sm text-on-surface-variant mt-3">

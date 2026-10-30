@@ -5,6 +5,7 @@ import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import ResourceCard from '../components/resource/ResourceCard'
 import { resourcesApi, analyticsApi, externalApi } from '../services/api'
+import AudiobookPlayer from '../components/ui/AudiobookPlayer'
 import { getMediaKind, MEDIA_KIND_STYLE } from '../lib/mediaKind'
 import { extractAccentGradient } from '../lib/extractAccentColor'
 import { useAuth } from '../contexts/AuthContext'
@@ -187,8 +188,60 @@ function InfoStat({ label, value }) {
   )
 }
 
-// One open-access result: cover, type badge, key facts, licence, preview link, add button.
-function ExternalBookCard({ item, state, onGet }) {
+// One open textbook (Open Textbook Library): read on the publisher's site or open the PDF.
+function TextbookCard({ item }) {
+  return (
+    <article className="rcf-lift rounded-2xl bg-surface-container border border-outline p-4 flex gap-4">
+      <div className="w-16 h-20 flex-none rounded-xl bg-gradient-to-br from-[#5b7cfa] to-[#7c5cf5] flex flex-col items-center justify-center text-white shadow-md">
+        <span className="material-symbols-outlined text-[26px]">school</span>
+        {item.year && <span className="text-[11px] font-bold mt-0.5">{item.year}</span>}
+      </div>
+      <div className="min-w-0 flex-1 flex flex-col gap-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#5b7cfa]/15 text-[#5b7cfa] text-[11px] font-semibold uppercase tracking-wide">
+            Textbook
+          </span>
+          {item.subjects?.[0] && <span className="text-[11px] text-on-surface-variant truncate">{item.subjects[0]}</span>}
+          {item.rating ? (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-amber-500">
+              <span className="material-symbols-outlined text-[13px]">star</span>{item.rating}
+            </span>
+          ) : null}
+        </div>
+        <h3 className="font-body-md text-body-md font-semibold text-on-surface leading-snug line-clamp-2">{item.title}</h3>
+        {item.author && <p className="font-label-sm text-label-sm text-on-surface-variant line-clamp-1">{item.author}</p>}
+        {item.description && <p className="font-label-sm text-label-sm text-on-surface-variant line-clamp-2">{item.description}</p>}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          <a
+            href={item.readUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rcf-press inline-flex items-center gap-1.5 px-4 h-9 rounded-full bg-primary text-on-primary font-label-sm text-label-sm"
+          >
+            <span className="material-symbols-outlined text-[16px]">auto_stories</span>
+            Read free
+          </a>
+          {item.pdfUrl && (
+            <a
+              href={item.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rcf-press inline-flex items-center gap-1.5 px-4 h-9 rounded-full border border-outline text-on-surface font-label-sm text-label-sm"
+            >
+              <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+              PDF
+            </a>
+          )}
+          <span className="text-[11px] text-on-surface-variant">{item.licence}</span>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+// One open-access result: cover, type badge, key facts, licence, preview link,
+// and either "Get this book" (import) or, for audiobooks, "Listen now".
+function ExternalBookCard({ item, state, onGet, onListen }) {
   const isAudio = item.kind === 'audio'
   const working = state?.state === 'working'
   const size = item.sizeMB ?? item.approxMB
@@ -261,6 +314,15 @@ function ExternalBookCard({ item, state, onGet }) {
       )}
 
       <div className="p-4">
+        {isAudio ? (
+          <button
+            onClick={onListen}
+            className="rcf-press w-full inline-flex items-center justify-center gap-2 h-11 rounded-full bg-gradient-to-r from-[#5b7cfa] to-[#d946ef] text-white font-label-md text-label-md"
+          >
+            <span className="material-symbols-outlined text-[20px]">play_circle</span>
+            Listen now · {item.chapters} chapters
+          </button>
+        ) : (
         <button
           onClick={onGet}
           disabled={working}
@@ -269,8 +331,9 @@ function ExternalBookCard({ item, state, onGet }) {
           <span className={`material-symbols-outlined text-[18px] ${working ? 'animate-spin' : ''}`}>
             {working ? 'progress_activity' : 'add_circle'}
           </span>
-          {working ? 'Adding to library… about 20 seconds' : isAudio ? 'Get this audiobook' : 'Get this book'}
+          {working ? 'Adding to library… about 20 seconds' : 'Get this book'}
         </button>
+        )}
       </div>
     </article>
   )
@@ -302,6 +365,9 @@ function Search() {
   const [extSearching, setExtSearching] = useState(false)
   const [extError, setExtError] = useState(null)
   const [importing, setImporting] = useState({})
+  const [extTextbooks, setExtTextbooks] = useState([])
+  const [extAudio, setExtAudio] = useState([])
+  const [listening, setListening] = useState(null) // audiobook item being played
 
   useEffect(() => {
     setRecents(loadRecents())
@@ -437,23 +503,31 @@ function Search() {
 
   useEffect(() => {
     setExtResults(null)
+    setExtTextbooks([])
+    setExtAudio([])
     setExtError(null)
   }, [query])
 
+  // Three free sources at once: newest open textbooks first, then
+  // public-domain books, then audiobooks you can play right here.
   const searchOpenBooks = async () => {
     const q = query.trim()
     if (q.length < 3) return
     setExtSearching(true)
     setExtError(null)
-    try {
-      const data = await externalApi.search(q)
-      setExtResults(data.items || [])
-    } catch (err) {
-      setExtError(err.message || 'Could not search open books right now')
-      setExtResults([])
-    } finally {
-      setExtSearching(false)
+    const [textbooks, books, audio] = await Promise.allSettled([
+      externalApi.textbooks(q),
+      externalApi.search(q),
+      externalApi.audiobooks(q),
+    ])
+    const items = (r) => (r.status === 'fulfilled' ? r.value.items || [] : [])
+    setExtTextbooks(items(textbooks))
+    setExtResults(items(books))
+    setExtAudio(items(audio).map((a) => ({ ...a, kind: 'audio' })))
+    if ([textbooks, books, audio].every((r) => r.status === 'rejected')) {
+      setExtError('Could not search free books right now. Please try again.')
     }
+    setExtSearching(false)
   }
 
   const getExternalBook = async (item) => {
@@ -589,7 +663,7 @@ function Search() {
               </div>
             )}
 
-            {!searching && !searchError && hasSearched && results.length === 0 && query.trim().length >= 3 && (
+            {!searching && !searchError && hasSearched && query.trim().length >= 3 && (
               <section className="mb-stack-lg">
                 {extResults === null && (
                   <button
@@ -600,7 +674,7 @@ function Search() {
                     <span className={`material-symbols-outlined text-[18px] ${extSearching ? 'animate-spin' : ''}`}>
                       {extSearching ? 'progress_activity' : 'travel_explore'}
                     </span>
-                    {extSearching ? 'Searching open books…' : 'Search free open-access books online'}
+                    {extSearching ? 'Searching free books, textbooks and audiobooks…' : 'Search free textbooks, books & audiobooks online'}
                   </button>
                 )}
 
@@ -608,10 +682,40 @@ function Search() {
                   <p className="font-label-md text-label-md text-red-400 mt-stack-sm">{extError}</p>
                 )}
 
-                {extResults !== null && !extError && extResults.length === 0 && (
+                {extResults !== null && !extError && extResults.length === 0 && extTextbooks.length === 0 && extAudio.length === 0 && (
                   <p className="font-label-md text-label-md text-on-surface-variant text-center">
-                    No free open-access books found for "{query.trim()}". You can still request it above.
+                    No free books found for "{query.trim()}". You can still request it.
                   </p>
+                )}
+
+                {extTextbooks.length > 0 && (
+                  <div className="mb-stack-lg">
+                    <h2 className="font-headline-md text-headline-md font-display text-on-surface mb-1">
+                      Newest free textbooks
+                    </h2>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant mb-stack-sm">
+                      Peer-reviewed university textbooks, free and legal to read. Latest editions first.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      {extTextbooks.map((t) => <TextbookCard key={t.id} item={t} />)}
+                    </div>
+                  </div>
+                )}
+
+                {extAudio.length > 0 && (
+                  <div className="mb-stack-lg">
+                    <h2 className="font-headline-md text-headline-md font-display text-on-surface mb-1">
+                      Free audiobooks
+                    </h2>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant mb-stack-sm">
+                      Public-domain classics read by LibriVox volunteers. Tap Listen now to play here.
+                    </p>
+                    <div className="flex flex-col gap-4">
+                      {extAudio.map((item) => (
+                        <ExternalBookCard key={item.librivoxId} item={item} onListen={() => setListening(item)} />
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {extResults !== null && extResults.length > 0 && (
@@ -733,6 +837,8 @@ function Search() {
           </>
         )}
       </main>
+
+      {listening && <AudiobookPlayer item={listening} onClose={() => setListening(null)} />}
 
       <BottomNav />
     </div>

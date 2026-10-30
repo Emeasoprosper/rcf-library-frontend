@@ -29,29 +29,17 @@ function NetworkStatusBanner() {
     if (!current) setDismissedKey(null)
   }, [current?.key])
 
-  // Clicking anywhere on the main screen outside the toast dismisses it.
-  useEffect(() => {
-    if (!current || dismissedKey === current.key) return
-    function handleClickOutside(e) {
-      if (e.target.closest?.('[data-priority-popup]')) return
-      if (toastRef.current && !toastRef.current.contains(e.target)) {
-        setDismissedKey(current.key)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('touchstart', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('touchstart', handleClickOutside)
-    }
-  }, [current?.key, dismissedKey])
-
+  // Stays on screen, above every popup, until the person closes it (or the
+  // connection problem goes away). Tapping elsewhere no longer hides it.
   if (!current || dismissedKey === current.key) return null
 
   return (
     <div
       ref={toastRef}
-      className={`fixed top-1/2 -translate-y-1/2 right-0 z-[250] w-56 bg-surface-container border ${current.tone} rounded-l-xl shadow-2xl px-3 py-2.5 flex items-start gap-2`}
+      role="status"
+      aria-live="polite"
+      data-priority-popup
+      className={`fixed top-1/2 -translate-y-1/2 right-0 z-[400] w-60 bg-surface-container border ${current.tone} rounded-l-xl shadow-2xl px-3 py-2.5 flex items-start gap-2`}
       style={{ animation: 'networkToastSlideIn 220ms ease-out' }}
     >
       <style>{`
@@ -65,9 +53,9 @@ function NetworkStatusBanner() {
       <button
         onClick={() => setDismissedKey(current.key)}
         aria-label="Dismiss"
-        className="flex-none text-on-surface-variant hover:text-on-surface"
+        className="flex-none w-7 h-7 -mr-1 -mt-1 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
       >
-        <span className="material-symbols-outlined text-[16px]">close</span>
+        <span className="material-symbols-outlined text-[18px]">close</span>
       </button>
     </div>
   )

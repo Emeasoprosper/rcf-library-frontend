@@ -23,6 +23,25 @@ const typeIcon = {
   request_resolved: 'inbox',
 }
 
+// Colour of the icon tile shown when a notification has no picture.
+const typeTile = {
+  announcement: 'from-pink-500 to-rose-400',
+  news: 'from-blue-500 to-cyan-400',
+  advert: 'from-orange-500 to-amber-400',
+  resource_approved: 'from-emerald-500 to-teal-400',
+  resource_rejected: 'from-red-500 to-orange-400',
+  request_resolved: 'from-violet-500 to-purple-400',
+}
+
+function timeAgo(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return 'Just now'
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)} d ago`
+  return new Date(iso).toLocaleDateString()
+}
+
 export function NotificationsContent() {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
@@ -142,47 +161,51 @@ export function NotificationsContent() {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`flex items-start gap-3 p-stack-md rounded-xl bg-surface-container border border-outline transition-opacity ${
-                n.is_read ? 'opacity-60' : ''
+              className={`rcf-lift group relative flex items-center gap-3 p-3 rounded-2xl border transition-opacity ${
+                n.is_read ? 'bg-surface-container/60 border-outline/60' : 'bg-surface-container border-outline'
               } ${dismissingId === n.id ? 'opacity-30' : ''}`}
             >
-              <button
-                onClick={() => handleOpen(n)}
-                className="flex items-start gap-3 flex-grow min-w-0 text-left"
-              >
-                <span className="material-symbols-outlined text-primary flex-none mt-0.5">
-                  {typeIcon[n.type] || 'notifications'}
-                </span>
+              <button onClick={() => handleOpen(n)} className="flex items-center gap-3 flex-grow min-w-0 text-left">
+                {/* Picture on the left: the attached image/cover, or a coloured icon tile */}
+                {n.thumbnail_url ? (
+                  <img
+                    src={n.thumbnail_url}
+                    alt=""
+                    loading="lazy"
+                    className="w-14 h-14 flex-none rounded-xl object-cover border border-outline bg-surface-container-high"
+                  />
+                ) : (
+                  <span
+                    className={`w-14 h-14 flex-none rounded-xl flex items-center justify-center bg-gradient-to-br ${
+                      typeTile[n.type] || 'from-slate-500 to-slate-400'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-white text-[26px]">{typeIcon[n.type] || 'notifications'}</span>
+                  </span>
+                )}
+
                 <div className="flex-grow min-w-0">
-                  <p className={`font-body-md text-body-md text-on-surface break-words ${n.is_read ? '' : 'font-semibold'}`}>
+                  <p className={`font-body-md text-body-md text-on-surface leading-snug line-clamp-2 ${n.is_read ? '' : 'font-semibold'}`}>
                     {n.title}
                   </p>
                   {n.body && (
-                    <p className="font-label-sm text-label-sm text-on-surface-variant mt-1 break-words">{n.body}</p>
+                    <p className="font-label-sm text-label-sm text-on-surface-variant mt-0.5 line-clamp-2">{n.body}</p>
                   )}
-                  {n.thumbnail_url && (
-                    <img
-                      src={n.thumbnail_url}
-                      alt=""
-                      className="w-16 h-16 rounded-lg object-cover mt-2 border border-outline"
-                    />
-                  )}
-                  <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">
-                    {new Date(n.created_at).toLocaleString()}
-                  </p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant/80 mt-1">{timeAgo(n.created_at)}</p>
                 </div>
-                {!n.is_read && <span className="w-2 h-2 rounded-full bg-primary flex-none mt-2" />}
               </button>
-              <button
-                onClick={(e) => handleDismiss(e, n)}
-                disabled={dismissingId === n.id}
-                className="p-1.5 rounded-full hover:bg-surface-container-highest transition-colors flex-none disabled:opacity-50"
-                aria-label="Dismiss notification"
-              >
-                <span className="material-symbols-outlined text-on-surface-variant text-[18px]">
-                  close
-                </span>
-              </button>
+
+              <div className="flex flex-col items-center gap-2 flex-none self-stretch justify-between">
+                <button
+                  onClick={(e) => handleDismiss(e, n)}
+                  disabled={dismissingId === n.id}
+                  className="p-1.5 rounded-full hover:bg-surface-container-highest transition-colors disabled:opacity-50"
+                  aria-label="Dismiss notification"
+                >
+                  <span className="material-symbols-outlined text-on-surface-variant text-[18px]">close</span>
+                </button>
+                {!n.is_read && <span className="w-2.5 h-2.5 rounded-full bg-primary mb-1" aria-label="Unread" />}
+              </div>
             </div>
           ))}
         </div>

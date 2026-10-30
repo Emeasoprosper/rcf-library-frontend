@@ -209,8 +209,16 @@ export const authApi = {
     apiFetch('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),
 }
 
+export const engagementApi = {
+  me: () => apiFetch('/engagement/me'),
+  setGoal: (goal) => apiFetch('/engagement/goal', { method: 'PUT', body: JSON.stringify({ goal }) }),
+}
+
 export const externalApi = {
   search: (q) => apiFetch(`/external/search?q=${encodeURIComponent(q)}`),
+  textbooks: (q) => apiFetch(`/external/textbooks?q=${encodeURIComponent(q)}`),
+  audiobooks: (q) => apiFetch(`/external/audiobooks/search?q=${encodeURIComponent(q)}`),
+  audiobookTracks: (identifier) => apiFetch(`/external/audiobooks/${encodeURIComponent(identifier)}/tracks`),
   startImport: (identifier) =>
     apiFetch('/external/import', { method: 'POST', body: JSON.stringify({ identifier }) }),
   importStatus: (jobId) => apiFetch(`/external/import/${jobId}`),

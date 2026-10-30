@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import BirthdayContactSheet from '../components/ui/BirthdayContactSheet'
 
 const menuItems = [
+  { icon: 'emoji_events', label: 'Achievements & Streak', to: '/achievements' },
   { icon: 'bookmark', label: 'Saved Resources', to: '/saved' },
   { icon: 'download_for_offline', label: 'Downloads', to: '/downloads' },
   { icon: 'history', label: 'Reading History', to: '/reading-history' },

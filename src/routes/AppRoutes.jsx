@@ -47,6 +47,7 @@ import OrganizeResources from '../pages/admin/OrganizeResources'
 import AdminHomeRails from '../pages/admin/AdminHomeRails'
 import AdminAnalytics from '../pages/admin/AdminAnalytics'
 import AdminWhatsApp from '../pages/admin/AdminWhatsApp'
+import Achievements from '../pages/Achievements'
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth()
@@ -96,6 +97,7 @@ function AppRoutes() {
       <Route path="/shelf" element={<ProtectedRoute><Library /></ProtectedRoute>} />
       <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
       <Route path="/contribute" element={<ProtectedRoute><Contribute /></ProtectedRoute>} />
+      <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
       <Route path="/contributions" element={<ProtectedRoute><MyContributions /></ProtectedRoute>} />
       <Route path="/contribute/request" element={<ProtectedRoute><RequestMaterial /></ProtectedRoute>} />
       <Route path="/contribute/suggest" element={<ProtectedRoute><SuggestMaterial /></ProtectedRoute>} />

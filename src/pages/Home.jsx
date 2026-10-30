@@ -11,6 +11,7 @@ import UpdatesList from '../components/ui/UpdatesList'
 import { HomeContentSkeleton, HomeContentSkeletonDesktop } from '../components/ui/PageSkeletons'
 import NewsCarousel from '../components/ui/NewsCarousel'
 import NewsPopupModal from '../components/ui/NewsPopupModal'
+import { HomeEngagement } from '../components/ui/Engagement'
 import { useScrollDirection } from '../hooks/useScrollDirection'
 import { resourcesApi, communityApi, newsApi, resourceCollectionsApi } from '../services/api'
 import { getMediaKind } from '../lib/mediaKind'
@@ -402,6 +403,8 @@ function Home() {
         </section>
 
         <AdvertBanner ads={ads} />
+
+        <HomeEngagement />
 
         {loading && (isDesktop ? <HomeContentSkeletonDesktop /> : <HomeContentSkeleton />)}
 
