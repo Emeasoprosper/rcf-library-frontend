@@ -6,7 +6,7 @@
 
 let pdfjsLibPromise
 
-async function getPdfjs() {
+export async function getPdfjs() {
   if (!pdfjsLibPromise) {
     pdfjsLibPromise = import('pdfjs-dist').then((lib) => {
       lib.GlobalWorkerOptions.workerSrc = new URL(

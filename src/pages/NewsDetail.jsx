@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
 import { newsApi } from '../services/api'
+import AttachmentViewerModal from '../components/ui/AttachmentViewerModal'
+import { confirmExternal } from '../lib/externalLink'
 
 function NewsDetail() {
   const { id } = useParams()
@@ -11,6 +13,7 @@ function NewsDetail() {
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [docOpen, setDocOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -60,15 +63,14 @@ function NewsDetail() {
             )}
 
             {isDoc && (
-              <a
-                href={item.attachment_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-stack-md rounded-2xl bg-surface-container border border-outline"
+              <button
+                type="button"
+                onClick={() => setDocOpen(true)}
+                className="rcf-lift flex items-center gap-3 p-stack-md rounded-2xl bg-surface-container border border-outline text-left"
               >
                 <span className="material-symbols-outlined text-primary text-2xl">description</span>
                 <span className="font-body-md text-body-md text-on-surface">Open attached document</span>
-              </a>
+              </button>
             )}
 
             <div>
@@ -95,14 +97,13 @@ function NewsDetail() {
             )}
 
             {item.link_url && (
-              <a
-                href={item.link_url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => confirmExternal(item.link_url, { title: item.title })}
                 className="w-full py-3.5 rounded-lg font-label-md text-label-md font-semibold bg-orange-500 text-white text-center active:scale-[0.98] transition-transform"
               >
                 Open Link
-              </a>
+              </button>
             )}
 
             <p className="font-label-sm text-label-sm text-on-surface-variant">
@@ -111,6 +112,14 @@ function NewsDetail() {
           </div>
         )}
       </main>
+
+      <AttachmentViewerModal
+        open={docOpen}
+        onClose={() => setDocOpen(false)}
+        title={item?.title}
+        url={item?.attachment_url}
+        mime={item?.attachment_mime || 'application/pdf'}
+      />
     </div>
   )
 }

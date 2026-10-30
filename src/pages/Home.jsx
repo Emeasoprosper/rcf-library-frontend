@@ -12,6 +12,7 @@ import { HomeContentSkeleton, HomeContentSkeletonDesktop } from '../components/u
 import NewsCarousel from '../components/ui/NewsCarousel'
 import NewsPopupModal from '../components/ui/NewsPopupModal'
 import { HomeEngagement } from '../components/ui/Engagement'
+import { confirmExternal } from '../lib/externalLink'
 import { useScrollDirection } from '../hooks/useScrollDirection'
 import { resourcesApi, communityApi, newsApi, resourceCollectionsApi } from '../services/api'
 import { getMediaKind } from '../lib/mediaKind'
@@ -352,7 +353,7 @@ function Home() {
       body: e.description,
       imageUrl: e.imageUrl,
       badge: e.sourceName,
-      onClick: () => window.open(e.link, '_blank', 'noopener,noreferrer'),
+      onClick: () => confirmExternal(e.link, { title: e.title, sourceName: e.sourceName }),
     })),
   ]
 

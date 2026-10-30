@@ -217,6 +217,8 @@ export const engagementApi = {
 export const externalApi = {
   search: (q) => apiFetch(`/external/search?q=${encodeURIComponent(q)}`),
   textbooks: (q) => apiFetch(`/external/textbooks?q=${encodeURIComponent(q)}`),
+  startTextbookImport: (id) =>
+    apiFetch('/external/textbooks/import', { method: 'POST', body: JSON.stringify({ id }) }),
   audiobooks: (q) => apiFetch(`/external/audiobooks/search?q=${encodeURIComponent(q)}`),
   audiobookTracks: (identifier) => apiFetch(`/external/audiobooks/${encodeURIComponent(identifier)}/tracks`),
   startImport: (identifier) =>

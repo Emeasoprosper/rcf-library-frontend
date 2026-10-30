@@ -188,8 +188,10 @@ function InfoStat({ label, value }) {
   )
 }
 
-// One open textbook (Open Textbook Library): read on the publisher's site or open the PDF.
-function TextbookCard({ item }) {
+// One open textbook (Open Textbook Library). "Add & read" copies it into the
+// library so it opens in the app's own reader; nothing opens outside the app.
+function TextbookCard({ item, state, onGet }) {
+  const working = state?.state === 'working'
   return (
     <article className="rcf-lift rounded-2xl bg-surface-container border border-outline p-4 flex gap-4">
       <div className="w-16 h-20 flex-none rounded-xl bg-gradient-to-br from-[#5b7cfa] to-[#7c5cf5] flex flex-col items-center justify-center text-white shadow-md">
@@ -212,28 +214,24 @@ function TextbookCard({ item }) {
         {item.author && <p className="font-label-sm text-label-sm text-on-surface-variant line-clamp-1">{item.author}</p>}
         {item.description && <p className="font-label-sm text-label-sm text-on-surface-variant line-clamp-2">{item.description}</p>}
         <div className="flex flex-wrap items-center gap-2 mt-2">
-          <a
-            href={item.readUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rcf-press inline-flex items-center gap-1.5 px-4 h-9 rounded-full bg-primary text-on-primary font-label-sm text-label-sm"
+          <button
+            type="button"
+            onClick={onGet}
+            disabled={working}
+            className="rcf-press inline-flex items-center gap-1.5 px-4 h-9 rounded-full bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-60"
           >
-            <span className="material-symbols-outlined text-[16px]">auto_stories</span>
-            Read free
-          </a>
-          {item.pdfUrl && (
-            <a
-              href={item.pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rcf-press inline-flex items-center gap-1.5 px-4 h-9 rounded-full border border-outline text-on-surface font-label-sm text-label-sm"
-            >
-              <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
-              PDF
-            </a>
-          )}
-          <span className="text-[11px] text-on-surface-variant">{item.licence}</span>
+            <span className={`material-symbols-outlined text-[16px] ${working ? 'animate-spin' : ''}`}>
+              {working ? 'progress_activity' : 'auto_stories'}
+            </span>
+            {working ? 'Adding to library…' : 'Add & read in app'}
+          </button>
+          <span className="text-[11px] text-on-surface-variant">
+            PDF{item.sizeMB ? ` · ${item.sizeMB} MB` : ''} · {item.licence}
+          </span>
         </div>
+        {state?.state === 'error' && (
+          <p className="mt-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 font-label-sm text-label-sm">{state.message}</p>
+        )}
       </div>
     </article>
   )
@@ -289,15 +287,10 @@ function ExternalBookCard({ item, state, onGet, onListen }) {
           <span className="material-symbols-outlined text-[16px]">public</span>
           {shortLicence(item.licence)}
         </span>
-        <a
-          href={item.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-primary font-label-sm text-label-sm"
-        >
-          Preview on archive.org
-          <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-        </a>
+        <span className="inline-flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+          <span className="material-symbols-outlined text-[14px]">{isAudio ? 'headphones' : 'chrome_reader_mode'}</span>
+          {isAudio ? 'Plays in the app' : 'Opens in the app reader'}
+        </span>
       </div>
 
       {isLarge && !working && (
@@ -530,14 +523,16 @@ function Search() {
     setExtSearching(false)
   }
 
-  const getExternalBook = async (item) => {
+  // key = card id for the spinner; start = asks the backend to copy the book
+  // into the library. Ends by opening it in the app's own reader page.
+  const getExternalBook = async (item, { key = item.identifier, start: startFn = () => externalApi.startImport(item.identifier) } = {}) => {
     if (!isAuthenticated) {
       navigate('/signin', { state: { from: '/search' } })
       return
     }
-    setImporting((prev) => ({ ...prev, [item.identifier]: { state: 'working' } }))
+    setImporting((prev) => ({ ...prev, [key]: { state: 'working' } }))
     try {
-      const start = await externalApi.startImport(item.identifier)
+      const start = await startFn()
       if (start.alreadyInLibrary) {
         navigate(resourceDetailPath(start.resourceId))
         return
@@ -555,7 +550,7 @@ function Search() {
       }
       throw new Error('This is taking too long. Please try again in a minute.')
     } catch (err) {
-      setImporting((prev) => ({ ...prev, [item.identifier]: { state: 'error', message: err.message } }))
+      setImporting((prev) => ({ ...prev, [key]: { state: 'error', message: err.message } }))
     }
   }
 
@@ -694,10 +689,17 @@ function Search() {
                       Newest free textbooks
                     </h2>
                     <p className="font-label-sm text-label-sm text-on-surface-variant mb-stack-sm">
-                      Peer-reviewed university textbooks, free and legal to read. Latest editions first.
+                      Peer-reviewed university textbooks, free and legal. Latest editions first. Tap one to add it to the library and read it here.
                     </p>
                     <div className="flex flex-col gap-3">
-                      {extTextbooks.map((t) => <TextbookCard key={t.id} item={t} />)}
+                      {extTextbooks.map((t) => (
+                        <TextbookCard
+                          key={t.id}
+                          item={t}
+                          state={importing[`otl-${t.id}`]}
+                          onGet={() => getExternalBook(t, { key: `otl-${t.id}`, start: () => externalApi.startTextbookImport(t.id) })}
+                        />
+                      ))}
                     </div>
                   </div>
                 )}

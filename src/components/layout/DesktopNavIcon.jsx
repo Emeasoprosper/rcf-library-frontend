@@ -1,26 +1,27 @@
+import { House, Search, LibraryBig, BookPlus, CircleUserRound, Circle } from 'lucide-react'
+
+// One consistent line-icon family (Lucide) for the desktop nav.
 const ICON_MAP = {
-  home: 'home',
-  search: 'search',
-  library: 'local_library',
-  contribute: 'volunteer_activism',
-  profile: 'account_circle',
+  home: House,
+  search: Search,
+  library: LibraryBig,
+  contribute: BookPlus,
+  profile: CircleUserRound,
 }
 
 // playKey changes on every click, which remounts the span and replays
 // that icon's animation even when the page is already active.
 function DesktopNavIcon({ icon, active, playKey = 0 }) {
-  const name = ICON_MAP[icon] || 'circle'
+  const Icon = ICON_MAP[icon] || Circle
   return (
     <span key={playKey} className={`inline-flex ${playKey ? `dnav-anim-${icon}` : ''}`}>
-      <span
-        className="material-symbols-outlined"
-        style={{
-          fontSize: 26,
-          fontVariationSettings: `'FILL' ${active ? 1 : 0}, 'wght' ${active ? 500 : 400}, 'GRAD' 0, 'opsz' 24`,
-        }}
-      >
-        {name}
-      </span>
+      <Icon
+        size={24}
+        strokeWidth={active ? 2.3 : 1.7}
+        absoluteStrokeWidth
+        aria-hidden="true"
+        style={{ fill: active ? 'currentColor' : 'none', fillOpacity: active ? 0.14 : 0 }}
+      />
     </span>
   )
 }

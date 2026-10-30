@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 import { useNotificationsModal } from '../contexts/NotificationsModalContext'
 import { NotificationsSkeleton } from '../components/ui/PageSkeletons'
+import { confirmExternal } from '../lib/externalLink'
 
 const typeIcon = {
   announcement: 'campaign',
@@ -65,7 +66,10 @@ export function NotificationsContent() {
             type: 'news',
             title: a.title,
             body: a.message,
-            thumbnail_url: a.attachment_url,
+            // Only images make a thumbnail; a PDF still opens in the viewer.
+            thumbnail_url: a.attachment_url && /^image\//.test(a.attachment_mime || 'image/') ? a.attachment_url : null,
+            attachment_url: a.attachment_url,
+            attachment_mime: a.attachment_mime,
             is_read: true,
             is_global: true,
             created_at: a.created_at,
@@ -99,11 +103,11 @@ export function NotificationsContent() {
 
   const handleOpen = async (n) => {
     if (n.is_external) {
-      window.open(n.link, '_blank', 'noopener,noreferrer')
+      confirmExternal(n.link, { title: n.title, sourceName: n.body })
       return
     }
-    if (n.thumbnail_url) {
-      setViewerItem({ title: n.title, url: n.thumbnail_url })
+    if (n.attachment_url || n.thumbnail_url) {
+      setViewerItem({ title: n.title, url: n.attachment_url || n.thumbnail_url, mime: n.attachment_mime || '' })
     }
     if (n.is_global || n.is_read) return
     setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)))
@@ -216,6 +220,7 @@ export function NotificationsContent() {
         onClose={() => setViewerItem(null)}
         title={viewerItem?.title}
         url={viewerItem?.url}
+        mime={viewerItem?.mime}
       />
     </div>
   )

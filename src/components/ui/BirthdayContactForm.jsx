@@ -61,12 +61,12 @@ export function toBirthdayContactPayload(v) {
 const inputClass =
   'w-full h-12 px-4 rounded-lg bg-surface-container-low border border-outline text-on-surface font-body-md focus:outline-none focus:border-primary'
 
-function Toggle({ checked, onChange, label, hint, disabled = false }) {
+function Toggle({ checked, onChange, label, hint, disabled = false, compact = false }) {
   return (
-    <div className={`flex items-start gap-3 ${disabled ? 'opacity-50' : ''}`}>
+    <div className={`flex items-center gap-3 ${disabled ? 'opacity-50' : ''}`}>
       <div className="flex-grow min-w-0">
-        <p className="font-body-md text-body-md text-on-surface">{label}</p>
-        {hint && <p className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">{hint}</p>}
+        <p className={compact ? 'text-[14px] font-medium text-on-surface leading-snug' : 'font-body-md text-body-md text-on-surface'}>{label}</p>
+        {hint && <p className={compact ? 'text-[12px] text-on-surface-variant mt-0.5 leading-snug' : 'font-label-sm text-label-sm text-on-surface-variant mt-0.5'}>{hint}</p>}
       </div>
       <button
         type="button"
@@ -176,16 +176,24 @@ export function BirthdayQuickFields({ value, onChange }) {
   )
 }
 
-function BirthdayContactFields({ value, onChange }) {
+// compact = the tighter layout used in the Birthday & contact popup, so the
+// whole form fits without scrolling (phone and WhatsApp side by side).
+function BirthdayContactFields({ value, onChange, compact = false }) {
   const set = (patch) => onChange({ ...value, ...patch })
   const monthNum = Number(value.month)
   const maxDay = monthNum ? DAYS_IN_MONTH[monthNum - 1] : 31
   const hasContact = Boolean(value.phone.trim() || (!value.sameAsPhone && value.whatsapp.trim()))
+  const field = compact
+    ? 'w-full h-10 px-3 rounded-lg bg-surface-container-low border border-outline text-on-surface text-[14px] focus:outline-none focus:border-primary'
+    : inputClass
+  const label = compact
+    ? 'text-[12px] font-medium text-on-surface-variant mb-1 block'
+    : 'font-label-sm text-label-sm text-on-surface-variant mb-1 block'
 
   return (
-    <div className="flex flex-col gap-stack-md">
+    <div className={`flex flex-col ${compact ? 'gap-3' : 'gap-stack-md'}`}>
       <div>
-        <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block">Birthday (no year needed)</label>
+        <label className={label}>Birthday (no year needed)</label>
         <div className="grid grid-cols-2 gap-2">
           <select
             value={value.month}
@@ -194,67 +202,81 @@ function BirthdayContactFields({ value, onChange }) {
               const max = month ? DAYS_IN_MONTH[Number(month) - 1] : 31
               set({ month, day: Number(value.day) > max ? '' : value.day })
             }}
-            className={inputClass}
+            className={field}
+            aria-label="Birthday month"
           >
             <option value="">Month</option>
             {MONTHS.map((name, i) => <option key={name} value={String(i + 1)}>{name}</option>)}
           </select>
-          <select value={value.day} onChange={(e) => set({ day: e.target.value })} className={inputClass}>
+          <select value={value.day} onChange={(e) => set({ day: e.target.value })} className={field} aria-label="Birthday day">
             <option value="">Day</option>
             {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => <option key={d} value={String(d)}>{d}</option>)}
           </select>
         </div>
       </div>
 
-      <div>
-        <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block">Phone number (optional)</label>
-        <input
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          value={value.phone}
-          onChange={(e) => set({ phone: e.target.value })}
-          placeholder="+234 801 234 5678"
-          className={inputClass}
-        />
-      </div>
-
-      <div>
-        <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block">WhatsApp number (optional)</label>
-        {!value.sameAsPhone && (
+      <div className={compact ? 'grid grid-cols-1 sm:grid-cols-2 gap-2' : 'contents'}>
+        <div>
+          <label className={label}>Phone (optional)</label>
           <input
             type="tel"
             inputMode="tel"
-            value={value.whatsapp}
-            onChange={(e) => set({ whatsapp: e.target.value })}
+            autoComplete="tel"
+            value={value.phone}
+            onChange={(e) => set({ phone: e.target.value })}
             placeholder="+234 801 234 5678"
-            className={inputClass}
+            className={field}
           />
-        )}
-        <label className="flex items-center gap-2 mt-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={value.sameAsPhone}
-            onChange={(e) => set({ sameAsPhone: e.target.checked })}
-            className="w-4 h-4 accent-orange-500"
-          />
-          <span className="font-label-sm text-label-sm text-on-surface-variant">My WhatsApp is the same as my phone number</span>
-        </label>
+        </div>
+
+        <div>
+          <label className={label}>WhatsApp (optional)</label>
+          {value.sameAsPhone ? (
+            <div className={`${field} flex items-center text-on-surface-variant`}>Same as phone</div>
+          ) : (
+            <input
+              type="tel"
+              inputMode="tel"
+              value={value.whatsapp}
+              onChange={(e) => set({ whatsapp: e.target.value })}
+              placeholder="+234 801 234 5678"
+              className={field}
+            />
+          )}
+        </div>
       </div>
 
-      <div className="rounded-xl border border-outline bg-surface-container-low p-stack-md flex flex-col gap-stack-md">
+      <label className="flex items-center gap-2 cursor-pointer -mt-1">
+        <input
+          type="checkbox"
+          checked={value.sameAsPhone}
+          onChange={(e) => set({ sameAsPhone: e.target.checked })}
+          className="w-4 h-4 accent-orange-500"
+        />
+        <span className={compact ? 'text-[12px] text-on-surface-variant' : 'font-label-sm text-label-sm text-on-surface-variant'}>
+          My WhatsApp is the same as my phone number
+        </span>
+      </label>
+
+      <div className={`rounded-xl border border-outline bg-surface-container-low flex flex-col ${compact ? 'p-3 gap-3' : 'p-stack-md gap-stack-md'}`}>
         <Toggle
+          compact={compact}
           checked={value.birthdayPublic}
           onChange={(birthdayPublic) => set({ birthdayPublic })}
           label="Celebrate my birthday in the app"
-          hint="On your birthday, everyone sees your photo and name."
+          hint="Everyone sees your photo and name on your birthday."
         />
         <Toggle
+          compact={compact}
           checked={hasContact && value.contactPublic}
           onChange={(contactPublic) => set({ contactPublic })}
           disabled={!hasContact}
           label="Show my phone and WhatsApp on my birthday"
-          hint="Off by default. Only signed-in members can see it, and only on your birthday. Admins can always see the numbers you add."
+          hint={
+            compact
+              ? 'Off by default. Signed-in members only, on your birthday only.'
+              : 'Off by default. Only signed-in members can see it, and only on your birthday. Admins can always see the numbers you add.'
+          }
         />
       </div>
     </div>

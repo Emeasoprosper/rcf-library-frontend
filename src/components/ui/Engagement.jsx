@@ -6,17 +6,8 @@ import { Link } from 'react-router-dom'
 import { engagementApi } from '../../services/api'
 import { verseOfTheDay, tipOfTheDay } from '../../lib/dailyInspiration'
 import { Confetti } from './Celebrate'
+import { Medal, AnimatedFlame, VerseArt, TipArt } from './Illustrations'
 
-const BADGE_COLORS = {
-  blue: 'from-[#4f6cf7] to-[#7c9bff]',
-  green: 'from-[#4caf50] to-[#a3d65c]',
-  violet: 'from-[#7c5cf5] to-[#b28dff]',
-  orange: 'from-[#f97316] to-[#facc15]',
-  pink: 'from-[#d946ef] to-[#f472b6]',
-  amber: 'from-[#f59e0b] to-[#fde047]',
-  teal: 'from-[#0d9488] to-[#38bdf8]',
-  slate: 'from-[#475569] to-[#94a3b8]',
-}
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const SEEN_KEY = 'rcf_badges_seen'
 
@@ -54,14 +45,8 @@ export function BadgeTile({ badge, size = 'md' }) {
   const big = size === 'lg'
   return (
     <div className={`flex flex-col items-center text-center gap-1.5 ${big ? 'w-full' : 'w-[76px] flex-none'}`} title={badge.desc}>
-      <div
-        className={`relative ${big ? 'w-20 h-20' : 'w-14 h-14'} rounded-2xl flex items-center justify-center ${
-          badge.earned ? `bg-gradient-to-br ${BADGE_COLORS[badge.color] || BADGE_COLORS.blue} shadow-lg` : 'bg-surface-container-high'
-        }`}
-      >
-        <span className={`material-symbols-outlined ${big ? 'text-[38px]' : 'text-[28px]'} ${badge.earned ? 'text-white' : 'text-on-surface-variant/50'}`}>
-          {badge.earned ? badge.icon : 'lock'}
-        </span>
+      <div className={badge.earned ? 'drop-shadow-md' : ''}>
+        <Medal badge={badge} size={big ? 68 : 50} />
       </div>
       <p className={`font-label-sm text-label-sm leading-tight ${badge.earned ? 'text-on-surface font-semibold' : 'text-on-surface-variant'}`}>{badge.title}</p>
       {big && (
@@ -84,12 +69,10 @@ export function BadgeTile({ badge, size = 'md' }) {
 export function StreakCard({ streak, week }) {
   const alive = streak.current > 0
   return (
-    <div className="rcf-lift relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-[#f97316] via-[#fb5c3c] to-[#ec4899] text-white">
-      <span className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/10" aria-hidden="true" />
-      <div className="flex items-center gap-2">
-        <span className={`material-symbols-outlined text-[34px] ${alive ? 'rcf-flicker' : 'opacity-70'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
-          local_fire_department
-        </span>
+    <div className="rcf-lift relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-[#3a1d14] via-[#5a2617] to-[#7a2f16] text-white border border-orange-900/40">
+      <span className="absolute -right-10 -top-10 w-36 h-36 rounded-full bg-orange-400/15 blur-2xl" aria-hidden="true" />
+      <div className="flex items-center gap-3">
+        <AnimatedFlame size={42} lit={alive || streak.readToday} />
         <div>
           <p className="font-display text-[30px] font-extrabold leading-none">{streak.current}</p>
           <p className="text-[12px] font-semibold text-white/90">day streak</p>
@@ -100,7 +83,7 @@ export function StreakCard({ streak, week }) {
           <div key={d.date} className="flex flex-col items-center gap-1">
             <span
               className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                d.read ? 'bg-white text-[#f05a28]' : d.today ? 'border-2 border-white/90' : 'bg-white/20'
+                d.read ? 'bg-gradient-to-b from-[#FFD84D] to-[#FF7A1F] text-[#3a1d14]' : d.today ? 'border-2 border-orange-300/90' : 'bg-white/12'
               } ${d.future ? 'opacity-50' : ''}`}
             >
               {d.read ? '✓' : ''}
@@ -142,33 +125,38 @@ export function WeeklyGoalCard({ week }) {
   )
 }
 
+// Editorial cards: text on the left, a soft illustration panel on the right.
 export function VerseCard() {
   const v = verseOfTheDay()
   return (
-    <div className="rcf-lift relative overflow-hidden rounded-[22px] p-5 bg-gradient-to-br from-[#4f6cf7] via-[#6a5cf5] to-[#9b5cf5] text-white">
-      <span className="absolute -right-4 -bottom-8 font-display text-[120px] leading-none text-white/10 select-none" aria-hidden="true">”</span>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-white/80 flex items-center gap-1">
-        <span className="material-symbols-outlined text-[15px]">auto_awesome</span>
-        Verse of the day
-      </p>
-      <p className="font-body-md text-[16px] leading-relaxed mt-2">“{v.text}”</p>
-      <p className="font-label-md text-label-md font-semibold text-white/90 mt-2">{v.ref}</p>
-    </div>
+    <article className="rcf-lift overflow-hidden rounded-[22px] bg-surface-container border border-outline flex flex-col sm:flex-row">
+      <div className="flex-1 p-5 flex flex-col">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6c63ff]">Verse of the day</p>
+        <blockquote className="font-display text-[17px] md:text-[18px] leading-relaxed text-on-surface mt-3 italic">
+          “{v.text}”
+        </blockquote>
+        <p className="mt-auto pt-3 font-label-md text-label-md font-semibold text-on-surface-variant">— {v.ref} <span className="font-normal">(KJV)</span></p>
+      </div>
+      <div className="sm:w-[42%] flex-none bg-gradient-to-br from-[#EEF0FF] to-[#E3E6FF] flex items-center justify-center p-3">
+        <VerseArt className="w-full max-w-[220px] h-auto" />
+      </div>
+    </article>
   )
 }
 
 export function TipCard() {
   const t = tipOfTheDay()
   return (
-    <div className="rcf-lift rounded-[22px] p-4 bg-surface-container border border-outline flex gap-3">
-      <span className="w-11 h-11 flex-none rounded-xl bg-gradient-to-br from-[#14b8a6] to-[#38bdf8] flex items-center justify-center">
-        <span className="material-symbols-outlined text-white text-[24px]">{t.icon}</span>
-      </span>
-      <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-teal-500">Study tip of the day</p>
-        <p className="font-label-md text-label-md text-on-surface mt-1 leading-snug">{t.text}</p>
+    <article className="rcf-lift overflow-hidden rounded-[22px] bg-surface-container border border-outline flex flex-col sm:flex-row">
+      <div className="flex-1 p-5 flex flex-col">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#0e8f86]">Study tip of the day</p>
+        <p className="font-body-md text-[16px] leading-relaxed text-on-surface mt-3">{t.text}</p>
+        <p className="mt-auto pt-3 font-label-sm text-label-sm text-on-surface-variant">A new tip every day at midnight</p>
       </div>
-    </div>
+      <div className="sm:w-[42%] flex-none bg-gradient-to-br from-[#E6FAF5] to-[#D5F3EC] flex items-center justify-center p-3">
+        <TipArt className="w-full max-w-[200px] h-auto" />
+      </div>
+    </article>
   )
 }
 
@@ -190,8 +178,8 @@ export function BadgeUnlocked({ badges, onClose }) {
       <Confetti count={22} />
       <div className="rcf-pop relative w-full max-w-sm rounded-[32px] bg-surface-container border border-outline shadow-2xl p-8 flex flex-col items-center text-center" onClick={(e) => e.stopPropagation()}>
         <p className="text-[12px] font-semibold uppercase tracking-wider text-amber-500">New badge unlocked!</p>
-        <div className={`rcf-float mt-4 w-28 h-28 rounded-[30px] bg-gradient-to-br ${BADGE_COLORS[b.color] || BADGE_COLORS.blue} flex items-center justify-center shadow-2xl`}>
-          <span className="material-symbols-outlined text-white text-[56px]" style={{ fontVariationSettings: "'FILL' 1" }}>{b.icon}</span>
+        <div className="rcf-float mt-4 drop-shadow-2xl">
+          <Medal badge={b} size={110} />
         </div>
         <h2 className="font-display text-[30px] font-extrabold text-on-surface mt-5">{b.title}</h2>
         <p className="font-body-md text-body-md text-on-surface-variant mt-1">{b.desc}</p>

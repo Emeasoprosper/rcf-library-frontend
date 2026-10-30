@@ -275,6 +275,21 @@ body {
 .rcf-confetti { position: absolute; top: 0; animation: rcfFall var(--dur, 6s) cubic-bezier(0.3, 0.5, 0.6, 1) var(--delay, 0s) both; will-change: transform; }
 .rcf-gradient { background-size: 200% 200%; animation: rcfGradient 8s ease-in-out infinite; }
 
+/* Living fire: each flame layer sways on its own rhythm, embers drift up. */
+@keyframes rcfFlameA { 0%, 100% { transform: scale(1, 1) skewX(0deg); } 25% { transform: scale(0.96, 1.06) skewX(-3deg); } 50% { transform: scale(1.03, 0.95) skewX(2deg); } 75% { transform: scale(0.98, 1.04) skewX(-1deg); } }
+@keyframes rcfFlameB { 0%, 100% { transform: scale(1, 1) skewX(0deg); } 33% { transform: scale(1.05, 0.93) skewX(4deg); } 66% { transform: scale(0.94, 1.08) skewX(-4deg); } }
+@keyframes rcfEmber { 0% { transform: translate(0, 0) scale(1); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(var(--ex, 4px), -34px) scale(0.3); opacity: 0; } }
+.rcf-flame-a { animation: rcfFlameA 0.9s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.rcf-flame-b { animation: rcfFlameB 0.7s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.rcf-flame-c { animation: rcfFlameA 0.55s ease-in-out infinite reverse; transform-box: fill-box; transform-origin: 50% 100%; }
+.rcf-ember { animation: rcfEmber 1.8s ease-out infinite; transform-box: fill-box; }
+
+/* Owl wings flap while it crosses the screen. */
+@keyframes rcfFlapL { 0%, 100% { transform: rotate(18deg); } 50% { transform: rotate(-28deg); } }
+@keyframes rcfFlapR { 0%, 100% { transform: rotate(-18deg); } 50% { transform: rotate(28deg); } }
+.rcf-wing-l { animation: rcfFlapL 0.32s ease-in-out infinite; transform-box: fill-box; transform-origin: 100% 30%; }
+.rcf-wing-r { animation: rcfFlapR 0.32s ease-in-out infinite; transform-box: fill-box; transform-origin: 0% 30%; }
+
 /* Cards and buttons lift a little under the pointer (desktop only). */
 @media (hover: hover) {
   .rcf-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
@@ -286,6 +301,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .rcf-page, .rcf-route-enter main > *, .rcf-pop, .rcf-step, .rcf-float, .rcf-blink, .rcf-flicker, .rcf-gradient { animation: none !important; }
   .rcf-confetti { display: none; }
+  .rcf-flame-a, .rcf-flame-b, .rcf-flame-c, .rcf-ember, .rcf-wing-l, .rcf-wing-r { animation: none !important; }
   .rcf-lift:hover { transform: none; }
 }
 
