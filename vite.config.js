@@ -64,7 +64,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,mjs,css,html,svg,png,jpg,jpeg,webp,ico,woff,woff2}', 'RcfNotificationfx.wav'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        // /backend/* is the API proxied through Vercel (see vercel.json): file
+        // downloads and streams opened as links must reach it, not the app shell.
+        navigateFallbackDenylist: [/^\/api\//, /^\/backend\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

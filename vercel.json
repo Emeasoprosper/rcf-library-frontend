@@ -3,10 +3,11 @@
     { "source": "/resources/:id", "destination": "/library/:id", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/backend/:path*", "destination": "https://rcf-library-backend.onrender.com/api/:path*" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/robots.txt", "destination": "/api/robots" },
     { "source": "/library/:id", "destination": "/api/book?id=:id" },
     { "source": "/collections/:id", "destination": "/api/collection?id=:id" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|backend/).*)", "destination": "/index.html" }
   ]
 }

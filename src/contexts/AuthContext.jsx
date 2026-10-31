@@ -77,7 +77,18 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const meCall = authApi.me()
+    // Back from Google sign-in with a one-time code: trade it for this
+    // site's own session cookies (then check the session as usual), and
+    // take the code out of the address bar so it is never reused or shared.
+    const params = new URLSearchParams(window.location.search)
+    const handoff = params.get('handoff')
+    if (handoff) {
+      params.delete('handoff')
+      const rest = params.toString()
+      window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash)
+    }
+
+    const meCall = handoff ? authApi.handoff(handoff).catch(() => authApi.me()) : authApi.me()
     const racers = [meCall]
     if (readOfflineAuthFlag()) {
       racers.push(

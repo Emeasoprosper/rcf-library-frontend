@@ -1,7 +1,15 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/services/api.js
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
+// In production the API is reached through the site's own /backend path,
+// which Vercel forwards to Render (vercel.json). That makes the session
+// cookies first-party: Safari and Chrome with third-party cookies blocked
+// otherwise dropped them, and sign-in looped straight back to /signin.
+// Set VITE_API_PROXY=off on Vercel to go back to calling Render directly.
+const API_BASE =
+  import.meta.env.PROD && import.meta.env.VITE_API_PROXY !== 'off'
+    ? '/backend'
+    : import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
 
-const NO_REFRESH_PATHS = ['/auth/refresh', '/auth/google', '/auth/logout', '/auth/login', '/auth/signup']
+const NO_REFRESH_PATHS = ['/auth/refresh', '/auth/google', '/auth/logout', '/auth/login', '/auth/signup', '/auth/handoff']
 
 async function rawFetch(path, options) {
   return fetch(`${API_BASE}${path}`, {
@@ -225,6 +233,8 @@ export const authApi = {
   emailSignup: (email, password, name) =>
     apiFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, name }) }),
   me: () => apiFetch('/auth/me'),
+  // Trades the one-time code from Google sign-in for first-party session cookies.
+  handoff: (token) => apiFetch('/auth/handoff', { method: 'POST', body: JSON.stringify({ token }) }),
   logout: () => apiFetch('/auth/logout', { method: 'POST' }),
   refresh: () => apiFetch('/auth/refresh', { method: 'POST' }),
   completeProfile: (payload) =>
