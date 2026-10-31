@@ -39,7 +39,7 @@ const EFFECTIVE_TYPE_MAP = {
   'slow-2g': 'slow',
 }
 
-async function measureFallbackSpeed() {
+export async function measureFallbackSpeed() {
   const start = performance.now()
   try {
     await fetch(`/favicon.ico?_=${Date.now()}`, { cache: 'no-store' })
