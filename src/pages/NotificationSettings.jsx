@@ -7,6 +7,7 @@ import { communityApi } from '../services/api'
 import { getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush } from '../lib/pushNotifications'
 
 const OPTIONS = [
+  { key: 'daily', icon: 'auto_awesome', title: 'Verse of the day', hint: 'A Bible verse and a study tip every morning at 7am.' },
   { key: 'resources', icon: 'library_add', title: 'New resources', hint: 'When new books, videos or past questions are added.' },
   { key: 'news', icon: 'newspaper', title: 'News', hint: 'News posted by the library team.' },
   { key: 'announcements', icon: 'campaign', title: 'Announcements', hint: 'Important notices from the admins.' },

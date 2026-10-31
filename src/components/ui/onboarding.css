@@ -1,0 +1,228 @@
+/* Cinematic onboarding (MissingDetailsPrompt.jsx). Hand-written, no libraries. */
+
+@property --ob-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes ob-spin { to { --ob-angle: 360deg; } }
+/* Fallback for browsers without @property: shift the colours instead. */
+@keyframes ob-hue { to { filter: hue-rotate(360deg); } }
+@keyframes ob-kenburns { from { transform: scale(1); } to { transform: scale(1.08); } }
+@keyframes ob-fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+.ob-root {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #000;
+  color: #fff;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+/* ---------- Background scenes ---------- */
+.ob-scenes { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+.ob-scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.ob-scene img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+.ob-scene.is-active { opacity: 1; }
+.ob-scene.is-active img { animation: ob-kenburns 12s ease-out forwards; }
+.ob-shade {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, #000 0%, #000 30%, rgba(0, 0, 0, 0.6) 55%, transparent 100%);
+}
+
+/* ---------- Top bar ---------- */
+.ob-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 0;
+}
+.ob-dots { display: flex; gap: 6px; }
+.ob-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  transition: width 300ms ease, background 300ms ease;
+}
+.ob-dot.is-done { background: rgba(255, 255, 255, 0.75); }
+.ob-dot.is-current { width: 26px; background: #fff; }
+.ob-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+.ob-close:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* ---------- Content (bottom) ---------- */
+.ob-content-wrap {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.ob-content {
+  width: 100%;
+  padding: 120px 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  animation: ob-fade-up 400ms ease both;
+}
+.ob-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: 38px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.ob-subtitle { margin: 10px 0 0; font-size: 15px; line-height: 1.45; color: #a1a1aa; }
+.ob-error {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.ob-options { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 24px; }
+
+/* ---------- Pill buttons with the moving gradient outline ---------- */
+.ob-btn {
+  --ob-speed: 4s;
+  --ob-ring: 0.75;
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 56px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font: 600 16px/1 Inter, system-ui, sans-serif;
+  color: #fff;
+  background: #1c1c1e;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 200ms ease, opacity 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ob-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--ob-angle), #5b7bf2, #d946ef, #fb923c, #5b7bf2);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: var(--ob-ring);
+  animation: ob-spin var(--ob-speed) linear infinite;
+  pointer-events: none;
+}
+.ob-no-property .ob-btn::before { animation: ob-hue var(--ob-speed) linear infinite; }
+.ob-btn.is-primary { background: #fff; color: #000; }
+.ob-btn:active { transform: scale(0.97); }
+.ob-btn.is-selected { --ob-ring: 1; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 24px rgba(217, 70, 239, 0.35); }
+.ob-btn:disabled { opacity: 0.55; cursor: default; }
+.ob-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.ob-btn .ob-emoji { font-size: 20px; line-height: 1; }
+
+.ob-btn.is-small { height: 40px; padding: 0 8px; font-size: 14px; font-weight: 600; }
+.ob-btn.is-gradient {
+  background: linear-gradient(90deg, #d946ef, #fb923c);
+  color: #fff;
+}
+
+.ob-skip {
+  display: block;
+  margin: 18px auto 0;
+  padding: 10px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #d4d4d8;
+  font: 500 14px/1 Inter, system-ui, sans-serif;
+  cursor: pointer;
+}
+.ob-skip:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+.ob-skip:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* ---------- Birthday step ---------- */
+.ob-label { display: block; margin: 20px 0 8px; font-size: 13px; color: #a1a1aa; }
+.ob-months { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ob-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.ob-days .ob-btn.is-small { height: 36px; font-size: 13px; padding: 0; }
+.ob-input {
+  width: 100%;
+  height: 52px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #1c1c1e;
+  color: #fff;
+  font: 400 15px Inter, system-ui, sans-serif;
+}
+.ob-input::placeholder { color: #71717a; }
+.ob-input:focus { outline: none; border-color: #d946ef; box-shadow: 0 0 0 3px rgba(217, 70, 239, 0.25); }
+.ob-check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 14px; color: #d4d4d8; cursor: pointer; }
+.ob-check input { width: 18px; height: 18px; accent-color: #d946ef; }
+.ob-save { margin-top: 20px; }
+
+/* ---------- Desktop ---------- */
+@media (min-width: 768px) {
+  .ob-top { padding: 28px 36px 0; }
+  .ob-content { max-width: 460px; margin: 0 auto; padding: 140px 0 48px; }
+  .ob-title { font-size: 48px; }
+  .ob-subtitle { font-size: 16px; }
+  .ob-options.is-grid { grid-template-columns: 1fr 1fr; }
+  .ob-options.is-grid .ob-btn { height: 56px; padding: 0 16px; }
+
+  @media (hover: hover) {
+    .ob-btn:hover:not(:disabled) { transform: translateY(-2px); --ob-speed: 1.6s; --ob-ring: 1; }
+    .ob-btn:active:not(:disabled) { transform: scale(0.97); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ob-scene.is-active img,
+  .ob-content,
+  .ob-btn::before { animation: none !important; }
+  .ob-scene { transition: none; }
+}

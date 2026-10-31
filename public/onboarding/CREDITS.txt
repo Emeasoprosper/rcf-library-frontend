@@ -1,0 +1,40 @@
+Onboarding background photos (student-dashboard/public/onboarding)
+All photos are CC0 1.0 (public domain dedication): free for commercial use, no attribution required.
+Originally published on Unsplash; downloaded from the Wikimedia Commons copies listed below.
+Cropped to 1080x1920 portrait and converted to WebP.
+
+scene-1.webp
+  Photo: The great outdoors (Unsplash).jpg
+  Photographer: Clarisse Meyer clarissemeyer
+  Licence: CC0
+  Source: https://commons.wikimedia.org/wiki/File:The_great_outdoors_(Unsplash).jpg
+
+scene-2.webp
+  Photo: Houston audience lifting up hands (Unsplash).jpg
+  Photographer: Chad Kirchoff cakirchoff
+  Licence: CC0
+  Source: https://commons.wikimedia.org/wiki/File:Houston_audience_lifting_up_hands_(Unsplash).jpg
+
+scene-3.webp
+  Photo: Man with bible sunset (Unsplash).jpg
+  Photographer: Priscilla Du Preez artographybyp
+  Licence: CC0
+  Source: https://commons.wikimedia.org/wiki/File:Man_with_bible_sunset_(Unsplash).jpg
+
+scene-4.webp
+  Photo: Orange sunset celebration (Unsplash).jpg
+  Photographer: Levi Guzman homeschool
+  Licence: CC0
+  Source: https://commons.wikimedia.org/wiki/File:Orange_sunset_celebration_(Unsplash).jpg
+
+scene-5.webp
+  Photo: Happy birthday candles (Unsplash).jpg
+  Photographer: Stephanie McCabe stephaniemccabe
+  Licence: CC0
+  Source: https://commons.wikimedia.org/wiki/File:Happy_birthday_candles_(Unsplash).jpg
+
+scene-6.webp
+  Photo: People at a view point of a cityscape (Unsplash).jpg
+  Photographer: adrian aows
+  Licence: CC0
+  Source: https://commons.wikimedia.org/wiki/File:People_at_a_view_point_of_a_cityscape_(Unsplash).jpg

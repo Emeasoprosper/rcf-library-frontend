@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 import { engagementApi } from '../../services/api'
 import { verseOfTheDay, tipOfTheDay } from '../../lib/dailyInspiration'
 import { Confetti } from './Celebrate'
-import { Medal, AnimatedFlame, VerseArt, TipArt } from './Illustrations'
+import { Medal, AnimatedFlame } from './Illustrations'
 
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const SEEN_KEY = 'rcf_badges_seen'
@@ -125,38 +125,37 @@ export function WeeklyGoalCard({ week }) {
   )
 }
 
-// Editorial cards: text on the left, a soft illustration panel on the right.
-export function VerseCard() {
-  const v = verseOfTheDay()
+// Quote cards in the style of a social post: logo on top, centred uppercase
+// text, small signature at the bottom. Navy for the verse, white for the tip,
+// always side by side.
+function QuoteCard({ tone, label, text, signature }) {
+  const navy = tone === 'navy'
   return (
-    <article className="rcf-lift overflow-hidden rounded-[22px] bg-surface-container border border-outline flex flex-col sm:flex-row">
-      <div className="flex-1 p-5 flex flex-col">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6c63ff]">Verse of the day</p>
-        <blockquote className="font-display text-[17px] md:text-[18px] leading-relaxed text-on-surface mt-3 italic">
-          “{v.text}”
-        </blockquote>
-        <p className="mt-auto pt-3 font-label-md text-label-md font-semibold text-on-surface-variant">— {v.ref} <span className="font-normal">(KJV)</span></p>
-      </div>
-      <div className="sm:w-[42%] flex-none bg-gradient-to-br from-[#EEF0FF] to-[#E3E6FF] flex items-center justify-center p-3">
-        <VerseArt className="w-full max-w-[220px] h-auto" />
-      </div>
+    <article
+      className={`rcf-lift relative rounded-[20px] md:rounded-[24px] px-3.5 py-5 md:px-7 md:py-8 flex flex-col items-center justify-center text-center min-h-[200px] md:min-h-[260px] shadow-lg ${
+        navy ? 'bg-[#16235e] text-white' : 'bg-white text-[#16235e] border border-black/5'
+      }`}
+    >
+      <span className={`w-9 h-9 md:w-11 md:h-11 rounded-full overflow-hidden flex items-center justify-center ${navy ? 'bg-white' : 'bg-[#16235e]'}`}>
+        <img src="/android-chrome-192x192.png" alt="" className="w-full h-full object-cover" />
+      </span>
+      <p className={`mt-2 text-[9px] md:text-[10px] font-semibold uppercase tracking-[0.2em] ${navy ? 'text-white/60' : 'text-[#16235e]/55'}`}>{label}</p>
+      <p className="mt-2.5 md:mt-3 text-[11px] leading-[1.45] md:text-[14px] md:leading-[1.5] font-semibold uppercase tracking-[0.04em]">
+        {text}
+      </p>
+      <p className={`mt-3 text-[9px] md:text-[11px] ${navy ? 'text-white/70' : 'text-[#16235e]/60'}`}>{signature}</p>
     </article>
   )
 }
 
-export function TipCard() {
+export function DailyQuotes() {
+  const v = verseOfTheDay()
   const t = tipOfTheDay()
   return (
-    <article className="rcf-lift overflow-hidden rounded-[22px] bg-surface-container border border-outline flex flex-col sm:flex-row">
-      <div className="flex-1 p-5 flex flex-col">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#0e8f86]">Study tip of the day</p>
-        <p className="font-body-md text-[16px] leading-relaxed text-on-surface mt-3">{t.text}</p>
-        <p className="mt-auto pt-3 font-label-sm text-label-sm text-on-surface-variant">A new tip every day at midnight</p>
-      </div>
-      <div className="sm:w-[42%] flex-none bg-gradient-to-br from-[#E6FAF5] to-[#D5F3EC] flex items-center justify-center p-3">
-        <TipArt className="w-full max-w-[200px] h-auto" />
-      </div>
-    </article>
+    <div className="grid grid-cols-2 gap-2.5 md:gap-4">
+      <QuoteCard tone="navy" label="Verse of the day" text={v.text} signature={`— ${v.ref}`} />
+      <QuoteCard tone="light" label="Study tip" text={t.text} signature="@rcfmouaulibrary" />
+    </div>
   )
 }
 
@@ -219,10 +218,7 @@ export function HomeEngagement() {
           <WeeklyGoalCard week={data.week} />
         </div>
       )}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <VerseCard />
-        <TipCard />
-      </div>
+      <DailyQuotes />
       {data && (
         <Link to="/achievements" className="rcf-lift rounded-[22px] p-4 bg-surface-container border border-outline block">
           <div className="flex items-center justify-between mb-3">
