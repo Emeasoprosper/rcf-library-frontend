@@ -752,7 +752,9 @@ function Search() {
             )}
 
             <section>
-              <h2 className="text-[22px] font-bold text-on-surface tracking-tight mb-3">Browse all</h2>
+              <h2 className="text-[22px] md:text-[24px] font-bold text-on-surface leading-tight mb-3" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                Browse the shelves
+              </h2>
               {realCategories.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                   {realCategories.map((cat, i) => (
