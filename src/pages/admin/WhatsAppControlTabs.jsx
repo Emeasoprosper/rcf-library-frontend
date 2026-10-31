@@ -46,6 +46,7 @@ const relTime = (iso) => {
 
 const FEATURES = [
   { key: 'answerUntagged', icon: 'menu_book', title: 'Answer book requests without a tag', hint: '"Anyone has GST 101 past questions?" gets an answer even if nobody tags him.' },
+  { key: 'morningPost', icon: 'wb_sunny', title: 'Morning verse in groups', hint: 'Every day from 7am: the verse of the day and a study tip, once per group.' },
   { key: 'privateChats', icon: 'chat', title: 'Reply to private chats', hint: 'Anyone who messages his number directly gets an answer, no tag needed. Up to 30 AI answers per person a day.' },
   { key: 'chimeIn', icon: 'forum', title: 'Join lively discussions', hint: 'When the chat is busy, he may add something useful. At most once an hour per group.' },
   { key: 'welcomeNewMembers', icon: 'waving_hand', title: 'Welcome new members', hint: 'One friendly welcome when people are added to a group.' },
@@ -379,6 +380,7 @@ const KIND = {
   react: { icon: 'favorite', color: 'text-pink-400', label: 'Reaction' },
   send: { icon: 'send', color: 'text-[#25D366]', label: 'Admin message' },
   private: { icon: 'lock', color: 'text-sky-500', label: 'Private chat' },
+  morning: { icon: 'wb_sunny', color: 'text-amber-500', label: 'Morning verse' },
 }
 
 export function ActivityTab() {
