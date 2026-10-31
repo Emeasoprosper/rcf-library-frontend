@@ -8,7 +8,7 @@ import { resourcesApi, analyticsApi, externalApi } from '../services/api'
 import AudiobookPlayer from '../components/ui/AudiobookPlayer'
 import { getMediaKind, MEDIA_KIND_STYLE } from '../lib/mediaKind'
 import { useAuth } from '../contexts/AuthContext'
-import { QuickPicks, GettingStarted, BrowseTile, BROWSE_COLORS } from '../components/search/SearchDiscover'
+import { GettingStarted, BrowseTile, BROWSE_COLORS } from '../components/search/SearchDiscover'
 
 // Canonical resource URL — see AppRoutes.jsx (<Route path="/library/:id" />)
 const resourceDetailPath = (id) => `/library/${id}`
@@ -515,8 +515,6 @@ function Search() {
   const showIdleContent = query.trim().length < MIN_SEARCH_LENGTH
   const showHistoryDropdown = historyOpen && query.trim().length === 0 && recents.length > 0
 
-  // Quick picks: what's recommended for them first, then what's popular, no repeats.
-  const quickPicks = [...forYou, ...popular].filter((r, i, all) => r?.id && all.findIndex((x) => x.id === r.id) === i)
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
@@ -727,12 +725,6 @@ function Search() {
 
         {showIdleContent && (
           <>
-            {quickPicks.length > 0 && (
-              <section className="mb-stack-lg">
-                <QuickPicks items={quickPicks} onOpen={openResource} />
-              </section>
-            )}
-
             <div className="mb-stack-lg">
               <GettingStarted onOpen={openResource} />
             </div>

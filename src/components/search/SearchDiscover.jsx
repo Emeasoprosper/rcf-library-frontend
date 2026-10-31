@@ -1,6 +1,5 @@
-﻿// components/search/SearchDiscover.jsx
+// components/search/SearchDiscover.jsx
 // The search page before anything is typed, built around library objects:
-// - Jump back in: rounded cards with a small inset cover and what it is.
 // - Today at the library: cards drawn like books (coloured spine with the
 //   card number, serif title), each with real art from the library.
 // - Browse all: solid colour tiles with the cover standing up like a book.
@@ -14,8 +13,6 @@ const SERIF = { fontFamily: "'Playfair Display', Georgia, serif" }
 // Rich, solid tile colours, cycled across categories.
 export const BROWSE_COLORS = ['#9a3412', '#1e3a8a', '#6d28d9', '#065f46', '#9d174d', '#155e75', '#854d0e', '#1d4ed8', '#4c1d95', '#166534', '#be123c', '#3f6212']
 
-const kindOf = (r) => (/video/.test(r?.file_type || '') ? 'Video' : /audio/.test(r?.file_type || '') ? 'Audio' : 'Book')
-const KIND_ICON = { Video: 'movie', Audio: 'headphones', Book: 'menu_book' }
 
 function Thumb({ src, icon, className = '' }) {
   const [failed, setFailed] = useState(false)
@@ -33,47 +30,6 @@ function SectionTitle({ children, right = null }) {
       <h2 className="text-[22px] md:text-[24px] font-bold text-on-surface leading-tight" style={SERIF}>{children}</h2>
       {right}
     </div>
-  )
-}
-
-// Two columns of small rounded cards: inset cover, title, and what it is.
-export function QuickPicks({ items, onOpen }) {
-  const navigate = useNavigate()
-  const fixed = [
-    { key: 'saved', title: 'Saved', sub: 'Your bookmarks', icon: 'bookmark', bg: 'linear-gradient(135deg,#7c3aed,#c084fc)', to: '/saved' },
-    { key: 'downloads', title: 'Offline shelf', sub: 'Read without data', icon: 'download_done', bg: 'linear-gradient(135deg,#0f766e,#34d399)', to: '/downloads' },
-  ]
-  const card = 'rcf-press flex items-center gap-2.5 p-1.5 pr-2 rounded-xl bg-surface-container border border-outline hover:bg-surface-container-high text-left transition-colors min-w-0'
-
-  return (
-    <section>
-      <SectionTitle>Jump back in</SectionTitle>
-      <div className="grid grid-cols-2 gap-2">
-        {fixed.map((f) => (
-          <button key={f.key} type="button" onClick={() => navigate(f.to)} className={card}>
-            <span className="w-11 h-11 flex-none rounded-lg flex items-center justify-center" style={{ background: f.bg }}>
-              <span className="material-symbols-outlined text-white text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>{f.icon}</span>
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[13px] font-semibold text-on-surface truncate">{f.title}</span>
-              <span className="block text-[11px] text-on-surface-variant truncate">{f.sub}</span>
-            </span>
-          </button>
-        ))}
-        {items.slice(0, 6).map((r) => {
-          const kind = kindOf(r)
-          return (
-            <button key={r.id} type="button" onClick={() => onOpen(r)} className={card}>
-              <Thumb src={r.thumbnail_url} icon={KIND_ICON[kind]} className="w-11 h-11 flex-none rounded-lg" />
-              <span className="min-w-0">
-                <span className="block text-[13px] font-semibold text-on-surface leading-tight line-clamp-2">{r.title}</span>
-                <span className="block text-[11px] text-on-surface-variant truncate">{kind}</span>
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    </section>
   )
 }
 
