@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
@@ -229,11 +229,49 @@ function TextbookCard({ item, state, onGet }) {
             PDF{item.sizeMB ? ` · ${item.sizeMB} MB` : ''} · {item.licence}
           </span>
         </div>
-        {state?.state === 'error' && (
-          <p className="mt-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 font-label-sm text-label-sm">{state.message}</p>
-        )}
+        {state?.state === 'error' && <ImportProblem message={state.message} title={item.title} onRetry={onGet} />}
       </div>
     </article>
+  )
+}
+
+// Raw API errors ("Request failed (404)") mean nothing to a student and make
+// the app look broken. Turn them into a calm sentence.
+function friendlyImportError(err) {
+  const msg = String(err?.message || '')
+  if (!navigator.onLine) return "You're offline. Connect to the internet and try again."
+  if (/session expired/i.test(msg)) return msg
+  if (/^Request failed \((404|5\d\d)\)|failed to fetch|network/i.test(msg)) {
+    return "We couldn't add this book right now. Our library server may be updating. Please try again in a few minutes, or request it and we'll add it for you."
+  }
+  return msg || "We couldn't add this book right now. Please try again."
+}
+
+// Shown under a free book that couldn't be added: what happened, and what to do next.
+function ImportProblem({ message, title, onRetry }) {
+  return (
+    <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 flex gap-2.5">
+      <span className="material-symbols-outlined text-amber-500 text-[20px] flex-none">info</span>
+      <div className="min-w-0 flex-1">
+        <p className="font-label-sm text-label-sm text-on-surface">{message}</p>
+        <div className="flex flex-wrap gap-2 mt-2">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rcf-press inline-flex items-center gap-1 h-8 px-3 rounded-full bg-surface-container-high border border-outline font-label-sm text-label-sm text-on-surface"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>Try again
+          </button>
+          <Link
+            to="/contribute/request"
+            state={{ prefillTitle: title }}
+            className="rcf-press inline-flex items-center gap-1 h-8 px-3 rounded-full font-label-sm text-label-sm text-primary hover:bg-primary/10"
+          >
+            <span className="material-symbols-outlined text-[16px]">add_circle</span>Request this book
+          </Link>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -301,9 +339,9 @@ function ExternalBookCard({ item, state, onGet, onListen }) {
       )}
 
       {state?.state === 'error' && (
-        <p className="mx-4 mt-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 font-label-sm text-label-sm">
-          {state.message}
-        </p>
+        <div className="mx-4">
+          <ImportProblem message={state.message} title={item.title} onRetry={onGet} />
+        </div>
       )}
 
       <div className="p-4">
@@ -550,7 +588,7 @@ function Search() {
       }
       throw new Error('This is taking too long. Please try again in a minute.')
     } catch (err) {
-      setImporting((prev) => ({ ...prev, [key]: { state: 'error', message: err.message } }))
+      setImporting((prev) => ({ ...prev, [key]: { state: 'error', message: friendlyImportError(err) } }))
     }
   }
 

@@ -8,6 +8,7 @@ import DownloadGateModal from '../components/ui/DownloadGateModal'
 import { resourceCollectionsApi, adminApi, resourcesApi } from '../services/api'
 import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
+import { confirmOfflineDownload, playDownloadSaved } from '../lib/downloadFx'
 import { useAuth } from '../contexts/AuthContext'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
 import { useHeaderAmbient } from '../contexts/HeaderAmbientContext'
@@ -118,9 +119,10 @@ function ResourceListRow({ resource, isAdmin, onRemove, onMove, onDownload, onTo
             {saved ? 'Remove from Saved' : 'Save'}
           </button>
           <button
-            onClick={async () => {
+            onClick={async (e) => {
+              const from = e.currentTarget.getBoundingClientRect() // the menu closes, so remember where it was
               setMenuOpen(false)
-              const success = await onDownload(resource)
+              const success = await onDownload(resource, from)
               if (success) setDownloaded(true)
             }}
             disabled={downloaded}
@@ -376,12 +378,13 @@ function CollectionPage() {
     }
   }
 
-  const handleDownload = async (resource) => {
+  const handleDownload = async (resource, from = null) => {
     if (goSignInFirst()) return false
     if (!isRunningAsInstalledApp()) {
       setShowGate(true)
       return false
     }
+    if (!(await confirmOfflineDownload())) return false
     try {
       await resourcesApi.download(resource.id)
       const { blob, mimeType } = await resourcesApi.downloadFileForOffline(resource.id)
@@ -389,6 +392,7 @@ function CollectionPage() {
         title: resource.title,
         thumbnailUrl: resourcesApi.thumbnailUrl(resource.id),
       })
+      playDownloadSaved({ from, title: resource.title })
       return true
     } catch {
       alert('Download failed — please try again.')

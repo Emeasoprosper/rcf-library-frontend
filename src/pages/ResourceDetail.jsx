@@ -7,8 +7,7 @@ import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
 import { getMediaKind } from '../lib/mediaKind'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
-import OfflineDownloadInfoModal from '../components/ui/OfflineDownloadInfoModal'
-import { hasSeenOfflineDownloadInfo, markOfflineDownloadInfoSeen } from '../lib/offlineDownloadInfo'
+import { confirmOfflineDownload, playDownloadSaved } from '../lib/downloadFx'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
 import { useAuth } from '../contexts/AuthContext'
 import { ResourceDetailSkeleton } from '../components/ui/PageSkeletons'
@@ -117,7 +116,6 @@ function ResourceDetail() {
   const [savingBookmark, setSavingBookmark] = useState(false)
   const [showGate, setShowGate] = useState(false)
   const [sharing, setSharing] = useState(false)
-  const [showOfflineInfo, setShowOfflineInfo] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -172,12 +170,14 @@ function ResourceDetail() {
   // Strict install gate: nothing is fetched until we've confirmed this
   // tab is currently running inside the installed PWA. If not, block
   // here and show the gate popup — the fetch/save flow below never runs.
-  const handleDownload = async () => {
+  const handleDownload = async (e) => {
+    const button = e?.currentTarget
     if (goSignInFirst()) return
     if (!isRunningAsInstalledApp()) {
       setShowGate(true)
       return
     }
+    if (!(await confirmOfflineDownload())) return
 
     setDownloading(true)
     try {
@@ -203,11 +203,7 @@ function ResourceDetail() {
         thumbnailUrl: resourcesApi.thumbnailUrl(id),
       })
       setDownloaded(true)
-
-      if (!hasSeenOfflineDownloadInfo()) {
-        markOfflineDownloadInfoSeen()
-        setShowOfflineInfo(true)
-      }
+      playDownloadSaved({ from: button, title: resource?.title })
     } catch {
       alert('Download failed — please try again.')
     } finally {
@@ -414,15 +410,6 @@ function ResourceDetail() {
       </div>
 
       <DownloadGateModal open={showGate} onClose={() => setShowGate(false)} />
-
-      <OfflineDownloadInfoModal
-        open={showOfflineInfo}
-        onClose={() => setShowOfflineInfo(false)}
-        onViewOffline={() => {
-          setShowOfflineInfo(false)
-          navigate('/downloads')
-        }}
-      />
     </div>
   )
 }

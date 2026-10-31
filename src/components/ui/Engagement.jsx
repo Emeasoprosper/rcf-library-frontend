@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Heart, Share2, Share, X } from 'lucide-react'
 import { shareQuoteCard, isLiked, setLiked } from '../../lib/shareQuote'
 import { useFitCard } from '../../lib/fitText'
+import { loadPath, TYPES } from '../../lib/readingPath'
 import { Link } from 'react-router-dom'
 import { engagementApi } from '../../services/api'
 import { verseOfTheDay, tipOfTheDay } from '../../lib/dailyInspiration'
@@ -14,13 +15,19 @@ import { Medal, AnimatedFlame } from './Illustrations'
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const SEEN_KEY = 'rcf_badges_seen'
 
-export function GoalRing({ done, goal, size = 92 }) {
+export function GoalRing({ done, goal, size = 92, className = '' }) {
   const stroke = 9
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
-  const pct = goal > 0 ? Math.min(done / goal, 1) : 0
+  const target = goal > 0 ? Math.min(done / goal, 1) : 0
+  // Start empty and fill up after the first paint, so the ring visibly grows.
+  const [pct, setPct] = useState(0)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setPct(target))
+    return () => cancelAnimationFrame(id)
+  }, [target])
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="flex-none -rotate-90" aria-hidden="true">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className={`flex-none -rotate-90 ${className}`} aria-hidden="true">
       <circle cx={size / 2} cy={size / 2} r={r} stroke="currentColor" strokeOpacity="0.15" strokeWidth={stroke} fill="none" />
       <circle
         cx={size / 2}
@@ -106,23 +113,74 @@ export function StreakCard({ streak, week }) {
   )
 }
 
-export function WeeklyGoalCard({ week }) {
-  const hit = week.done >= week.goal
+// Small rounded action used inside cards ("See all", "Adjust goal") instead
+// of a bare "text →". Rendered as a span because the whole card is the link.
+function CardAction({ icon = 'chevron_right', iconFirst = false, children }) {
+  const glyph = <span className="material-symbols-outlined text-[17px] leading-none">{icon}</span>
   return (
-    <Link to="/achievements" className="rcf-lift rounded-[22px] p-4 bg-surface-container border border-outline flex items-center gap-3">
-      <div className="relative text-on-surface">
-        <GoalRing done={week.done} goal={week.goal} />
+    <span className={`inline-flex items-center gap-1 h-7 rounded-full bg-primary/10 text-primary text-[12px] font-semibold tracking-wide transition-colors group-hover:bg-primary/20 ${iconFirst ? 'pl-2 pr-3' : 'pl-3 pr-1.5'}`}>
+      {iconFirst && glyph}
+      {children}
+      {!iconFirst && glyph}
+    </span>
+  )
+}
+
+const GOAL_CELEBRATED_KEY = 'rcf_goal_celebrated_week'
+
+// True the first time this device sees the goal reached in a given week.
+function firstTimeGoalHit(hit, weekKey) {
+  if (!hit || !weekKey) return false
+  try {
+    if (localStorage.getItem(GOAL_CELEBRATED_KEY) === weekKey) return false
+    localStorage.setItem(GOAL_CELEBRATED_KEY, weekKey)
+  } catch { /* storage blocked: celebrate anyway */ }
+  return true
+}
+
+export function WeeklyGoalCard({ week }) {
+  const hit = week.goal > 0 && week.done >= week.goal
+  const [celebrate] = useState(() => firstTimeGoalHit(hit, week.days?.[0]?.date))
+  const left = week.goal - week.done
+  return (
+    <Link
+      to="/achievements"
+      className={`group rcf-lift relative overflow-hidden rounded-[22px] p-4 border flex items-center gap-3 ${
+        hit ? 'bg-gradient-to-br from-[#4caf50]/15 via-surface-container to-surface-container border-[#4caf50]/40' : 'bg-surface-container border-outline'
+      }`}
+    >
+      {celebrate && <Confetti count={18} />}
+      <div className="relative text-on-surface flex-none">
+        {hit && celebrate && (
+          <>
+            <span className="rcf-ring-burst absolute inset-0 rounded-full border-4 border-[#4caf50]" style={{ animationDelay: '0.9s' }} />
+            <span className="rcf-ring-burst absolute inset-0 rounded-full border-4 border-[#38bdf8]" style={{ animationDelay: '1.15s' }} />
+          </>
+        )}
+        <GoalRing done={week.done} goal={week.goal} className={hit ? 'rcf-goal-glow' : ''} />
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-display text-[22px] font-extrabold leading-none">{week.done}</span>
-          <span className="text-[10px] text-on-surface-variant">of {week.goal}</span>
+          {hit ? (
+            <span className="rcf-pop w-11 h-11 rounded-full bg-gradient-to-br from-[#4caf50] to-[#38bdf8] text-white flex items-center justify-center shadow-lg" style={{ animationDelay: celebrate ? '0.9s' : '0s' }}>
+              <span className="material-symbols-outlined text-[26px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}>check</span>
+            </span>
+          ) : (
+            <>
+              <span className="font-display text-[22px] font-extrabold leading-none">{week.done}</span>
+              <span className="text-[10px] text-on-surface-variant">of {week.goal}</span>
+            </>
+          )}
         </div>
       </div>
-      <div className="min-w-0">
-        <p className="font-body-md text-body-md font-semibold text-on-surface">Weekly goal</p>
+      <div className="min-w-0 relative">
+        <p className="font-body-md text-body-md font-semibold text-on-surface">{hit ? 'Goal complete! 🎯' : 'Weekly goal'}</p>
         <p className="font-label-sm text-label-sm text-on-surface-variant">
-          {hit ? 'Goal smashed this week! 🎯' : `${week.goal - week.done} more resource${week.goal - week.done === 1 ? '' : 's'} to go this week`}
+          {hit
+            ? `${week.done} of ${week.goal} resources this week. Well done!`
+            : `${left} more resource${left === 1 ? '' : 's'} to go this week`}
         </p>
-        <p className="font-label-sm text-label-sm text-primary mt-1">Change goal →</p>
+        <div className="mt-2">
+          <CardAction icon="tune" iconFirst>Adjust goal</CardAction>
+        </div>
       </div>
     </Link>
   )
@@ -143,7 +201,7 @@ export function QuoteActions({ id, text, by, cardRef, tone = 'light', round = fa
     setLiked(id, next)
     if (next) {
       setPop(true)
-      setTimeout(() => setPop(false), 400)
+      setTimeout(() => setPop(false), 1100)
     }
   }
 
@@ -171,14 +229,30 @@ export function QuoteActions({ id, text, by, cardRef, tone = 'light', round = fa
             <Share size={24} strokeWidth={2.2} className="text-[#111]" />
           </button>
         )}
-        <button type="button" onClick={toggleLike} aria-pressed={liked} aria-label={liked ? 'Unlike' : 'Like'} className={`${base} ${round ? '' : dark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
+        <button
+          type="button"
+          onClick={toggleLike}
+          aria-pressed={liked}
+          aria-label={liked ? 'Unlike' : 'Love this'}
+          className={`${base} relative ${round ? (liked ? 'ring-4 ring-[#22c55e]/25' : '') : dark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
+        >
+          {/* Outline until loved, then filled; a tap bounces it and floats little hearts up. */}
           <Heart
             size={round ? 28 : 24}
-            strokeWidth={2}
-            className={`${round ? 'text-[#22c55e]' : 'text-[#ef4444]'} transition-transform ${pop ? 'scale-125' : ''}`}
-            fill={liked || round ? 'currentColor' : 'none'}
-            fillOpacity={round && !liked ? 0.9 : 1}
+            strokeWidth={2.2}
+            className={`${round ? 'text-[#22c55e]' : 'text-[#ef4444]'} ${pop ? 'rcf-heart-beat' : ''}`}
+            fill={liked ? 'currentColor' : 'none'}
           />
+          {pop &&
+            [-18, 0, 16].map((hx, i) => (
+              <Heart
+                key={hx}
+                size={round ? 14 : 12}
+                className={`rcf-heart-float absolute left-1/2 top-1/2 -ml-[7px] -mt-[7px] pointer-events-none ${round ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}
+                fill="currentColor"
+                style={{ '--hx': `${hx}px`, animationDelay: `${i * 80}ms` }}
+              />
+            ))}
         </button>
         {!round && (
           <button type="button" onClick={share} aria-label="Share" className={`${base} ${dark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
@@ -187,6 +261,7 @@ export function QuoteActions({ id, text, by, cardRef, tone = 'light', round = fa
         )}
       </div>
       {status && <p className={`mt-1 text-[11px] ${dark ? 'text-white/70' : 'text-[#16235e]/60'}`}>{status}</p>}
+      {round && liked && <p className="mt-2 text-[11px] font-semibold text-white/80">💚 You loved this</p>}
     </div>
   )
 }
@@ -273,6 +348,35 @@ export function BadgeUnlocked({ badges, onClose }) {
   )
 }
 
+// Home entry to /reading-path: invites the quiz, or shows their reader type.
+function ReadingPathCard() {
+  const path = loadPath()
+  const type = path && TYPES.find((t) => t.key === path.type)
+  return (
+    <Link
+      to="/reading-path"
+      className={`group rcf-lift relative overflow-hidden rounded-[22px] p-4 flex items-center gap-4 text-white bg-gradient-to-br ${type ? type.gradient : 'from-[#5b7cfa] to-[#8b5cf6]'} shadow-lg`}
+    >
+      <span className="absolute -right-8 -bottom-10 w-36 h-36 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+      <span className="flex-none w-12 h-12 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-[26px]">
+        {type ? type.emoji : <span className="material-symbols-outlined text-[26px]">explore</span>}
+      </span>
+      <div className="min-w-0 flex-1 relative">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">My Reading Path</p>
+        <p className="font-body-md text-body-md font-semibold leading-snug">
+          {type ? `${type.title}: your shelves are ready` : 'What should you read next?'}
+        </p>
+        <p className="font-label-sm text-label-sm text-white/80">
+          {type ? 'Books picked for your goals and the way you read.' : '5 quick questions, then a plan made for you.'}
+        </p>
+      </div>
+      <span className="relative flex-none w-9 h-9 rounded-full bg-white/15 flex items-center justify-center transition-transform group-hover:translate-x-0.5">
+        <span className="material-symbols-outlined text-[22px]">chevron_right</span>
+      </span>
+    </Link>
+  )
+}
+
 // Everything for the home page: streak + goal, verse, tip, badge strip.
 export function HomeEngagement() {
   const [data, setData] = useState(null)
@@ -300,14 +404,15 @@ export function HomeEngagement() {
           <WeeklyGoalCard week={data.week} />
         </div>
       )}
+      <ReadingPathCard />
       <DailyQuotes />
       {data && (
-        <Link to="/achievements" className="rcf-lift rounded-[22px] p-4 bg-surface-container border border-outline block">
+        <Link to="/achievements" className="group rcf-lift rounded-[22px] p-4 bg-surface-container border border-outline block">
           <div className="flex items-center justify-between mb-3">
             <p className="font-body-md text-body-md font-semibold text-on-surface">
               Badges <span className="text-on-surface-variant font-normal">· {earned.length} of {data.badges.length}</span>
             </p>
-            <span className="font-label-sm text-label-sm text-primary">See all →</span>
+            <CardAction>See all</CardAction>
           </div>
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {[...earned, ...next].map((b) => <BadgeTile key={b.key} badge={b} />)}

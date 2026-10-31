@@ -14,12 +14,42 @@ async function rawFetch(path, options) {
   })
 }
 
+// The access cookie lives 15 minutes. Requests that hit a 401 at the same
+// moment share one refresh instead of each starting their own.
+let refreshing = null
+function refreshSession() {
+  if (!refreshing) {
+    refreshing = rawFetchOk('/auth/refresh', { method: 'POST' }).finally(() => { refreshing = null })
+  }
+  return refreshing
+}
+
+// While someone is signed in, renew the access cookie a little before it
+// expires (and when they come back to the tab), so normal requests don't
+// first fail with a 401 and show red lines in the console. Returns a stop function.
+const KEEP_FRESH_MS = 13 * 60 * 1000
+export function keepSessionFresh() {
+  let last = Date.now()
+  const renew = () => {
+    if (!navigator.onLine || Date.now() - last < KEEP_FRESH_MS) return
+    last = Date.now()
+    refreshSession().catch(() => {})
+  }
+  const timer = setInterval(renew, 60 * 1000)
+  const onVisible = () => { if (!document.hidden) renew() }
+  document.addEventListener('visibilitychange', onVisible)
+  return () => {
+    clearInterval(timer)
+    document.removeEventListener('visibilitychange', onVisible)
+  }
+}
+
 export async function apiFetch(path, options = {}, _isRetry = false) {
   const res = await rawFetch(path, options)
 
   if (res.status === 401 && !_isRetry && !NO_REFRESH_PATHS.includes(path)) {
     try {
-      await rawFetchOk('/auth/refresh', { method: 'POST' })
+      await refreshSession()
       return apiFetch(path, options, true)
     } catch {
       window.dispatchEvent(new Event('auth:expired'))

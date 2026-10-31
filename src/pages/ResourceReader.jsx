@@ -10,6 +10,7 @@ import { extractAccentColorMixedWithBlack } from '../lib/extractAccentColor'
 import HorizontalRail from '../components/resource/HorizontalRail'
 import { useNetworkStatus, useSlowFetchWarning } from '../hooks/useNetworkStatus'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
+import { confirmOfflineDownload, playDownloadSaved } from '../lib/downloadFx'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
 import ReaderSettingsPanel from '../components/resource/ReaderSettingsPanel'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
@@ -361,7 +362,8 @@ function ResourceReader() {
     checkOffline()
   }, [id])
 
-  const handleDownload = async () => {
+  const handleDownload = async (e) => {
+    const button = e?.currentTarget
     // Strict install gate — checked before anything else. If this tab
     // isn't currently running inside the installed PWA, block here and
     // show the gate popup. No fetch, no blob, no IndexedDB write happens
@@ -374,6 +376,7 @@ function ResourceReader() {
       alert('You need an internet connection to download this for offline use.')
       return
     }
+    if (!(await confirmOfflineDownload())) return
     setDownloading(true)
     startSlowWatch()
     try {
@@ -394,6 +397,7 @@ function ResourceReader() {
       })
       setDownloaded(true)
       setHasOfflineCopy(true)
+      playDownloadSaved({ from: button, title: resource?.title })
     } catch {
       alert('Download failed — please try again.')
     } finally {

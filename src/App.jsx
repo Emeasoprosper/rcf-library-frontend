@@ -20,6 +20,7 @@ import LeaveSiteDialog from './components/ui/LeaveSiteDialog'
 import AmbientOwl from './components/ui/AmbientOwl'
 import DailyWordPopup from './components/ui/DailyWordPopup'
 import PushPermissionAsk from './components/ui/PushPermissionAsk'
+import DownloadFx from './components/ui/DownloadFx'
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner'
 import { PresenceProvider } from './contexts/PresenceContext'
 import FloatingStudyButton from './components/ui/FloatingStudyButton'
@@ -47,6 +48,7 @@ function App() {
             <NewMonthCelebration />
             <DailyWordPopup />
             <PushPermissionAsk />
+            <DownloadFx />
             <LeaveSiteDialog />
             <AmbientOwl />
             <NotificationsModal />

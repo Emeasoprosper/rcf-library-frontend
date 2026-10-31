@@ -298,7 +298,24 @@ body {
 .rcf-press { transition: transform 0.15s ease; }
 .rcf-press:active { transform: scale(0.97); }
 
+/* Download saved: little stars twinkle round the safe. */
+@keyframes rcfSparkle { 0% { transform: scale(0) rotate(0deg); opacity: 0; } 40% { transform: scale(1.3) rotate(45deg); opacity: 1; } 100% { transform: scale(0.6) rotate(90deg); opacity: 0; } }
+.rcf-sparkle { animation: rcfSparkle 0.9s ease-out both; }
+
+/* Heart tapped: the heart bounces and small hearts float up from it. */
+@keyframes rcfHeartBeat { 0% { transform: scale(1); } 30% { transform: scale(1.35); } 55% { transform: scale(0.9); } 100% { transform: scale(1); } }
+@keyframes rcfHeartFloat { 0% { transform: translate(0, 0) scale(0.6); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(var(--hx, 0px), -70px) scale(1.1); opacity: 0; } }
+.rcf-heart-beat { animation: rcfHeartBeat 0.5s ease-out both; }
+.rcf-heart-float { animation: rcfHeartFloat 0.9s ease-out both; }
+
+/* Weekly goal reached: the ring glows and the check pops in. */
+@keyframes rcfGoalGlow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(76, 175, 80, 0)); } 50% { filter: drop-shadow(0 0 10px rgba(76, 175, 80, 0.75)); } }
+@keyframes rcfRingBurst { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(1.6); opacity: 0; } }
+.rcf-goal-glow { animation: rcfGoalGlow 2.4s ease-in-out infinite; }
+.rcf-ring-burst { animation: rcfRingBurst 1s ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
+  .rcf-sparkle, .rcf-heart-beat, .rcf-heart-float, .rcf-goal-glow, .rcf-ring-burst { animation: none !important; }
   .rcf-page, .rcf-route-enter main > *, .rcf-pop, .rcf-step, .rcf-float, .rcf-blink, .rcf-flicker, .rcf-gradient { animation: none !important; }
   .rcf-confetti { display: none; }
   .rcf-flame-a, .rcf-flame-b, .rcf-flame-c, .rcf-ember, .rcf-wing-l, .rcf-wing-r { animation: none !important; }

@@ -1,6 +1,6 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react'
-import { authApi } from '../services/api'
+import { authApi, keepSessionFresh } from '../services/api'
 
 const AuthContext = createContext(null)
 
@@ -131,6 +131,9 @@ export function AuthProvider({ children }) {
     window.addEventListener('auth:expired', handleExpired)
     return () => window.removeEventListener('auth:expired', handleExpired)
   }, [])
+
+  // Renew the 15-minute access cookie in the background while signed in.
+  useEffect(() => (user ? keepSessionFresh() : undefined), [user])
 
   const loginWithGoogleToken = async (idToken) => {
     const { user } = await authApi.googleSignIn(idToken)
