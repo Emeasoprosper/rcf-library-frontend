@@ -352,26 +352,25 @@ export function BadgeUnlocked({ badges, onClose }) {
 function ReadingPathCard() {
   const path = loadPath()
   const type = path && TYPES.find((t) => t.key === path.type)
+  // Same paper "reader card" look as the result on /reading-path.
   return (
     <Link
       to="/reading-path"
-      className={`group rcf-lift relative overflow-hidden rounded-[22px] p-4 flex items-center gap-4 text-white bg-gradient-to-br ${type ? type.gradient : 'from-[#5b7cfa] to-[#8b5cf6]'} shadow-lg`}
+      className="group rcf-lift relative overflow-hidden rounded-md flex items-stretch shadow-[0_16px_32px_-20px_rgba(0,0,0,0.7)]"
+      style={{ background: '#f3ead8', color: '#2a2118' }}
     >
-      <span className="absolute -right-8 -bottom-10 w-36 h-36 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
-      <span className="flex-none w-12 h-12 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-[26px]">
-        {type ? type.emoji : <span className="material-symbols-outlined text-[26px]">explore</span>}
-      </span>
-      <div className="min-w-0 flex-1 relative">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">My Reading Path</p>
-        <p className="font-body-md text-body-md font-semibold leading-snug">
-          {type ? `${type.title}: your shelves are ready` : 'What should you read next?'}
+      <span className="w-2 flex-none" style={{ background: '#d9a441' }} aria-hidden="true" />
+      <div className="min-w-0 flex-1 px-4 py-3.5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] opacity-60">RCF Library · Reader card</p>
+        <p className="mt-1 text-[19px] font-bold leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          {type ? type.title : 'What should you read next?'}
         </p>
-        <p className="font-label-sm text-label-sm text-white/80">
-          {type ? 'Books picked for your goals and the way you read.' : '5 quick questions, then a plan made for you.'}
+        <p className="text-[13px] opacity-75 mt-0.5">
+          {type ? 'Your shelves and reading log are ready.' : 'Answer five questions and get books picked for you.'}
         </p>
       </div>
-      <span className="relative flex-none w-9 h-9 rounded-full bg-white/15 flex items-center justify-center transition-transform group-hover:translate-x-0.5">
-        <span className="material-symbols-outlined text-[22px]">chevron_right</span>
+      <span className="flex-none self-center pr-4 text-[13px] font-semibold underline underline-offset-4 decoration-[#d9a441] decoration-2 group-hover:opacity-80">
+        {type ? 'Open' : 'Start'}
       </span>
     </Link>
   )

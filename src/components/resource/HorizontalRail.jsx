@@ -31,7 +31,8 @@ function HorizontalRail({ title, items, imageUrl }) {
 
   return (
     <section className="mb-stack-lg">
-      <div className="px-margin-mobile mb-stack-sm flex items-center gap-3">
+      {/* No title = the caller draws its own heading above the rail. */}
+      {(title || imageUrl) && <div className="px-margin-mobile mb-stack-sm flex items-center gap-3">
         {imageUrl && !imageFailed && (
           <img
             src={imageUrl}
@@ -42,7 +43,7 @@ function HorizontalRail({ title, items, imageUrl }) {
           />
         )}
         <h2 className="font-headline-lg text-headline-lg font-display text-on-surface">{title}</h2>
-      </div>
+      </div>}
       <div className="relative">
         {/*
           padding-left/right on this container used to be silently
