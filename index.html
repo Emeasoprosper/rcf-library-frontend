@@ -64,6 +64,46 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Self-repair. After an update, a phone can keep an old saved copy of
+      // this page that points at app files which no longer exist, and the
+      // app stays blank. If our own app code fails to load, or the app has
+      // not started 8 seconds after the page loads, clear the saved copy
+      // (service worker + caches) and reload once. Only while online, so the
+      // offline library keeps working; at most once a minute, so it never loops.
+      ;(function () {
+        var KEY = 'rcf_self_heal_at'
+        function heal() {
+          if (!navigator.onLine) return
+          try {
+            if (Date.now() - Number(sessionStorage.getItem(KEY) || 0) < 60000) return
+            sessionStorage.setItem(KEY, String(Date.now()))
+          } catch (e) {}
+          var jobs = []
+          if ('serviceWorker' in navigator) {
+            jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister() }))
+            }))
+          }
+          if (window.caches) {
+            jobs.push(caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k) }))
+            }))
+          }
+          Promise.all(jobs).catch(function () {}).then(function () { location.reload() })
+        }
+        // Our own app files failing to load (not Google, fonts or other sites).
+        window.addEventListener('error', function (e) {
+          var t = e.target
+          var src = t && (t.src || t.href)
+          if (src && (t.tagName === 'SCRIPT' || t.tagName === 'LINK') && src.indexOf(location.origin + '/assets/') === 0) heal()
+        }, true)
+        window.addEventListener('vite:preloadError', function (e) { e.preventDefault(); heal() })
+        window.addEventListener('load', function () {
+          setTimeout(function () { if (!window.__rcfStarted) heal() }, 8000)
+        })
+      })()
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

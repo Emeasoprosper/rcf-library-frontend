@@ -26,6 +26,9 @@ window.addEventListener('appinstalled', () => {
   window.dispatchEvent(new Event('appinstalled-app'))
 })
 
+// Tells the self-repair script in index.html that the app code loaded.
+window.__rcfStarted = true
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
