@@ -39,6 +39,22 @@ export async function subscribeToPush() {
   return subscription
 }
 
+// Called from a tap. Brings up the phone's own Allow / Block notification
+// dialog (no in-app popup). If the phone already allows notifications but this
+// device isn't subscribed yet (new phone, cleared data), it subscribes quietly.
+// Returns the permission that ends up set: 'granted' | 'denied' | 'default' | 'unsupported'.
+export async function askPhoneForPush() {
+  if (!(await isPushSupported()) || typeof Notification === 'undefined') return 'unsupported'
+  if (Notification.permission === 'denied') return 'denied'
+  if (Notification.permission === 'granted' && (await getPushSubscriptionStatus()) === 'subscribed') return 'granted'
+  try {
+    await subscribeToPush()
+    return 'granted'
+  } catch {
+    return Notification.permission
+  }
+}
+
 export async function unsubscribeFromPush() {
   if (!(await isPushSupported())) return
   const reg = await navigator.serviceWorker.ready

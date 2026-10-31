@@ -130,7 +130,7 @@ function NotificationSettings() {
 
           {denied && status !== 'unsupported' && (
             <p className="mt-4 font-label-md text-label-md text-error">
-              Notifications are blocked for this site. Allow them in your browser or phone site settings, then come back.
+              Notifications are blocked on this phone. To turn them back on: tap the lock or ⓘ icon next to the web address (or long-press the app icon → App info) → Notifications → Allow. Then come back here.
             </p>
           )}
 

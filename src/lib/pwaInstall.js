@@ -42,6 +42,39 @@ export function isIosSafari() {
   return /safari/i.test(ua) && !/crios|fxios|edgios|opios|instagram|fban|fbav|line|twitter/i.test(ua)
 }
 
+// Links opened inside WhatsApp, Instagram, Facebook, TikTok, Telegram etc.
+// load in that app's own mini browser, which can't install apps or (often)
+// download files. The student has to move to a real browser first.
+export function isInAppBrowser() {
+  const ua = window.navigator.userAgent
+  return /instagram|fban|fbav|fb_iab|messenger|line\/|twitter|tiktok|musical_ly|bytedance|snapchat|telegram|whatsapp|; wv\)/i.test(ua)
+}
+
+// Which iPhone/iPad browser this is. Since iOS 16.4 Safari, Chrome, Edge and
+// Firefox can all "Add to Home Screen"; only the Share button sits in a
+// different place. Returns 'safari' | 'chrome' | 'edge' | 'firefox' | 'inapp' | 'other'.
+export function iosBrowser() {
+  const ua = window.navigator.userAgent
+  if (isInAppBrowser()) return 'inapp'
+  if (/crios/i.test(ua)) return 'chrome'
+  if (/edgios/i.test(ua)) return 'edge'
+  if (/fxios/i.test(ua)) return 'firefox'
+  if (/safari/i.test(ua)) return 'safari'
+  return 'other'
+}
+
+// Copies the site link so the student can paste it into Safari/Chrome.
+export async function copySiteLink() {
+  const link = window.location.origin + '/'
+  try {
+    await navigator.clipboard.writeText(link)
+    return true
+  } catch {
+    window.prompt('Copy this link and open it in Safari or Chrome:', link)
+    return false
+  }
+}
+
 export function isRunningAsInstalledApp() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||

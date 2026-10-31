@@ -1,7 +1,10 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/components/ui/Engagement.jsx
 // Streak, weekly goal ring, verse/tip of the day, badges and the "new badge"
 // celebration. Data comes from GET /api/engagement/me.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Heart, Share2, Share, X } from 'lucide-react'
+import { shareQuoteCard, isLiked, setLiked } from '../../lib/shareQuote'
+import { useFitCard } from '../../lib/fitText'
 import { Link } from 'react-router-dom'
 import { engagementApi } from '../../services/api'
 import { verseOfTheDay, tipOfTheDay } from '../../lib/dailyInspiration'
@@ -125,36 +128,115 @@ export function WeeklyGoalCard({ week }) {
   )
 }
 
-// Quote cards in the style of a social post: logo on top, centred uppercase
-// text, small signature at the bottom. Navy for the verse, white for the tip,
-// always side by side.
-function QuoteCard({ tone, label, text, signature }) {
+const lagosToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' })
+
+// Heart + share, as in the reference: red outline heart, blue share.
+// round = the popup's big white circles in the order ✕ (onClose) · share · heart.
+export function QuoteActions({ id, text, by, cardRef, tone = 'light', round = false, onClose = null }) {
+  const [liked, setLikedState] = useState(() => isLiked(id))
+  const [pop, setPop] = useState(false)
+  const [status, setStatus] = useState('')
+
+  const toggleLike = () => {
+    const next = !liked
+    setLikedState(next)
+    setLiked(id, next)
+    if (next) {
+      setPop(true)
+      setTimeout(() => setPop(false), 400)
+    }
+  }
+
+  const share = async () => {
+    setStatus('Preparing…')
+    const result = await shareQuoteCard(cardRef?.current, { text, by })
+    setStatus(result === 'downloaded' ? 'Image saved, caption copied ✓' : '')
+    if (result === 'downloaded') setTimeout(() => setStatus(''), 2500)
+  }
+
+  const dark = tone === 'navy'
+  const base = round
+    ? 'w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center rcf-press'
+    : 'w-10 h-10 rounded-full flex items-center justify-center rcf-press transition-colors'
+  return (
+    <div data-html2canvas-ignore className="flex flex-col items-center">
+      <div className={`flex items-center ${round ? 'gap-8' : 'gap-8'}`}>
+        {round && onClose && (
+          <button type="button" onClick={onClose} aria-label="Close" className={base}>
+            <X size={28} strokeWidth={2.4} className="text-[#ef4444]" />
+          </button>
+        )}
+        {round && (
+          <button type="button" onClick={share} aria-label="Share" className={base}>
+            <Share size={24} strokeWidth={2.2} className="text-[#111]" />
+          </button>
+        )}
+        <button type="button" onClick={toggleLike} aria-pressed={liked} aria-label={liked ? 'Unlike' : 'Like'} className={`${base} ${round ? '' : dark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
+          <Heart
+            size={round ? 28 : 24}
+            strokeWidth={2}
+            className={`${round ? 'text-[#22c55e]' : 'text-[#ef4444]'} transition-transform ${pop ? 'scale-125' : ''}`}
+            fill={liked || round ? 'currentColor' : 'none'}
+            fillOpacity={round && !liked ? 0.9 : 1}
+          />
+        </button>
+        {!round && (
+          <button type="button" onClick={share} aria-label="Share" className={`${base} ${dark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
+            <Share2 size={22} strokeWidth={2} className={dark ? 'text-[#8fb0ff]' : 'text-[#2563eb]'} />
+          </button>
+        )}
+      </div>
+      {status && <p className={`mt-1 text-[11px] ${dark ? 'text-white/70' : 'text-[#16235e]/60'}`}>{status}</p>}
+    </div>
+  )
+}
+
+// Square quote card (social-post style): logo, quote, author, heart + share.
+// The hidden footer only appears in the shared image, as a link to the site.
+// The card never changes shape: long quotes get smaller type (useFitCard).
+function QuoteCard({ tone, label, text, by, id }) {
   const navy = tone === 'navy'
+  const ref = useRef(null)
+  useFitCard(ref, text)
   return (
     <article
-      className={`rcf-lift relative rounded-[20px] md:rounded-[24px] px-3.5 py-5 md:px-7 md:py-8 flex flex-col items-center justify-center text-center min-h-[200px] md:min-h-[260px] shadow-lg ${
-        navy ? 'bg-[#16235e] text-white' : 'bg-white text-[#16235e] border border-black/5'
+      ref={ref}
+      className={`rcf-lift relative aspect-square overflow-hidden rounded-[26px] px-5 py-5 md:px-7 md:py-6 flex flex-col items-center text-center shadow-lg ${
+        navy ? 'bg-[#16235e] text-white' : 'bg-white text-[#3f3f46] border border-black/5'
       }`}
     >
-      <span className={`w-9 h-9 md:w-11 md:h-11 rounded-full overflow-hidden flex items-center justify-center ${navy ? 'bg-white' : 'bg-[#16235e]'}`}>
+      <span className={`w-11 h-11 md:w-12 md:h-12 flex-none rounded-full overflow-hidden ring-2 ${navy ? 'ring-white/30 bg-white' : 'ring-black/5 bg-[#16235e]'}`}>
         <img src="/android-chrome-192x192.png" alt="" className="w-full h-full object-cover" />
       </span>
-      <p className={`mt-2 text-[9px] md:text-[10px] font-semibold uppercase tracking-[0.2em] ${navy ? 'text-white/60' : 'text-[#16235e]/55'}`}>{label}</p>
-      <p className="mt-2.5 md:mt-3 text-[11px] leading-[1.45] md:text-[14px] md:leading-[1.5] font-semibold uppercase tracking-[0.04em]">
-        {text}
+      <p className={`mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] ${navy ? 'text-white/55' : 'text-[#16235e]/50'}`}>{label}</p>
+      <div data-fit-region className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
+        <p data-fit-text className={`leading-snug break-words ${navy ? 'text-white/90' : 'text-[#52525b]'}`}>{text}</p>
+      </div>
+      <p className={`text-[11px] md:text-[12px] font-bold uppercase tracking-[0.12em] ${navy ? 'text-white' : 'text-[#16235e]'}`}>{by}</p>
+      <div className="mt-2">
+        <QuoteActions id={id} text={text} by={by} cardRef={ref} tone={tone} />
+      </div>
+      <p data-share-footer className={`hidden mt-3 text-[11px] font-semibold ${navy ? 'text-white/75' : 'text-[#16235e]/70'}`}>
+        Daily verses & study tips · rcf-mouau-library.vercel.app
       </p>
-      <p className={`mt-3 text-[9px] md:text-[11px] ${navy ? 'text-white/70' : 'text-[#16235e]/60'}`}>{signature}</p>
     </article>
   )
 }
 
+// Mobile: swipeable row of full squares (the next one peeks in).
+// Desktop: two squares side by side.
 export function DailyQuotes() {
   const v = verseOfTheDay()
   const t = tipOfTheDay()
+  const day = lagosToday()
   return (
-    <div className="grid grid-cols-2 gap-2.5 md:gap-4">
-      <QuoteCard tone="navy" label="Verse of the day" text={v.text} signature={`— ${v.ref}`} />
-      <QuoteCard tone="light" label="Study tip" text={t.text} signature="@rcfmouaulibrary" />
+    <div className="flex md:grid md:grid-cols-2 gap-3 md:gap-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory no-scrollbar -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0 pb-1">
+      <div className="snap-center flex-none w-[84%] sm:w-[60%] md:w-auto">
+        <QuoteCard tone="navy" label="Verse of the day" text={v.text} by={v.ref} id={`${day}-verse`} />
+      </div>
+      <div className="snap-center flex-none w-[84%] sm:w-[60%] md:w-auto">
+        <QuoteCard tone="light" label="Study tip of the day" text={t.text} by="RCF Library" id={`${day}-tip`} />
+      </div>
     </div>
   )
 }
