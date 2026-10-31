@@ -7,24 +7,8 @@ import ResourceCard from '../components/resource/ResourceCard'
 import { resourcesApi, analyticsApi, externalApi } from '../services/api'
 import AudiobookPlayer from '../components/ui/AudiobookPlayer'
 import { getMediaKind, MEDIA_KIND_STYLE } from '../lib/mediaKind'
-import { extractAccentGradient } from '../lib/extractAccentColor'
 import { useAuth } from '../contexts/AuthContext'
-
-// Cycled by index across however many real categories come back from
-// /resources/meta/categories — that endpoint already only returns
-// categories with at least one approved resource, so every tile
-// rendered below is guaranteed non-empty. No more hardcoded 4-item
-// list disconnected from the real categories table.
-const CATEGORY_GRADIENTS = [
-  'from-amber-500 to-orange-400',
-  'from-emerald-500 to-teal-400',
-  'from-violet-500 to-fuchsia-400',
-  'from-rose-500 to-pink-400',
-  'from-sky-500 to-blue-400',
-  'from-lime-500 to-green-400',
-  'from-fuchsia-500 to-purple-400',
-  'from-cyan-500 to-teal-400',
-]
+import { QuickPicks, GettingStarted, BrowseTile, BROWSE_COLORS } from '../components/search/SearchDiscover'
 
 // Canonical resource URL — see AppRoutes.jsx (<Route path="/library/:id" />)
 const resourceDetailPath = (id) => `/library/${id}`
@@ -89,64 +73,6 @@ function RecentThumb({ fileType, thumbnailUrl, thumbnailStatus }) {
         </span>
       )}
     </div>
-  )
-}
-
-// Spotify's "Browse all" pattern: bold title pinned top-left, tilted
-// accent card peeking off the bottom-right corner (original size — w-20
-// h-20, 20deg tilt). When a real thumbnail exists, the background is no
-// longer the fixed per-category `gradient` prop — it's computed from
-// that thumbnail's own dominant color (see extractAccentColor.js), so a
-// red cover sits on a background that actually suits red instead of a
-// clashing fixed hue. Falls back to the static `gradient` prop when
-// there's no image, or if color sampling fails (e.g. CORS).
-function SpotifyTile({ title, icon, gradient, onClick, height = 'h-32', imageUrl }) {
-  const [imgFailed, setImgFailed] = useState(false)
-  const [accentGradient, setAccentGradient] = useState(null)
-  const showImage = Boolean(imageUrl) && !imgFailed
-
-  useEffect(() => {
-    let cancelled = false
-    setAccentGradient(null)
-    if (imageUrl) {
-      extractAccentGradient(imageUrl).then((grad) => {
-        if (!cancelled) setAccentGradient(grad)
-      })
-    }
-    return () => {
-      cancelled = true
-    }
-  }, [imageUrl])
-
-  const usingAccent = Boolean(accentGradient)
-
-  return (
-    <button
-      onClick={onClick}
-      className={`relative overflow-hidden rounded-xl ${height} p-4 text-left shadow-lg active:scale-[0.98] transition-transform ${
-        usingAccent ? '' : `bg-gradient-to-br ${gradient}`
-      }`}
-      style={usingAccent ? { background: accentGradient } : undefined}
-    >
-      <h3 className="relative z-10 font-display font-bold text-white text-lg leading-tight whitespace-pre-line">
-        {title}
-      </h3>
-      <div className="absolute -right-4 -bottom-4 w-20 h-20 rotate-[20deg] rounded-lg bg-black/30 shadow-xl border border-white/10 flex items-center justify-center overflow-hidden">
-        {showImage ? (
-          <img
-            src={imageUrl}
-            alt=""
-            loading="lazy"
-            className="w-full h-full object-cover -rotate-[20deg] scale-125"
-            onError={() => setImgFailed(true)}
-          />
-        ) : (
-          <span className="material-symbols-outlined text-white/90 text-[32px] -rotate-[20deg]">
-            {icon}
-          </span>
-        )}
-      </div>
-    </button>
   )
 }
 
@@ -389,7 +315,6 @@ function Search() {
   const [popular, setPopular] = useState([])
   const [realCategories, setRealCategories] = useState([])
   const [categorySamples, setCategorySamples] = useState({})
-  const [liveSessionSample, setLiveSessionSample] = useState(null)
 
   // Open-access fallback (Internet Archive). extResults === null means "not searched yet".
   const [extResults, setExtResults] = useState(null)
@@ -435,11 +360,6 @@ function Search() {
       .frequentlyViewed({ window: '7d', limit: 10 })
       .then((data) => setPopular(Array.isArray(data) ? data : []))
       .catch(() => setPopular([]))
-
-    resourcesApi
-      .list({ type: 'collection', pageSize: 1, sort: 'recent' })
-      .then((data) => setLiveSessionSample(data.items?.[0] || null))
-      .catch(() => setLiveSessionSample(null))
 
     // Real categories only — resourcesApi.categories() hits
     // /resources/meta/categories, which already filters to categories
@@ -595,9 +515,8 @@ function Search() {
   const showIdleContent = query.trim().length < MIN_SEARCH_LENGTH
   const showHistoryDropdown = historyOpen && query.trim().length === 0 && recents.length > 0
 
-  const madeForYouSample = forYou[0] || popular[0] || null
-  const liveSessionImage = liveSessionSample?.thumbnail_url
-  const madeForYouImage = madeForYouSample?.thumbnail_url
+  // Quick picks: what's recommended for them first, then what's popular, no repeats.
+  const quickPicks = [...forYou, ...popular].filter((r, i, all) => r?.id && all.findIndex((x) => x.id === r.id) === i)
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
@@ -808,30 +727,15 @@ function Search() {
 
         {showIdleContent && (
           <>
-            {(liveSessionImage || madeForYouImage) && (
+            {quickPicks.length > 0 && (
               <section className="mb-stack-lg">
-                <div className="grid grid-cols-2 gap-gutter">
-                  {liveSessionImage && (
-                    <SpotifyTile
-                      title={'Live\nSessions'}
-                      icon="mic"
-                      gradient="from-indigo-600 to-purple-700"
-                      onClick={() => navigate('/shelf?category=collection')}
-                      imageUrl={liveSessionImage}
-                    />
-                  )}
-                  {madeForYouImage && (
-                    <SpotifyTile
-                      title={'Made\nFor You'}
-                      icon="auto_stories"
-                      gradient="from-teal-500 to-cyan-700"
-                      onClick={() => navigate('/shelf?category=book')}
-                      imageUrl={madeForYouImage}
-                    />
-                  )}
-                </div>
+                <QuickPicks items={quickPicks} onOpen={openResource} />
               </section>
             )}
+
+            <div className="mb-stack-lg">
+              <GettingStarted onOpen={openResource} />
+            </div>
 
             {forYou.length > 0 && (
               <HorizontalRail
@@ -848,18 +752,14 @@ function Search() {
             )}
 
             <section>
-              <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-stack-sm">
-                Browse Categories
-              </h2>
+              <h2 className="text-[22px] font-bold text-on-surface tracking-tight mb-3">Browse all</h2>
               {realCategories.length > 0 ? (
-                <div className="grid grid-cols-2 gap-gutter">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                   {realCategories.map((cat, i) => (
-                    <SpotifyTile
+                    <BrowseTile
                       key={cat.id}
                       title={cat.name}
-                      icon="category"
-                      gradient={CATEGORY_GRADIENTS[i % CATEGORY_GRADIENTS.length]}
-                      height="h-28"
+                      color={BROWSE_COLORS[i % BROWSE_COLORS.length]}
                       onClick={() => navigate(`/shelf?category=${encodeURIComponent(cat.name)}`)}
                       imageUrl={categorySamples[cat.name]?.thumbnail_url}
                     />

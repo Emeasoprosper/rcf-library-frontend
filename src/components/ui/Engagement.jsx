@@ -6,8 +6,10 @@ import { Heart, Share2, Share, X } from 'lucide-react'
 import { shareQuoteCard, isLiked, setLiked } from '../../lib/shareQuote'
 import { useFitCard } from '../../lib/fitText'
 import { loadPath, TYPES } from '../../lib/readingPath'
+import { fetchBookOfTheDay } from '../../lib/bookOfTheDay'
+import { extractAccentGradient } from '../../lib/extractAccentColor'
 import { Link } from 'react-router-dom'
-import { engagementApi } from '../../services/api'
+import { engagementApi, resourcesApi } from '../../services/api'
 import { verseOfTheDay, tipOfTheDay } from '../../lib/dailyInspiration'
 import { Confetti } from './Celebrate'
 import { Medal, AnimatedFlame } from './Illustrations'
@@ -53,12 +55,13 @@ export function GoalRing({ done, goal, size = 92, className = '' }) {
 
 export function BadgeTile({ badge, size = 'md' }) {
   const big = size === 'lg'
+  const small = size === 'sm'
   return (
-    <div className={`flex flex-col items-center text-center gap-1.5 ${big ? 'w-full' : 'w-[76px] flex-none'}`} title={badge.desc}>
+    <div className={`flex flex-col items-center text-center gap-1 ${big ? 'w-full' : small ? 'w-[64px] flex-none' : 'w-[76px] flex-none'}`} title={badge.desc}>
       <div className={badge.earned ? 'drop-shadow-md' : ''}>
-        <Medal badge={badge} size={big ? 68 : 50} />
+        <Medal badge={badge} size={big ? 68 : small ? 38 : 50} />
       </div>
-      <p className={`font-label-sm text-label-sm leading-tight ${badge.earned ? 'text-on-surface font-semibold' : 'text-on-surface-variant'}`}>{badge.title}</p>
+      <p className={`${small ? 'text-[10.5px]' : 'font-label-sm text-label-sm'} leading-tight ${badge.earned ? 'text-on-surface font-semibold' : 'text-on-surface-variant'}`}>{badge.title}</p>
       {big && (
         <>
           <p className="font-label-sm text-label-sm text-on-surface-variant leading-tight">{badge.desc}</p>
@@ -76,8 +79,31 @@ export function BadgeTile({ badge, size = 'md' }) {
   )
 }
 
-export function StreakCard({ streak, week }) {
+export function StreakCard({ streak, week, compact = false }) {
   const alive = streak.current > 0
+  if (compact) {
+    // Half-width home version: flame, number and the week as small dots.
+    return (
+      <Link to="/achievements" className="rcf-lift relative overflow-hidden rounded-2xl px-3 py-3 bg-gradient-to-br from-[#3a1d14] via-[#5a2617] to-[#7a2f16] text-white border border-orange-900/40 flex flex-col justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <AnimatedFlame size={30} lit={alive || streak.readToday} />
+          <div className="min-w-0">
+            <p className="font-display text-[22px] font-extrabold leading-none">{streak.current}</p>
+            <p className="text-[11px] font-semibold text-white/85">day streak</p>
+          </div>
+        </div>
+        <div className="flex justify-between gap-0.5">
+          {week.days.map((d, i) => (
+            <span
+              key={d.date}
+              title={DAY_LETTERS[i]}
+              className={`w-3.5 h-3.5 rounded-full ${d.read ? 'bg-gradient-to-b from-[#FFD84D] to-[#FF7A1F]' : d.today ? 'border-2 border-orange-300/90' : 'bg-white/15'} ${d.future ? 'opacity-50' : ''}`}
+            />
+          ))}
+        </div>
+      </Link>
+    )
+  }
   return (
     <div className="rcf-lift relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-[#3a1d14] via-[#5a2617] to-[#7a2f16] text-white border border-orange-900/40">
       <span className="absolute -right-10 -top-10 w-36 h-36 rounded-full bg-orange-400/15 blur-2xl" aria-hidden="true" />
@@ -138,18 +164,19 @@ function firstTimeGoalHit(hit, weekKey) {
   return true
 }
 
-export function WeeklyGoalCard({ week }) {
+export function WeeklyGoalCard({ week, compact = false }) {
   const hit = week.goal > 0 && week.done >= week.goal
   const [celebrate] = useState(() => firstTimeGoalHit(hit, week.days?.[0]?.date))
   const left = week.goal - week.done
+  const ringSize = compact ? 54 : 92
   return (
     <Link
       to="/achievements"
-      className={`group rcf-lift relative overflow-hidden rounded-[22px] p-4 border flex items-center gap-3 ${
+      className={`group rcf-lift relative overflow-hidden border flex items-center ${compact ? 'rounded-2xl p-3 gap-2.5' : 'rounded-[22px] p-4 gap-3'} ${
         hit ? 'bg-gradient-to-br from-[#4caf50]/15 via-surface-container to-surface-container border-[#4caf50]/40' : 'bg-surface-container border-outline'
       }`}
     >
-      {celebrate && <Confetti count={18} />}
+      {celebrate && <Confetti count={compact ? 12 : 18} />}
       <div className="relative text-on-surface flex-none">
         {hit && celebrate && (
           <>
@@ -157,30 +184,37 @@ export function WeeklyGoalCard({ week }) {
             <span className="rcf-ring-burst absolute inset-0 rounded-full border-4 border-[#38bdf8]" style={{ animationDelay: '1.15s' }} />
           </>
         )}
-        <GoalRing done={week.done} goal={week.goal} className={hit ? 'rcf-goal-glow' : ''} />
+        <GoalRing done={week.done} goal={week.goal} size={ringSize} className={hit ? 'rcf-goal-glow' : ''} />
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           {hit ? (
-            <span className="rcf-pop w-11 h-11 rounded-full bg-gradient-to-br from-[#4caf50] to-[#38bdf8] text-white flex items-center justify-center shadow-lg" style={{ animationDelay: celebrate ? '0.9s' : '0s' }}>
-              <span className="material-symbols-outlined text-[26px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}>check</span>
+            <span
+              className={`rcf-pop rounded-full bg-gradient-to-br from-[#4caf50] to-[#38bdf8] text-white flex items-center justify-center shadow-lg ${compact ? 'w-7 h-7' : 'w-11 h-11'}`}
+              style={{ animationDelay: celebrate ? '0.9s' : '0s' }}
+            >
+              <span className={`material-symbols-outlined ${compact ? 'text-[18px]' : 'text-[26px]'}`} style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}>check</span>
             </span>
           ) : (
             <>
-              <span className="font-display text-[22px] font-extrabold leading-none">{week.done}</span>
-              <span className="text-[10px] text-on-surface-variant">of {week.goal}</span>
+              <span className={`font-display font-extrabold leading-none ${compact ? 'text-[16px]' : 'text-[22px]'}`}>{week.done}</span>
+              <span className="text-[9.5px] text-on-surface-variant">of {week.goal}</span>
             </>
           )}
         </div>
       </div>
       <div className="min-w-0 relative">
-        <p className="font-body-md text-body-md font-semibold text-on-surface">{hit ? 'Goal complete! 🎯' : 'Weekly goal'}</p>
-        <p className="font-label-sm text-label-sm text-on-surface-variant">
-          {hit
-            ? `${week.done} of ${week.goal} resources this week. Well done!`
-            : `${left} more resource${left === 1 ? '' : 's'} to go this week`}
+        <p className={`font-semibold text-on-surface ${compact ? 'text-[13px] leading-tight' : 'font-body-md text-body-md'}`}>
+          {hit ? (compact ? 'Goal done! 🎯' : 'Goal complete! 🎯') : 'Weekly goal'}
         </p>
-        <div className="mt-2">
-          <CardAction icon="tune" iconFirst>Adjust goal</CardAction>
-        </div>
+        <p className={`text-on-surface-variant ${compact ? 'text-[11px] leading-snug mt-0.5' : 'font-label-sm text-label-sm'}`}>
+          {hit
+            ? compact ? `${week.done}/${week.goal} this week` : `${week.done} of ${week.goal} resources this week. Well done!`
+            : compact ? `${left} more to go` : `${left} more resource${left === 1 ? '' : 's'} to go this week`}
+        </p>
+        {!compact && (
+          <div className="mt-2">
+            <CardAction icon="tune" iconFirst>Adjust goal</CardAction>
+          </div>
+        )}
       </div>
     </Link>
   )
@@ -269,26 +303,26 @@ export function QuoteActions({ id, text, by, cardRef, tone = 'light', round = fa
 // Square quote card (social-post style): logo, quote, author, heart + share.
 // The hidden footer only appears in the shared image, as a link to the site.
 // The card never changes shape: long quotes get smaller type (useFitCard).
-function QuoteCard({ tone, label, text, by, id }) {
+function QuoteCard({ tone, label, text, by, id, compact = false }) {
   const navy = tone === 'navy'
   const ref = useRef(null)
   useFitCard(ref, text)
   return (
     <article
       ref={ref}
-      className={`rcf-lift relative aspect-square overflow-hidden rounded-[26px] px-5 py-5 md:px-7 md:py-6 flex flex-col items-center text-center shadow-lg ${
-        navy ? 'bg-[#16235e] text-white' : 'bg-white text-[#3f3f46] border border-black/5'
-      }`}
+      className={`rcf-lift relative aspect-square overflow-hidden flex flex-col items-center text-center shadow-lg ${
+        compact ? 'rounded-[20px] px-4 pt-4 pb-2' : 'rounded-[26px] px-5 py-5 md:px-7 md:py-6'
+      } ${navy ? 'bg-[#16235e] text-white' : 'bg-white text-[#3f3f46] border border-black/5'}`}
     >
-      <span className={`w-11 h-11 md:w-12 md:h-12 flex-none rounded-full overflow-hidden ring-2 ${navy ? 'ring-white/30 bg-white' : 'ring-black/5 bg-[#16235e]'}`}>
+      <span className={`${compact ? 'w-8 h-8' : 'w-11 h-11 md:w-12 md:h-12'} flex-none rounded-full overflow-hidden ring-2 ${navy ? 'ring-white/30 bg-white' : 'ring-black/5 bg-[#16235e]'}`}>
         <img src="/android-chrome-192x192.png" alt="" className="w-full h-full object-cover" />
       </span>
-      <p className={`mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] ${navy ? 'text-white/55' : 'text-[#16235e]/50'}`}>{label}</p>
+      <p className={`${compact ? 'mt-1.5 text-[9px]' : 'mt-2 text-[10px]'} font-semibold uppercase tracking-[0.2em] ${navy ? 'text-white/55' : 'text-[#16235e]/50'}`}>{label}</p>
       <div data-fit-region className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
         <p data-fit-text className={`leading-snug break-words ${navy ? 'text-white/90' : 'text-[#52525b]'}`}>{text}</p>
       </div>
-      <p className={`text-[11px] md:text-[12px] font-bold uppercase tracking-[0.12em] ${navy ? 'text-white' : 'text-[#16235e]'}`}>{by}</p>
-      <div className="mt-2">
+      <p className={`${compact ? 'text-[10px]' : 'text-[11px] md:text-[12px]'} font-bold uppercase tracking-[0.12em] ${navy ? 'text-white' : 'text-[#16235e]'}`}>{by}</p>
+      <div className={compact ? 'mt-0.5' : 'mt-2'}>
         <QuoteActions id={id} text={text} by={by} cardRef={ref} tone={tone} />
       </div>
       <p data-share-footer className={`hidden mt-3 text-[11px] font-semibold ${navy ? 'text-white/75' : 'text-[#16235e]/70'}`}>
@@ -300,17 +334,25 @@ function QuoteCard({ tone, label, text, by, id }) {
 
 // Mobile: swipeable row of full squares (the next one peeks in).
 // Desktop: two squares side by side.
-export function DailyQuotes() {
+// compact = the home page size: smaller squares that never stretch across a wide screen.
+export function DailyQuotes({ compact = false }) {
   const v = verseOfTheDay()
   const t = tipOfTheDay()
   const day = lagosToday()
+  const slot = compact
+    ? 'snap-start flex-none w-[70%] sm:w-[46%] md:w-[260px]'
+    : 'snap-center flex-none w-[84%] sm:w-[60%] md:w-auto'
   return (
-    <div className="flex md:grid md:grid-cols-2 gap-3 md:gap-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory no-scrollbar -mx-margin-mobile px-margin-mobile md:mx-0 md:px-0 pb-1">
-      <div className="snap-center flex-none w-[84%] sm:w-[60%] md:w-auto">
-        <QuoteCard tone="navy" label="Verse of the day" text={v.text} by={v.ref} id={`${day}-verse`} />
+    <div
+      className={`flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-margin-mobile px-margin-mobile pb-1 ${
+        compact ? 'md:mx-0 md:px-0' : 'md:grid md:grid-cols-2 md:gap-4 md:overflow-visible md:mx-0 md:px-0'
+      }`}
+    >
+      <div className={slot}>
+        <QuoteCard tone="navy" label="Verse of the day" text={v.text} by={v.ref} id={`${day}-verse`} compact={compact} />
       </div>
-      <div className="snap-center flex-none w-[84%] sm:w-[60%] md:w-auto">
-        <QuoteCard tone="light" label="Study tip of the day" text={t.text} by="RCF Library" id={`${day}-tip`} />
+      <div className={slot}>
+        <QuoteCard tone="light" label="Study tip of the day" text={t.text} by="RCF Library" id={`${day}-tip`} compact={compact} />
       </div>
     </div>
   )
@@ -345,6 +387,53 @@ export function BadgeUnlocked({ badges, onClose }) {
         </button>
       </div>
     </div>
+  )
+}
+
+// One library book per day (same for everyone), on a background taken from
+// its own cover so each day's card looks different.
+function BookOfTheDay() {
+  const [book, setBook] = useState(null)
+  const [bg, setBg] = useState(null)
+  const [coverFailed, setCoverFailed] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchBookOfTheDay((p) => resourcesApi.list(p))
+      .then((b) => {
+        if (cancelled || !b) return
+        setBook(b)
+        if (b.thumbnail_url) extractAccentGradient(b.thumbnail_url).then((g) => { if (!cancelled && g) setBg(g) })
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  if (!book) return null
+  return (
+    <Link
+      to={`/library/${book.id}`}
+      className="group rcf-lift relative overflow-hidden rounded-2xl p-3 flex gap-3.5 items-center text-white shadow-lg"
+      style={{ background: bg || 'linear-gradient(135deg,#7a3d0c,#3a1e08)' }}
+    >
+      <span className="absolute inset-0 bg-gradient-to-r from-black/0 to-black/35 pointer-events-none" aria-hidden="true" />
+      <span className="relative flex-none w-[58px] h-[84px] rounded-md overflow-hidden shadow-[0_8px_18px_rgba(0,0,0,0.45)] bg-black/30 flex items-center justify-center">
+        {book.thumbnail_url && !coverFailed ? (
+          <img src={book.thumbnail_url} alt="" className="w-full h-full object-cover" onError={() => setCoverFailed(true)} />
+        ) : (
+          <span className="material-symbols-outlined text-white/80 text-[28px]">menu_book</span>
+        )}
+      </span>
+      <div className="relative min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">Book of the day</p>
+        <p className="mt-0.5 text-[15px] font-bold leading-snug line-clamp-2">{book.title}</p>
+        {book.author && <p className="text-[12px] text-white/75 truncate">{book.author}</p>}
+      </div>
+      <span className="relative flex-none h-9 px-4 rounded-full bg-white text-black text-[13px] font-bold flex items-center gap-1 shadow-md group-active:scale-95 transition-transform">
+        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>auto_stories</span>
+        Read
+      </span>
+    </Link>
   )
 }
 
@@ -395,26 +484,28 @@ export function HomeEngagement() {
   const earned = data?.badges.filter((b) => b.earned) || []
   const next = data?.badges.filter((b) => !b.earned).slice(0, 3) || []
 
+  // Kept compact on purpose: the home page shouldn't open with a wall of cards.
   return (
-    <section className="px-margin-mobile mb-stack-lg flex flex-col gap-3">
+    <section className="px-margin-mobile mb-stack-lg flex flex-col gap-2.5">
       {data && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <StreakCard streak={data.streak} week={data.week} />
-          <WeeklyGoalCard week={data.week} />
+        <div className="grid grid-cols-2 gap-2.5">
+          <StreakCard streak={data.streak} week={data.week} compact />
+          <WeeklyGoalCard week={data.week} compact />
         </div>
       )}
+      <BookOfTheDay />
       <ReadingPathCard />
-      <DailyQuotes />
+      <DailyQuotes compact />
       {data && (
-        <Link to="/achievements" className="group rcf-lift rounded-[22px] p-4 bg-surface-container border border-outline block">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-body-md text-body-md font-semibold text-on-surface">
+        <Link to="/achievements" className="group rcf-lift rounded-2xl px-3.5 py-3 bg-surface-container border border-outline block">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[14px] font-semibold text-on-surface">
               Badges <span className="text-on-surface-variant font-normal">· {earned.length} of {data.badges.length}</span>
             </p>
             <CardAction>See all</CardAction>
           </div>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {[...earned, ...next].map((b) => <BadgeTile key={b.key} badge={b} />)}
+          <div className="flex gap-1 overflow-x-auto no-scrollbar">
+            {[...earned, ...next].map((b) => <BadgeTile key={b.key} badge={b} size="sm" />)}
           </div>
         </Link>
       )}
