@@ -25,28 +25,36 @@ function Waveform() {
   )
 }
 
-// Curved shelf: cards in the middle sit flat; towards either edge they turn
-// away in 3D, shrink a little and fade, as if the rail wraps around a drum.
-// Recomputed on every scroll frame from each card's position on screen.
-const FLAT_ZONE = 0.5 // share of the half-width where cards stay flat
-const MAX_TURN = 38 // degrees at the very edge
+// Curved shelf: the cards sit on an arc of a circle seen from the front,
+// like books standing round a curved shelf. Only the card in the middle
+// faces you; every card further out is turned more, pushed further back and
+// drawn closer together, so the row visibly curves away on both sides and
+// fades out at the edges. Recomputed every scroll frame from where each card
+// sits on screen, so cards roll round the curve as you swipe.
+const ARC_DEG = 48 // how far round the circle the screen edge is (90 = half circle)
 
 function bendCards(scroller, slots, cards) {
   const box = scroller.getBoundingClientRect()
   const half = box.width / 2
   if (!half) return
   const mid = box.left + half
+  const maxAngle = (ARC_DEG * Math.PI) / 180
+  const radius = half / Math.sin(maxAngle) // so the screen edge lands on the arc's edge
   slots.forEach((slot, i) => {
     const card = cards[i]
     if (!slot || !card) return
     const r = slot.getBoundingClientRect()
-    const d = (r.left + r.width / 2 - mid) / half // -1 left edge ... 1 right edge
-    const e = Math.sign(d) * Math.min(1, Math.max(0, Math.abs(d) - FLAT_ZONE) / (1 - FLAT_ZONE + 0.2))
-    const a = Math.abs(e)
-    card.style.transform = a
-      ? `perspective(800px) translateZ(${-a * 40}px) rotateY(${e * MAX_TURN}deg) scale(${1 - a * 0.12})`
-      : ''
-    card.style.opacity = String(1 - a * 0.65)
+    const d = Math.max(-1.6, Math.min(1.6, (r.left + r.width / 2 - mid) / half)) // -1 left edge ... 1 right edge
+    const angle = d * maxAngle
+    // Where the card would be on the circle, versus where the straight row put it.
+    const shiftX = radius * Math.sin(Math.max(-Math.PI / 2, Math.min(Math.PI / 2, angle))) - d * half
+    const depth = radius * (1 - Math.cos(Math.min(Math.PI / 2, Math.abs(angle))))
+    const a = Math.min(1, Math.abs(d))
+    const turn = Math.max(-72, Math.min(72, (angle * 180) / Math.PI))
+    card.style.transform = `perspective(900px) translateX(${shiftX.toFixed(1)}px) translateZ(${(-depth).toFixed(1)}px) rotateY(${turn.toFixed(1)}deg)`
+    // Fully visible through the middle, fading only as cards near the edges.
+    card.style.opacity = String(Math.max(0.2, 1 - Math.max(0, a - 0.55) * 1.4).toFixed(2))
+    card.style.zIndex = String(100 - Math.round(a * 50))
   })
 }
 
@@ -105,7 +113,7 @@ function HorizontalRail({ title, items, imageUrl }) {
         */}
         <div
           ref={scrollerRef}
-          className="flex gap-gutter overflow-x-auto no-scrollbar snap-x snap-mandatory py-2 [mask-image:linear-gradient(to_right,transparent,black_6%,black_88%,transparent)]"
+          className="flex gap-gutter overflow-x-auto no-scrollbar snap-x snap-mandatory py-2 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
         >
           <div className="flex-none w-margin-mobile" style={{ scrollSnapAlign: 'none' }} aria-hidden="true" />
 
@@ -127,7 +135,7 @@ function HorizontalRail({ title, items, imageUrl }) {
               >
                 <div
                   ref={(el) => { cardRefs.current[index] = el }}
-                  className="rounded-xl overflow-hidden mb-stack-sm will-change-transform [transform-style:preserve-3d] shadow-[0_10px_24px_-14px_rgba(0,0,0,0.6)]"
+                  className="relative rounded-xl overflow-hidden mb-stack-sm will-change-transform [transform-style:preserve-3d] shadow-[0_10px_24px_-14px_rgba(0,0,0,0.6)]"
                 >
                   <div className={`relative ${item.isCollection ? 'aspect-[4/3]' : style.aspect} w-full bg-surface-container`}>
                     {item.thumbnailUrl ? (
