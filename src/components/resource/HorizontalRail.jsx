@@ -1,5 +1,5 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/components/resource/HorizontalRail.jsx
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getMediaKind, MEDIA_KIND_STYLE } from '../../lib/mediaKind'
 
 function splitProgress(subtitle) {
@@ -25,8 +25,55 @@ function Waveform() {
   )
 }
 
+// Curved shelf: cards in the middle sit flat; towards either edge they turn
+// away in 3D, shrink a little and fade, as if the rail wraps around a drum.
+// Recomputed on every scroll frame from each card's position on screen.
+const FLAT_ZONE = 0.5 // share of the half-width where cards stay flat
+const MAX_TURN = 38 // degrees at the very edge
+
+function bendCards(scroller, slots, cards) {
+  const box = scroller.getBoundingClientRect()
+  const half = box.width / 2
+  if (!half) return
+  const mid = box.left + half
+  slots.forEach((slot, i) => {
+    const card = cards[i]
+    if (!slot || !card) return
+    const r = slot.getBoundingClientRect()
+    const d = (r.left + r.width / 2 - mid) / half // -1 left edge ... 1 right edge
+    const e = Math.sign(d) * Math.min(1, Math.max(0, Math.abs(d) - FLAT_ZONE) / (1 - FLAT_ZONE + 0.2))
+    const a = Math.abs(e)
+    card.style.transform = a
+      ? `perspective(800px) translateZ(${-a * 40}px) rotateY(${e * MAX_TURN}deg) scale(${1 - a * 0.12})`
+      : ''
+    card.style.opacity = String(1 - a * 0.65)
+  })
+}
+
 function HorizontalRail({ title, items, imageUrl }) {
   const [imageFailed, setImageFailed] = useState(false)
+  const scrollerRef = useRef(null)
+  const slotRefs = useRef([])
+  const cardRefs = useRef([])
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined
+    let frame = 0
+    const update = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => bendCards(scroller, slotRefs.current, cardRefs.current))
+    }
+    update()
+    scroller.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      cancelAnimationFrame(frame)
+      scroller.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [items])
+
   if (!items || items.length === 0) return null
 
   return (
@@ -56,10 +103,13 @@ function HorizontalRail({ title, items, imageUrl }) {
           on the spacers keeps them out of the scroll-snap sequence so
           they never become a snap stop themselves.
         */}
-        <div className="flex gap-gutter overflow-x-auto no-scrollbar snap-x snap-mandatory [mask-image:linear-gradient(to_right,black_90%,transparent)]">
+        <div
+          ref={scrollerRef}
+          className="flex gap-gutter overflow-x-auto no-scrollbar snap-x snap-mandatory py-2 [mask-image:linear-gradient(to_right,transparent,black_6%,black_88%,transparent)]"
+        >
           <div className="flex-none w-margin-mobile" style={{ scrollSnapAlign: 'none' }} aria-hidden="true" />
 
-          {items.map((item) => {
+          {items.map((item, index) => {
             const kind = getMediaKind(item.fileType)
             const style = MEDIA_KIND_STYLE[kind]
             const progress = splitProgress(item.subtitle)
@@ -71,10 +121,14 @@ function HorizontalRail({ title, items, imageUrl }) {
             return (
               <div
                 key={item.id || item.title}
+                ref={(el) => { slotRefs.current[index] = el }}
                 onClick={item.onClick}
                 className={`flex-none ${item.isCollection ? 'w-52' : style.railWidth} snap-start group cursor-pointer`}
               >
-                <div className="rounded-xl overflow-hidden transition-all mb-stack-sm">
+                <div
+                  ref={(el) => { cardRefs.current[index] = el }}
+                  className="rounded-xl overflow-hidden mb-stack-sm will-change-transform [transform-style:preserve-3d] shadow-[0_10px_24px_-14px_rgba(0,0,0,0.6)]"
+                >
                   <div className={`relative ${item.isCollection ? 'aspect-[4/3]' : style.aspect} w-full bg-surface-container`}>
                     {item.thumbnailUrl ? (
                       <img
