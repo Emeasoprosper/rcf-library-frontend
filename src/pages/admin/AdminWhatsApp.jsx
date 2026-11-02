@@ -31,6 +31,8 @@ function AdminWhatsApp() {
   const [relinking, setRelinking] = useState(false)
   const [togglingJid, setTogglingJid] = useState(null)
   const [tab, setTab] = useState('groups')
+  const [groupSearch, setGroupSearch] = useState('')
+  const [copiedJid, setCopiedJid] = useState(null)
 
   const load = useCallback(
     () =>
@@ -84,6 +86,23 @@ function AdminWhatsApp() {
       setTogglingJid(null)
     }
   }
+
+  // Group ID for ALLOWED_GROUP_JID and the bot logs; copied in full.
+  const handleCopyJid = async (jid) => {
+    try {
+      await navigator.clipboard.writeText(jid)
+      setCopiedJid(jid)
+      setTimeout(() => setCopiedJid((c) => (c === jid ? null : c)), 1500)
+    } catch {
+      window.prompt('Copy the group ID:', jid)
+    }
+  }
+
+  // Search by name or by any part of the group ID (as shown in the bot logs).
+  const search = groupSearch.trim().toLowerCase()
+  const shownGroups = (data?.groups || []).filter(
+    (g) => !search || (g.name || '').toLowerCase().includes(search) || g.jid.toLowerCase().includes(search)
+  )
 
   const status = stateConfig[data?.state] || stateConfig.offline
 
@@ -182,8 +201,25 @@ function AdminWhatsApp() {
             </div>
           )}
 
+          {data && data.groups.length > 0 && (
+            <label className="mb-stack-sm flex items-center gap-2 px-3 py-2.5 rounded-xl bg-surface-container border border-outline focus-within:border-emerald-500">
+              <span className="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+              <input
+                type="search"
+                value={groupSearch}
+                onChange={(e) => setGroupSearch(e.target.value)}
+                placeholder="Search by group name or ID"
+                className="flex-grow min-w-0 bg-transparent outline-none font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+              />
+            </label>
+          )}
+
+          {data && data.groups.length > 0 && shownGroups.length === 0 && (
+            <p className="font-label-md text-label-md text-on-surface-variant mb-stack-sm">No group matches “{groupSearch}”.</p>
+          )}
+
           <div className="flex flex-col gap-gutter">
-            {(data?.groups || []).map((group) => (
+            {shownGroups.map((group) => (
               <div key={group.jid} className="p-stack-md rounded-xl bg-surface-container border border-outline flex items-center gap-3">
                 <span className="material-symbols-outlined text-emerald-500">groups</span>
                 <div className="min-w-0 flex-grow">
@@ -193,6 +229,15 @@ function AdminWhatsApp() {
                     added {new Date(group.added_at).toLocaleDateString()}
                     {group.enabled ? '' : ' • muted'}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyJid(group.jid)}
+                    title="Copy group ID"
+                    className="mt-1 max-w-full flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface"
+                  >
+                    <span className="truncate font-mono">ID: {group.jid.split('@')[0]}</span>
+                    <span className="material-symbols-outlined text-[14px] flex-none">{copiedJid === group.jid ? 'check' : 'content_copy'}</span>
+                  </button>
                 </div>
                 <button
                   type="button"
