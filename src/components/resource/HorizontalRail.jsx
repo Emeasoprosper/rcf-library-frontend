@@ -30,7 +30,7 @@ function Waveform() {
 // out drop lower and tilt to follow the curve (left cards lean left, right
 // cards lean right). No 3D turning. Recomputed every scroll frame from where
 // each card sits on screen, so cards slide along the arch as you swipe.
-const ARC_DEG = 14 // tilt of a card sitting at the screen edge
+const ARC_DEG = 6 // tilt of a card sitting at the screen edge
 
 function bendCards(scroller, slots, cards) {
   const box = scroller.getBoundingClientRect()
@@ -43,12 +43,11 @@ function bendCards(scroller, slots, cards) {
     const card = cards[i]
     if (!slot || !card) return
     const r = slot.getBoundingClientRect()
-    const d = Math.max(-1.6, Math.min(1.6, (r.left + r.width / 2 - mid) / half)) // -1 left edge ... 1 right edge
+    const d = Math.max(-1.3, Math.min(1.3, (r.left + r.width / 2 - mid) / half)) // -1 left edge ... 1 right edge
     const angle = d * maxAngle
     const drop = radius * (1 - Math.cos(angle)) // how far below the top of the arch
     const turn = (angle * 180) / Math.PI
-    card.style.transform = `translateY(${drop.toFixed(1)}px) rotate(${turn.toFixed(1)}deg)`
-    card.style.zIndex = String(100 - Math.round(Math.min(1, Math.abs(d)) * 50))
+    card.style.transform = `translate3d(0, ${drop.toFixed(1)}px, 0) rotate(${turn.toFixed(2)}deg)`
   })
 }
 
@@ -107,7 +106,7 @@ function HorizontalRail({ title, items, imageUrl }) {
         */}
         <div
           ref={scrollerRef}
-          className="flex gap-gutter overflow-x-auto no-scrollbar snap-x snap-mandatory pt-3 pb-12 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
+          className="flex gap-5 overflow-x-auto no-scrollbar snap-x snap-proximity pt-3 pb-6 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
         >
           <div className="flex-none w-margin-mobile" style={{ scrollSnapAlign: 'none' }} aria-hidden="true" />
 
@@ -125,7 +124,7 @@ function HorizontalRail({ title, items, imageUrl }) {
                 key={item.id || item.title}
                 ref={(el) => { slotRefs.current[index] = el }}
                 onClick={item.onClick}
-                className={`flex-none ${item.isCollection ? 'w-52' : style.railWidth} snap-start group cursor-pointer`}
+                className={`flex-none ${item.isCollection ? 'w-52' : style.railWidth} snap-center group cursor-pointer`}
               >
                 <div
                   ref={(el) => { cardRefs.current[index] = el }}
