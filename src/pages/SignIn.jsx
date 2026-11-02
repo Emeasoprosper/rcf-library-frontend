@@ -1,8 +1,8 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/pages/SignIn.jsx
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import SplashLight from '../assets/SplahLightMode.svg'
-import SplashDark from '../assets/SplashDarkMode.svg'
+import SplashLight from '../assets/SplashLight.webp'
+import SplashDark from '../assets/SplashDark.webp'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
 

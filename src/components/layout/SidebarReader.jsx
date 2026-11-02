@@ -6,17 +6,24 @@
 // PDF and video/audio still work — just single-page-at-a-time / native
 // controls instead of the richer old UI.
 import { useEffect, useRef, useState } from 'react'
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
 import { resourcesApi } from '../../services/api'
 import { getOffline, saveReadingProgress } from '../../lib/offlineStorage'
 import { useActiveResource } from '../../contexts/ActiveResourceContext'
 import { extractAccentColorMixedWithBlack } from '../../lib/extractAccentColor'
 import ReaderSettingsPanel from '../resource/ReaderSettingsPanel'
 
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).toString()
+// This panel is part of the desktop layout, so pdf.js (large) is only
+// downloaded when it actually opens a PDF, not with every page of the app.
+let pdfjsReady = null
+function loadPdfjs() {
+  if (!pdfjsReady) {
+    pdfjsReady = import('pdfjs-dist').then((lib) => {
+      lib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
+      return lib
+    })
+  }
+  return pdfjsReady
+}
 
 function getViewerKind(fileType = '') {
   if (fileType === 'application/pdf') return 'pdf'
@@ -192,6 +199,8 @@ function PdfMiniReader({ resource }) {
           if (!res.ok) throw new Error('stream failed')
           arrayBuffer = await res.arrayBuffer()
         }
+        if (cancelled) return
+        const { getDocument } = await loadPdfjs()
         if (cancelled) return
         const pdf = await getDocument({ data: arrayBuffer, wasmUrl: '/wasm/' }).promise
         if (cancelled) return

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import SplashLight from '../assets/SplahLightMode.svg'
-import SplashDark from '../assets/SplashDarkMode.svg'
+import SplashLight from '../assets/SplashLight.webp'
+import SplashDark from '../assets/SplashDark.webp'
 
 function Splash() {
   const navigate = useNavigate()

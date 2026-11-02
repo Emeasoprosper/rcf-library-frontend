@@ -4,12 +4,13 @@
 // (WhatsApp, Instagram...); elsewhere the image downloads and the text is
 // copied. Elements marked data-html2canvas-ignore (the buttons) are left out,
 // and [data-share-footer] (the site address) only appears in the image.
-import html2canvas from 'html2canvas'
 import { fitCard } from './fitText'
 
 export const SITE_URL = 'https://rcf-mouau-library.vercel.app'
 
 async function cardToBlob(el) {
+  // Loaded only when someone actually shares a card, not with the home page.
+  const { default: html2canvas } = await import('html2canvas')
   const canvas = await html2canvas(el, {
     scale: Math.min(3, (window.devicePixelRatio || 1) * 1.5),
     backgroundColor: null,

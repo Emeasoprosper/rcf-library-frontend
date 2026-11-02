@@ -1,6 +1,5 @@
 /* RCFMOUAULIBRARYreact/student-dashboard/src/index.css */
 @import "tailwindcss";
-@import "material-symbols/outlined.css";
 @custom-variant dark (&:where(.dark, .dark *));
 @import "@fontsource/inter/400.css";
 @import "@fontsource/inter/500.css";

@@ -1,54 +1,68 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/routes/AppRoutes.jsx
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import ProtectedRoute from './ProtectedRoute'
+import AdminRoute from './AdminRoute'
+import { useAuth } from '../contexts/AuthContext'
+// The pages people land on first load with the app itself.
 import Splash from '../pages/Splash'
 import SignIn from '../pages/SignIn'
 import Home from '../pages/Home'
 import Library from '../pages/Library'
 import Search from '../pages/Search'
-import Contribute from '../pages/Contribute'
-import MyContributions from '../pages/MyContributions'
-import SuggestMaterial from '../pages/SuggestMaterial'
-import SubmitResource from '../pages/SubmitResource'
-import Leaderboard from '../pages/Leaderboard'
-import Profile from '../pages/Profile'
-import Downloads from '../pages/Downloads'
-import ReadingHistory from '../pages/ReadingHistory'
-import HelpSupport from '../pages/HelpSupport'
-import SavedResources from '../pages/SavedResources'
-import Settings from '../pages/Settings'
-import NotificationSettings from '../pages/NotificationSettings'
-import GettingStarted from '../pages/GettingStarted'
-import Licensing from '../pages/Licensing'
-import CitationTools from '../pages/CitationTools'
-import Notifications from '../pages/Notifications'
-import NewsDetail from '../pages/NewsDetail'
-import HeadsUp from '../pages/HeadsUp'
-import ReadingSpace from '../pages/ReadingSpace'
-import StudySaved from '../pages/StudySaved'
-import StudyNotes from '../pages/StudyNotes'
-import StudyPractice from '../pages/StudyPractice'
-import AdminDashboard from '../pages/admin/AdminDashboard'
-import AdminUploads from '../pages/admin/AdminUploads'
-import AdminRequests from '../pages/admin/AdminRequests'
-import AdminUsers from '../pages/admin/AdminUsers'
-import AdminAnnouncements from '../pages/admin/AdminAnnouncements'
-import ProtectedRoute from './ProtectedRoute'
-import AdminRoute from './AdminRoute'
-import { useAuth } from '../contexts/AuthContext'
-import RequestMaterial from '../pages/RequestMaterial'
-import CompleteProfile from '../pages/CompleteProfile'
-import ResourceDetail from '../pages/ResourceDetail'
-import CollectionPage from '../pages/CollectionPage'
-import ResourceReader from '../pages/ResourceReader'
-import ShareRedirect from '../pages/ShareRedirect'
-import AdminResources from '../pages/admin/AdminResources'
-import OrganizeResources from '../pages/admin/OrganizeResources'
-import AdminHomeRails from '../pages/admin/AdminHomeRails'
-import AdminAnalytics from '../pages/admin/AdminAnalytics'
-import AdminWhatsApp from '../pages/admin/AdminWhatsApp'
-import Achievements from '../pages/Achievements'
-import ReadingPath from '../pages/ReadingPath'
+
+// Everything else (and all admin pages, and the PDF reader) downloads only
+// when it is first opened, so the first visit is much lighter. The service
+// worker still keeps every page for offline use once it has them.
+const Contribute = lazy(() => import('../pages/Contribute'))
+const MyContributions = lazy(() => import('../pages/MyContributions'))
+const SuggestMaterial = lazy(() => import('../pages/SuggestMaterial'))
+const SubmitResource = lazy(() => import('../pages/SubmitResource'))
+const Leaderboard = lazy(() => import('../pages/Leaderboard'))
+const Profile = lazy(() => import('../pages/Profile'))
+const Downloads = lazy(() => import('../pages/Downloads'))
+const ReadingHistory = lazy(() => import('../pages/ReadingHistory'))
+const HelpSupport = lazy(() => import('../pages/HelpSupport'))
+const SavedResources = lazy(() => import('../pages/SavedResources'))
+const Settings = lazy(() => import('../pages/Settings'))
+const NotificationSettings = lazy(() => import('../pages/NotificationSettings'))
+const GettingStarted = lazy(() => import('../pages/GettingStarted'))
+const Licensing = lazy(() => import('../pages/Licensing'))
+const CitationTools = lazy(() => import('../pages/CitationTools'))
+const Notifications = lazy(() => import('../pages/Notifications'))
+const NewsDetail = lazy(() => import('../pages/NewsDetail'))
+const HeadsUp = lazy(() => import('../pages/HeadsUp'))
+const ReadingSpace = lazy(() => import('../pages/ReadingSpace'))
+const StudySaved = lazy(() => import('../pages/StudySaved'))
+const StudyNotes = lazy(() => import('../pages/StudyNotes'))
+const StudyPractice = lazy(() => import('../pages/StudyPractice'))
+const RequestMaterial = lazy(() => import('../pages/RequestMaterial'))
+const CompleteProfile = lazy(() => import('../pages/CompleteProfile'))
+const ResourceDetail = lazy(() => import('../pages/ResourceDetail'))
+const CollectionPage = lazy(() => import('../pages/CollectionPage'))
+const ResourceReader = lazy(() => import('../pages/ResourceReader'))
+const ShareRedirect = lazy(() => import('../pages/ShareRedirect'))
+const Achievements = lazy(() => import('../pages/Achievements'))
+const ReadingPath = lazy(() => import('../pages/ReadingPath'))
+const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'))
+const AdminUploads = lazy(() => import('../pages/admin/AdminUploads'))
+const AdminRequests = lazy(() => import('../pages/admin/AdminRequests'))
+const AdminUsers = lazy(() => import('../pages/admin/AdminUsers'))
+const AdminAnnouncements = lazy(() => import('../pages/admin/AdminAnnouncements'))
+const AdminResources = lazy(() => import('../pages/admin/AdminResources'))
+const OrganizeResources = lazy(() => import('../pages/admin/OrganizeResources'))
+const AdminHomeRails = lazy(() => import('../pages/admin/AdminHomeRails'))
+const AdminAnalytics = lazy(() => import('../pages/admin/AdminAnalytics'))
+const AdminWhatsApp = lazy(() => import('../pages/admin/AdminWhatsApp'))
+
+// Shown for the moment a page's code is still downloading.
+function PageLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background" role="status" aria-label="Loading">
+      <span className="w-9 h-9 rounded-full border-[3px] border-outline border-t-orange-500 animate-spin" />
+    </div>
+  )
+}
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth()
@@ -88,6 +102,7 @@ function AppRoutes() {
   return (
     <>
     <RouteMotion />
+    <Suspense fallback={<PageLoading />}>
     <Routes>
       <Route path="/" element={<RootRedirect />} />
       <Route path="/splash" element={<Splash />} />
@@ -139,6 +154,7 @@ function AppRoutes() {
       <Route path="/library/:id" element={<ResourceDetail />} />
       <Route path="/collections/:id" element={<CollectionPage />} />
     </Routes>
+    </Suspense>
     </>
   )
 }
