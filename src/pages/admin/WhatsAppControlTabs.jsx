@@ -411,6 +411,7 @@ const KIND = {
   featured: { icon: 'auto_stories', color: 'text-orange-500', label: 'Book of the day' },
   intro: { icon: 'waving_hand', color: 'text-emerald-500', label: 'Introduction' },
   prayer: { icon: 'church', color: 'text-violet-500', label: 'Prayed along' },
+  cleanup: { icon: 'delete_sweep', color: 'text-red-400', label: 'Cleaned up old posts' },
 }
 
 // Same groups as ACTIVITY_CATEGORIES in rcf-library-backend/src/routes/admin.js.
