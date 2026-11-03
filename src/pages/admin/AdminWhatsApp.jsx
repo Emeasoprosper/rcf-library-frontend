@@ -37,7 +37,9 @@ const PRAYER_MODES = [
 // Posts Bro Paul may send in a group.
 const GROUP_POSTS = [
   { key: 'bookOfDay', label: 'Book of the day (12 noon)' },
-  { key: 'morningPost', label: 'Morning verse and tip' },
+  { key: 'morningPost', label: 'Bible verse of the day (morning)' },
+  // Not set yet: on for student groups, off for 'general' ones (same as the bot).
+  { key: 'studyTip', label: 'Study tip of the day (morning)', isOn: (s) => (typeof s.studyTip === 'boolean' ? s.studyTip : s.audience !== 'general') },
   { key: 'promos', label: 'Upload / library adverts' },
   { key: 'welcome', label: 'Welcome new members' },
   { key: 'chimeIn', label: 'Join conversations untagged' },
@@ -133,7 +135,7 @@ function GroupSettingsPanel({ group, saving, onChange, onIntroduce, introducing 
       <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-2">What can Bro Paul post here?</p>
       <div className="flex flex-col">
         {GROUP_POSTS.map((p) => {
-          const on = settings[p.key] !== false
+          const on = p.isOn ? p.isOn(settings) : settings[p.key] !== false
           return (
             <label key={p.key} className="flex items-center justify-between gap-3 py-2 cursor-pointer">
               <span className="font-body-md text-body-md text-on-surface">{p.label}</span>

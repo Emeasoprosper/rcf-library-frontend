@@ -46,7 +46,7 @@ const relTime = (iso) => {
 
 const FEATURES = [
   { key: 'answerUntagged', icon: 'menu_book', title: 'Answer book requests without a tag', hint: '"Anyone has GST 101 past questions?" gets an answer even if nobody tags him.' },
-  { key: 'morningPost', icon: 'wb_sunny', title: 'Morning verse in groups', hint: 'Every day from 7am: the verse of the day and a study tip, once per group.' },
+  { key: 'morningPost', icon: 'wb_sunny', title: 'Morning posts in groups', hint: 'Every day from 7am, once per group: the Bible verse of the day and/or the study tip. Choose which in each group\'s ⚙️ settings.' },
   { key: 'stickers', icon: 'add_reaction', title: 'Stickers', hint: 'Uses your sticker pack at fitting moments (funny, birthdays, thanks...), at most one per chat every 20 minutes. Teach him by sending stickers to his number.' },
   { key: 'privateChats', icon: 'chat', title: 'Reply to private chats', hint: 'Anyone who messages his number directly gets an answer, no tag needed. Up to 30 AI answers per person a day.' },
   { key: 'chimeIn', icon: 'forum', title: 'Join lively discussions', hint: 'When the chat is busy, he may add something useful. At most once an hour per group.' },
