@@ -285,9 +285,21 @@ function AdminWhatsApp() {
   const matching = (data?.groups || []).filter(
     (g) => !search || (g.name || '').toLowerCase().includes(search) || g.jid.toLowerCase().includes(search)
   )
-  // Just added: Bro Paul stays silent there until you introduce or start him.
-  const newGroups = matching.filter((g) => g.settings?.started === false)
-  const shownGroups = matching.filter((g) => g.settings?.started !== false)
+  // Removed from: switched off; they come back as new groups if he's added back.
+  const removedGroups = matching.filter((g) => g.settings?.left)
+  // Just added (or added back): he stays silent there until you introduce or start him.
+  const newGroups = matching.filter((g) => !g.settings?.left && g.settings?.started === false)
+  const shownGroups = matching.filter((g) => !g.settings?.left && g.settings?.started !== false)
+
+  const handleForget = async (group) => {
+    if (!window.confirm(`Take "${group.name || 'this group'}" off the list? Its saved chats stay in the Chats tab.`)) return
+    try {
+      await adminApi.forgetWhatsappGroup(group.jid)
+      setData((prev) => ({ ...prev, groups: prev.groups.filter((g) => g.jid !== group.jid) }))
+    } catch (err) {
+      setError(err.message || 'Could not remove it from the list.')
+    }
+  }
 
   const status = stateConfig[data?.state] || stateConfig.offline
 
@@ -512,6 +524,33 @@ function AdminWhatsApp() {
               </div>
             ))}
           </div>
+
+          {removedGroups.length > 0 && (
+            <div className="mt-stack-lg">
+              <h3 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Removed from</h3>
+              <p className="font-label-sm text-label-sm text-on-surface-variant mb-stack-sm">
+                Bro Paul isn't in these groups any more and is switched off there. If someone adds his number back, the group shows up under New groups and waits for you.
+              </p>
+              <div className="flex flex-col gap-2">
+                {removedGroups.map((group) => (
+                  <div key={group.jid} className="p-3 rounded-xl bg-surface-container-low border border-outline flex items-center gap-3 opacity-80">
+                    <span className="material-symbols-outlined text-on-surface-variant">group_remove</span>
+                    <div className="min-w-0 flex-grow">
+                      <p className="font-body-md text-body-md text-on-surface truncate">{group.name || 'Unnamed group'}</p>
+                      <p className="font-label-sm text-label-sm text-on-surface-variant font-mono truncate">ID: {group.jid.split('@')[0]}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleForget(group)}
+                      className="flex-none px-3 py-1.5 rounded-lg border border-outline font-label-sm text-label-sm text-on-surface-variant hover:text-error"
+                    >
+                      Remove from list
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
         )}
       </main>

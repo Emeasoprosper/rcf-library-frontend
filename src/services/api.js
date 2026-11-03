@@ -425,6 +425,8 @@ export const adminApi = {
   // introduce = Bro Paul introduces himself there (also starts a new group).
   startWhatsappGroup: (jid, introduce) =>
     apiFetch(`/admin/whatsapp/groups/${encodeURIComponent(jid)}/start`, { method: 'POST', body: JSON.stringify({ introduce }) }),
+  // Only for groups Bro Paul was removed from.
+  forgetWhatsappGroup: (jid) => apiFetch(`/admin/whatsapp/groups/${encodeURIComponent(jid)}`, { method: 'DELETE' }),
   listWhatsappChats: (type) => apiFetch(`/admin/whatsapp/chats${type ? `?type=${type}` : ''}`),
   getWhatsappChatMessages: (jid, before) =>
     apiFetch(`/admin/whatsapp/chats/${encodeURIComponent(jid)}/messages${before ? `?before=${before}` : ''}`),
