@@ -25,6 +25,13 @@ const AUDIENCES = [
   { key: 'general', icon: 'public', label: 'General, not students', hint: 'Never mentions past questions or lecture notes. Offers "resources for research" instead.' },
 ]
 
+// What Bro Paul does while the group is praying together.
+const PRAYER_MODES = [
+  { key: 'quiet', icon: 'volume_off', label: 'Stay quiet', hint: 'Says nothing until prayer is over.' },
+  { key: 'amen', icon: 'volunteer_activism', label: 'Amen with them', hint: 'Reacts 🙏 to the prayers and stays reverent.' },
+  { key: 'join', icon: 'church', label: 'Pray along', hint: 'Also adds a short, sincere prayer now and then.' },
+]
+
 // Posts Bro Paul may send in a group.
 const GROUP_POSTS = [
   { key: 'bookOfDay', label: 'Book of the day (12 noon)' },
@@ -63,6 +70,31 @@ function GroupSettingsPanel({ group, saving, onChange }) {
           )
         })}
       </div>
+
+      <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-2">During prayer</p>
+      <div className="grid grid-cols-3 gap-1.5">
+        {PRAYER_MODES.map((p) => {
+          const active = (settings.prayer || 'amen') === p.key
+          return (
+            <button
+              key={p.key}
+              type="button"
+              disabled={saving}
+              title={p.hint}
+              onClick={() => !active && onChange({ prayer: p.key })}
+              className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-center transition-colors disabled:opacity-60 ${
+                active ? 'border-emerald-500 bg-emerald-500/10' : 'border-outline hover:border-on-surface-variant'
+              }`}
+            >
+              <span className={`material-symbols-outlined text-[20px] ${active ? 'text-emerald-500' : 'text-on-surface-variant'}`}>{p.icon}</span>
+              <span className="font-label-sm text-label-sm text-on-surface leading-tight">{p.label}</span>
+            </button>
+          )
+        })}
+      </div>
+      <p className="font-label-sm text-label-sm text-on-surface-variant">
+        {PRAYER_MODES.find((p) => p.key === (settings.prayer || 'amen'))?.hint} No adverts, jokes or posts go out while a group is praying.
+      </p>
 
       <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-2">What can Bro Paul post here?</p>
       <div className="flex flex-col">
