@@ -407,6 +407,8 @@ export const adminApi = {
   relinkWhatsappBot: () => apiFetch('/admin/whatsapp/relink', { method: 'POST' }),
   setWhatsappGroup: (jid, enabled) =>
     apiFetch(`/admin/whatsapp/groups/${encodeURIComponent(jid)}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
+  saveWhatsappGroupSettings: (jid, settings) =>
+    apiFetch(`/admin/whatsapp/groups/${encodeURIComponent(jid)}`, { method: 'PATCH', body: JSON.stringify({ settings }) }),
   getWhatsappSettings: () => apiFetch('/admin/whatsapp/settings'),
   saveWhatsappSettings: (settings) =>
     apiFetch('/admin/whatsapp/settings', { method: 'PUT', body: JSON.stringify({ settings }) }),

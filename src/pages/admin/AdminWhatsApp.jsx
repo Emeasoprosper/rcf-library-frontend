@@ -17,6 +17,79 @@ const TABS = [
   { key: 'activity', label: 'Activity', icon: 'history' },
 ]
 
+// Who a group is for: decides whether Bro Paul talks about past questions
+// and lecture notes there (see rcf-library-backend/src/services/groupSettings.js).
+const AUDIENCES = [
+  { key: 'campus', icon: 'school', label: 'Campus students', hint: 'Full help: past questions, lecture notes and course materials.' },
+  { key: 'mixed', icon: 'diversity_3', label: 'Mixed group', hint: 'Never brings up past questions. If asked, says "For MOUAU students, you can access these…".' },
+  { key: 'general', icon: 'public', label: 'General, not students', hint: 'Never mentions past questions or lecture notes. Offers "resources for research" instead.' },
+]
+
+// Posts Bro Paul may send in a group.
+const GROUP_POSTS = [
+  { key: 'bookOfDay', label: 'Book of the day (12 noon)' },
+  { key: 'morningPost', label: 'Morning verse and tip' },
+  { key: 'promos', label: 'Upload / library adverts' },
+  { key: 'welcome', label: 'Welcome new members' },
+  { key: 'chimeIn', label: 'Join conversations untagged' },
+  { key: 'newMonth', label: 'Happy new month' },
+  { key: 'birthdays', label: 'Birthday wishes' },
+]
+
+function GroupSettingsPanel({ group, saving, onChange }) {
+  const settings = group.settings || {}
+  return (
+    <div className="mt-3 pt-3 border-t border-outline flex flex-col gap-stack-sm">
+      <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Who is this group for?</p>
+      <div className="flex flex-col gap-1.5">
+        {AUDIENCES.map((a) => {
+          const active = (settings.audience || 'campus') === a.key
+          return (
+            <button
+              key={a.key}
+              type="button"
+              disabled={saving}
+              onClick={() => !active && onChange({ audience: a.key })}
+              className={`text-left flex items-start gap-2.5 p-2.5 rounded-lg border transition-colors disabled:opacity-60 ${
+                active ? 'border-emerald-500 bg-emerald-500/10' : 'border-outline hover:border-on-surface-variant'
+              }`}
+            >
+              <span className={`material-symbols-outlined text-[20px] flex-none ${active ? 'text-emerald-500' : 'text-on-surface-variant'}`}>{a.icon}</span>
+              <span className="min-w-0">
+                <span className="block font-label-md text-label-md text-on-surface">{a.label}</span>
+                <span className="block font-label-sm text-label-sm text-on-surface-variant">{a.hint}</span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-2">What can Bro Paul post here?</p>
+      <div className="flex flex-col">
+        {GROUP_POSTS.map((p) => {
+          const on = settings[p.key] !== false
+          return (
+            <label key={p.key} className="flex items-center justify-between gap-3 py-2 cursor-pointer">
+              <span className="font-body-md text-body-md text-on-surface">{p.label}</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={on}
+                disabled={saving}
+                onClick={() => onChange({ [p.key]: !on })}
+                className={`relative w-11 h-6 flex-none rounded-full transition-colors disabled:opacity-50 ${on ? 'bg-emerald-500' : 'bg-surface-container-highest border border-outline'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${on ? 'translate-x-5' : ''}`} />
+              </button>
+            </label>
+          )
+        })}
+      </div>
+      <p className="font-label-sm text-label-sm text-on-surface-variant">Admin announcements still go to every switched-on group. Changes reach Bro Paul within a minute.</p>
+    </div>
+  )
+}
+
 const stateConfig = {
   online: { label: 'Online', dot: 'bg-emerald-500', text: 'Bro Paul is connected and chatting.' },
   qr: { label: 'Waiting for scan', dot: 'bg-amber-500 animate-pulse', text: 'Scan the QR below with the bot phone.' },
@@ -33,6 +106,8 @@ function AdminWhatsApp() {
   const [tab, setTab] = useState('groups')
   const [groupSearch, setGroupSearch] = useState('')
   const [copiedJid, setCopiedJid] = useState(null)
+  const [openJid, setOpenJid] = useState(null)
+  const [savingJid, setSavingJid] = useState(null)
 
   const load = useCallback(
     () =>
@@ -84,6 +159,25 @@ function AdminWhatsApp() {
       setError(err.message || 'Could not update the group.')
     } finally {
       setTogglingJid(null)
+    }
+  }
+
+  // Saves one change (e.g. { audience: 'general' } or { promos: false }).
+  // Shown straight away, put back if the save fails.
+  const handleGroupSettings = async (group, change) => {
+    const before = group.settings
+    const patch = (settings) =>
+      setData((prev) => ({ ...prev, groups: prev.groups.map((g) => (g.jid === group.jid ? { ...g, settings } : g)) }))
+    patch({ ...before, ...change })
+    setSavingJid(group.jid)
+    try {
+      const updated = await adminApi.saveWhatsappGroupSettings(group.jid, change)
+      patch(updated.settings)
+    } catch (err) {
+      patch(before)
+      setError(err.message || 'Could not save the group settings.')
+    } finally {
+      setSavingJid(null)
     }
   }
 
@@ -220,11 +314,13 @@ function AdminWhatsApp() {
 
           <div className="flex flex-col gap-gutter">
             {shownGroups.map((group) => (
-              <div key={group.jid} className="p-stack-md rounded-xl bg-surface-container border border-outline flex items-center gap-3">
+              <div key={group.jid} className="p-stack-md rounded-xl bg-surface-container border border-outline">
+              <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-emerald-500">groups</span>
                 <div className="min-w-0 flex-grow">
                   <p className="font-body-md text-body-md font-semibold text-on-surface truncate">{group.name || 'Unnamed group'}</p>
                   <p className="font-label-sm text-label-sm text-on-surface-variant">
+                    {AUDIENCES.find((a) => a.key === (group.settings?.audience || 'campus'))?.label} •{' '}
                     {group.member_count ? `${group.member_count} members • ` : ''}
                     added {new Date(group.added_at).toLocaleDateString()}
                     {group.enabled ? '' : ' • muted'}
@@ -241,6 +337,17 @@ function AdminWhatsApp() {
                 </div>
                 <button
                   type="button"
+                  onClick={() => setOpenJid((j) => (j === group.jid ? null : group.jid))}
+                  aria-expanded={openJid === group.jid}
+                  aria-label={`Settings for ${group.name || 'this group'}`}
+                  className={`w-9 h-9 flex-none rounded-full flex items-center justify-center transition-colors ${
+                    openJid === group.jid ? 'bg-emerald-500/15 text-emerald-500' : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[22px]">tune</span>
+                </button>
+                <button
+                  type="button"
                   role="switch"
                   aria-checked={group.enabled}
                   aria-label={`Bro Paul active in ${group.name || 'this group'}`}
@@ -252,6 +359,10 @@ function AdminWhatsApp() {
                 >
                   <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${group.enabled ? 'translate-x-5' : ''}`} />
                 </button>
+              </div>
+              {openJid === group.jid && (
+                <GroupSettingsPanel group={group} saving={savingJid === group.jid} onChange={(change) => handleGroupSettings(group, change)} />
+              )}
               </div>
             ))}
           </div>
