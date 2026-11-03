@@ -8,9 +8,11 @@ import AdminNav from '../../components/layout/AdminNav'
 import { adminApi } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import { SettingsTab, FactsTab, SendTab, ActivityTab } from './WhatsAppControlTabs'
+import { ChatsTab } from './WhatsAppChatsTab'
 
 const TABS = [
   { key: 'groups', label: 'Groups', icon: 'groups' },
+  { key: 'chats', label: 'Chats', icon: 'forum' },
   { key: 'settings', label: 'Settings', icon: 'tune' },
   { key: 'facts', label: 'RCF Facts', icon: 'verified' },
   { key: 'send', label: 'Send', icon: 'send' },
@@ -43,10 +45,42 @@ const GROUP_POSTS = [
   { key: 'birthdays', label: 'Birthday wishes' },
 ]
 
-function GroupSettingsPanel({ group, saving, onChange }) {
+function GroupSettingsPanel({ group, saving, onChange, onIntroduce, introducing }) {
   const settings = group.settings || {}
+  const revealAi = settings.revealAi !== false
   return (
     <div className="mt-3 pt-3 border-t border-outline flex flex-col gap-stack-sm">
+      <button
+        type="button"
+        onClick={onIntroduce}
+        disabled={introducing}
+        className="rcf-press self-start flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 text-white font-label-md text-label-md font-semibold disabled:opacity-60"
+      >
+        <span className="material-symbols-outlined text-[18px]">waving_hand</span>
+        {introducing ? 'Asked him to introduce himself…' : 'Introduce himself now'}
+      </button>
+
+      <label className="flex items-center justify-between gap-3 py-1 cursor-pointer">
+        <span className="min-w-0">
+          <span className="block font-body-md text-body-md text-on-surface">Say he's an AI</span>
+          <span className="block font-label-sm text-label-sm text-on-surface-variant">
+            {revealAi
+              ? 'Introduces himself as the library\'s AI assistant.'
+              : 'Introduces himself as Bro Paul from the Library Department. If someone sincerely asks, he still answers honestly.'}
+          </span>
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={revealAi}
+          disabled={saving}
+          onClick={() => onChange({ revealAi: !revealAi })}
+          className={`relative w-11 h-6 flex-none rounded-full transition-colors disabled:opacity-50 ${revealAi ? 'bg-emerald-500' : 'bg-surface-container-highest border border-outline'}`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${revealAi ? 'translate-x-5' : ''}`} />
+        </button>
+      </label>
+
       <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Who is this group for?</p>
       <div className="flex flex-col gap-1.5">
         {AUDIENCES.map((a) => {
@@ -140,6 +174,8 @@ function AdminWhatsApp() {
   const [copiedJid, setCopiedJid] = useState(null)
   const [openJid, setOpenJid] = useState(null)
   const [savingJid, setSavingJid] = useState(null)
+  const [startingJid, setStartingJid] = useState(null)
+  const [introduced, setIntroduced] = useState({}) // jid -> true once asked
 
   const load = useCallback(
     () =>
@@ -213,6 +249,24 @@ function AdminWhatsApp() {
     }
   }
 
+  // A new group: start Bro Paul there, introducing himself first or not.
+  // An active group: introduce = he introduces himself again now.
+  const handleStart = async (group, introduce) => {
+    setStartingJid(group.jid)
+    try {
+      const updated = await adminApi.startWhatsappGroup(group.jid, introduce)
+      setData((prev) => ({
+        ...prev,
+        groups: prev.groups.map((g) => (g.jid === group.jid ? { ...g, enabled: updated.enabled, settings: updated.settings } : g)),
+      }))
+      if (introduce) setIntroduced((prev) => ({ ...prev, [group.jid]: true }))
+    } catch (err) {
+      setError(err.message || 'Could not start Bro Paul in that group.')
+    } finally {
+      setStartingJid(null)
+    }
+  }
+
   // Group ID for ALLOWED_GROUP_JID and the bot logs; copied in full.
   const handleCopyJid = async (jid) => {
     try {
@@ -226,9 +280,12 @@ function AdminWhatsApp() {
 
   // Search by name or by any part of the group ID (as shown in the bot logs).
   const search = groupSearch.trim().toLowerCase()
-  const shownGroups = (data?.groups || []).filter(
+  const matching = (data?.groups || []).filter(
     (g) => !search || (g.name || '').toLowerCase().includes(search) || g.jid.toLowerCase().includes(search)
   )
+  // Just added: Bro Paul stays silent there until you introduce or start him.
+  const newGroups = matching.filter((g) => g.settings?.started === false)
+  const shownGroups = matching.filter((g) => g.settings?.started !== false)
 
   const status = stateConfig[data?.state] || stateConfig.offline
 
@@ -311,6 +368,7 @@ function AdminWhatsApp() {
         {tab === 'facts' && <FactsTab />}
         {tab === 'send' && <SendTab groups={data?.groups || []} />}
         {tab === 'activity' && <ActivityTab />}
+        {tab === 'chats' && <ChatsTab />}
 
         {tab === 'groups' && (
         <section>
@@ -340,8 +398,56 @@ function AdminWhatsApp() {
             </label>
           )}
 
-          {data && data.groups.length > 0 && shownGroups.length === 0 && (
+          {data && data.groups.length > 0 && matching.length === 0 && (
             <p className="font-label-md text-label-md text-on-surface-variant mb-stack-sm">No group matches “{groupSearch}”.</p>
+          )}
+
+          {newGroups.length > 0 && (
+            <div className="mb-stack-md">
+              <h3 className="font-label-md text-label-md text-amber-500 uppercase tracking-wider mb-1">New groups • waiting for you</h3>
+              <p className="font-label-sm text-label-sm text-on-surface-variant mb-stack-sm">
+                Bro Paul was just added here and is staying silent. Set him up with ⚙️ after starting, or start him now.
+              </p>
+              <div className="flex flex-col gap-gutter">
+                {newGroups.map((group) => (
+                  <div key={group.jid} className="p-stack-md rounded-xl bg-amber-500/5 border border-amber-500/40">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-amber-500">group_add</span>
+                      <div className="min-w-0 flex-grow">
+                        <p className="font-body-md text-body-md font-semibold text-on-surface truncate">{group.name || 'Unnamed group'}</p>
+                        <p className="font-label-sm text-label-sm text-on-surface-variant">
+                          {group.member_count ? `${group.member_count} members • ` : ''}added {new Date(group.added_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={startingJid === group.jid}
+                        onClick={() => handleStart(group, true)}
+                        className="rcf-press flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 text-white font-label-md text-label-md font-semibold disabled:opacity-60"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">waving_hand</span>
+                        Introduce &amp; start
+                      </button>
+                      <button
+                        type="button"
+                        disabled={startingJid === group.jid}
+                        onClick={() => handleStart(group, false)}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-outline text-on-surface font-label-md text-label-md disabled:opacity-60"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+                        Start quietly
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {newGroups.length > 0 && shownGroups.length > 0 && (
+            <h3 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-stack-sm">Groups he's in</h3>
           )}
 
           <div className="flex flex-col gap-gutter">
@@ -393,7 +499,13 @@ function AdminWhatsApp() {
                 </button>
               </div>
               {openJid === group.jid && (
-                <GroupSettingsPanel group={group} saving={savingJid === group.jid} onChange={(change) => handleGroupSettings(group, change)} />
+                <GroupSettingsPanel
+                  group={group}
+                  saving={savingJid === group.jid}
+                  onChange={(change) => handleGroupSettings(group, change)}
+                  onIntroduce={() => handleStart(group, true)}
+                  introducing={startingJid === group.jid || !!introduced[group.jid]}
+                />
               )}
               </div>
             ))}

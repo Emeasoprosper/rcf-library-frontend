@@ -139,6 +139,31 @@ export function SettingsTab() {
           Outside these hours he still answers people who talk to him, but never starts posts (adverts, announcements, welcomes) on his own. Lagos time.
         </p>
       </Card>
+
+      <Card className="flex flex-col gap-stack-md">
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-emerald-500">forum</span>
+          <div className="min-w-0 flex-grow">
+            <p className="font-body-md text-body-md font-semibold text-on-surface">Save chats</p>
+            <p className="font-label-sm text-label-sm text-on-surface-variant">Private chats and the group messages he answers, viewable in the Chats tab.</p>
+          </div>
+          <Switch checked={!!settings.saveChats} onChange={(v) => save({ saveChats: v })} label="Save chats" />
+        </div>
+        <label className="flex flex-col gap-1">
+          <span className="font-label-sm text-label-sm text-on-surface-variant">Storage for saved chats</span>
+          <select value={settings.chatLogLimitMb} onChange={(e) => save({ chatLogLimitMb: Number(e.target.value) })} className={inputClass}>
+            {[25, 50, 100, 250, 500, 1000].map((mb) => <option key={mb} value={mb}>{mb >= 1000 ? `${mb / 1000} GB` : `${mb} MB`}</option>)}
+          </select>
+        </label>
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-amber-500">auto_delete</span>
+          <div className="min-w-0 flex-grow">
+            <p className="font-body-md text-body-md font-semibold text-on-surface">Delete the oldest when full</p>
+            <p className="font-label-sm text-label-sm text-on-surface-variant">Off: new messages stop being saved when full, until you download and clear some. Either way you get a notification at 80%.</p>
+          </div>
+          <Switch checked={!!settings.chatLogAutoDelete} onChange={(v) => save({ chatLogAutoDelete: v })} label="Delete the oldest when full" />
+        </div>
+      </Card>
       {saving && <p className="font-label-sm text-label-sm text-on-surface-variant">Saving…</p>}
       <Note error={error} ok={ok} />
     </div>
@@ -383,25 +408,63 @@ const KIND = {
   private: { icon: 'lock', color: 'text-sky-500', label: 'Private chat' },
   morning: { icon: 'wb_sunny', color: 'text-amber-500', label: 'Morning verse' },
   sticker: { icon: 'add_reaction', color: 'text-fuchsia-500', label: 'Sticker' },
+  featured: { icon: 'auto_stories', color: 'text-orange-500', label: 'Book of the day' },
+  intro: { icon: 'waving_hand', color: 'text-emerald-500', label: 'Introduction' },
+  prayer: { icon: 'church', color: 'text-violet-500', label: 'Prayed along' },
 }
+
+// Same groups as ACTIVITY_CATEGORIES in rcf-library-backend/src/routes/admin.js.
+const ACTIVITY_FILTERS = [
+  { key: '', label: 'All' },
+  { key: 'private', label: 'Private chats' },
+  { key: 'posts', label: 'His posts' },
+  { key: 'announcements', label: 'Announcements' },
+  { key: 'replies', label: 'Replies' },
+  { key: 'reactions', label: 'Reactions' },
+]
 
 export function ActivityTab() {
   const [items, setItems] = useState(null)
+  const [category, setCategory] = useState('')
 
   useEffect(() => {
-    const load = () => adminApi.listWhatsappActivity().then((res) => setItems(res.items || [])).catch(() => setItems((p) => p || []))
+    setItems(null)
+    const load = () => adminApi.listWhatsappActivity(category).then((res) => setItems(res.items || [])).catch(() => setItems((p) => p || []))
     load()
     const timer = setInterval(load, 20000)
     return () => clearInterval(timer)
-  }, [])
+  }, [category])
 
-  if (items === null) return <p className="text-on-surface-variant font-label-md">Loading…</p>
+  const filters = (
+    <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 mb-1">
+      {ACTIVITY_FILTERS.map((f) => (
+        <button
+          key={f.key}
+          type="button"
+          onClick={() => setCategory(f.key)}
+          className={`flex-none px-3.5 py-1.5 rounded-full font-label-md text-label-md transition-colors ${
+            category === f.key ? 'bg-emerald-500 text-white' : 'bg-surface-container border border-outline text-on-surface-variant'
+          }`}
+        >
+          {f.label}
+        </button>
+      ))}
+    </div>
+  )
+
+  if (items === null) return <div className="flex flex-col gap-2">{filters}<p className="text-on-surface-variant font-label-md">Loading…</p></div>
   if (items.length === 0) {
-    return <Card><p className="font-label-md text-label-md text-on-surface-variant">Nothing yet. Activity shows up here within a minute of Bro Paul doing something.</p></Card>
+    return (
+      <div className="flex flex-col gap-2">
+        {filters}
+        <Card><p className="font-label-md text-label-md text-on-surface-variant">Nothing here yet. Activity shows up within a minute of Bro Paul doing something.</p></Card>
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-2">
+      {filters}
       {items.map((a) => {
         const k = KIND[a.kind] || { icon: 'bolt', color: 'text-on-surface-variant', label: a.kind }
         return (

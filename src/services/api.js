@@ -420,7 +420,18 @@ export const adminApi = {
   sendWhatsappMessage: (jid, text) =>
     apiFetch('/admin/whatsapp/send', { method: 'POST', body: JSON.stringify({ jid, text }) }),
   listWhatsappOutbox: () => apiFetch('/admin/whatsapp/outbox'),
-  listWhatsappActivity: () => apiFetch('/admin/whatsapp/activity'),
+  listWhatsappActivity: (category) =>
+    apiFetch(`/admin/whatsapp/activity${category ? `?category=${encodeURIComponent(category)}` : ''}`),
+  // introduce = Bro Paul introduces himself there (also starts a new group).
+  startWhatsappGroup: (jid, introduce) =>
+    apiFetch(`/admin/whatsapp/groups/${encodeURIComponent(jid)}/start`, { method: 'POST', body: JSON.stringify({ introduce }) }),
+  listWhatsappChats: (type) => apiFetch(`/admin/whatsapp/chats${type ? `?type=${type}` : ''}`),
+  getWhatsappChatMessages: (jid, before) =>
+    apiFetch(`/admin/whatsapp/chats/${encodeURIComponent(jid)}/messages${before ? `?before=${before}` : ''}`),
+  deleteWhatsappChat: (jid) => apiFetch(`/admin/whatsapp/chats/${encodeURIComponent(jid)}`, { method: 'DELETE' }),
+  deleteAllWhatsappChats: () => apiFetch('/admin/whatsapp/chats', { method: 'DELETE' }),
+  getWhatsappChatStorage: () => apiFetch('/admin/whatsapp/chat-storage'),
+  exportWhatsappChats: () => apiFetch('/admin/whatsapp/chats-export'),
   setAnnouncementWhatsapp: (id, postToWhatsapp) =>
     apiFetch(`/admin/announcements/${id}/whatsapp`, { method: 'PATCH', body: JSON.stringify({ postToWhatsapp }) }),
   uploadAnnouncementAttachment: (file) => uploadAnnouncementAttachment(file),
