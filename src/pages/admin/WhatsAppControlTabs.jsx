@@ -48,7 +48,6 @@ const FEATURES = [
   { key: 'answerUntagged', icon: 'menu_book', title: 'Answer book requests without a tag', hint: '"Anyone has GST 101 past questions?" gets an answer even if nobody tags him.' },
   { key: 'morningPost', icon: 'wb_sunny', title: 'Morning posts in groups', hint: 'Every day from 7am, once per group: the Bible verse of the day and/or the study tip. Choose which in each group\'s ⚙️ settings.' },
   { key: 'stickers', icon: 'add_reaction', title: 'Stickers', hint: 'Uses your sticker pack at fitting moments (funny, birthdays, thanks...), at most one per chat every 20 minutes. Teach him by sending stickers to his number.' },
-  { key: 'featuredOnlyLicensed', icon: 'verified_user', title: 'Book of the day: only openly licensed books', hint: 'Only promotes public-domain and Creative Commons books (the ones added from the app\'s free-book search), so nothing copyrighted is advertised. Licensed books are always preferred, even with this off.' },
   { key: 'voiceReplies', icon: 'record_voice_over', title: 'Answer voice notes with his voice', hint: 'When someone sends him a voice note, he replies with a voice note (male voice). Links and search results still come as text.' },
   { key: 'privateChats', icon: 'chat', title: 'Reply to private chats', hint: 'Anyone who messages his number directly gets an answer, no tag needed. Up to 30 AI answers per person a day.' },
   { key: 'chimeIn', icon: 'forum', title: 'Join lively discussions', hint: 'When the chat is busy, he may add something useful. At most once an hour per group.' },
