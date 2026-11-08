@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { goBack } from '../../lib/backNav.js'
 import { useScrollDirection } from '../../hooks/useScrollDirection'
 import { useAuth } from '../../contexts/AuthContext'
 import { useHeaderAmbient } from '../../contexts/HeaderAmbientContext'
@@ -51,7 +52,7 @@ function TopAppBar({ title, rightIcons, showBack = false, titleRef, tabs, active
         <div className="flex items-center gap-3">
           {showBack ? (
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => goBack(navigate)}
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors flex-none md:bg-surface-container-high md:border md:border-outline ${ambient ? 'hover:bg-white/10' : 'hover:bg-surface-container-high'}`}
               aria-label="Go back"
             >

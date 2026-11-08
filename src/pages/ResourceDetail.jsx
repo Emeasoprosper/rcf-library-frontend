@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { goBack } from '../lib/backNav.js'
 import { useIsDesktopViewport } from '../hooks/useIsDesktopViewport'
 import { resourcesApi } from '../services/api'
 import HorizontalRail from '../components/resource/HorizontalRail'
@@ -263,7 +264,7 @@ function ResourceDetail() {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
         <img src="/somethingunexpectedHappened.png" alt="" className="w-36 h-36 object-contain" />
         <p className="text-on-surface-variant font-body-md">This resource couldn't be found.</p>
-        <button onClick={() => navigate(-1)} className="text-primary font-label-md">Go back</button>
+        <button onClick={() => goBack(navigate)} className="text-primary font-label-md">Go back</button>
       </div>
     )
   }
@@ -303,7 +304,7 @@ function ResourceDetail() {
           }}
         />
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => goBack(navigate)}
           className="absolute top-6 left-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center"
           aria-label="Back"
         >

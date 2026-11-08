@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { goBack } from '../lib/backNav.js'
 import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import HorizontalRail from '../components/resource/HorizontalRail'
@@ -425,7 +426,7 @@ function CollectionPage() {
       <TopAppBar
         title={collection.title}
         showBack
-        onBack={() => navigate(-1)}
+        onBack={() => goBack(navigate)}
         titleRef={mobileHeaderTitleRef}
         tabs={TABS}
         activeTab={activeTab}
@@ -456,7 +457,7 @@ function CollectionPage() {
         />
         <div className="flex items-center gap-3 h-10">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => goBack(navigate)}
             className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface hover:bg-white/10 flex-none pointer-events-auto"
             aria-label="Go back"
           >

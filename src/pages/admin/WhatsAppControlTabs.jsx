@@ -414,6 +414,7 @@ const KIND = {
   prayer: { icon: 'church', color: 'text-violet-500', label: 'Prayed along' },
   cleanup: { icon: 'delete_sweep', color: 'text-red-400', label: 'Cleaned up old posts' },
   left: { icon: 'group_remove', color: 'text-on-surface-variant', label: 'Removed from a group' },
+  request: { icon: 'inbox', color: 'text-amber-500', label: 'Material request' },
 }
 
 // Same groups as ACTIVITY_CATEGORIES in rcf-library-backend/src/routes/admin.js.

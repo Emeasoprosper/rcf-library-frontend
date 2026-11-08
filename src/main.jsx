@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import './lib/pushSound.js'
 import { AuthProvider } from './contexts/AuthContext.jsx'
+import { seedBackHistory } from './lib/backNav.js'
 
 // Captured as early as possible — beforeinstallprompt fires only once per
 // page load, often before React finishes mounting InstallPrompt.jsx. If
@@ -28,6 +29,10 @@ window.addEventListener('appinstalled', () => {
 
 // Tells the self-repair script in index.html that the app code loaded.
 window.__rcfStarted = true
+
+// Opened from a link (e.g. a resource shared on WhatsApp): put the page's
+// parents behind it so Back goes resource -> Library -> Home, then exits.
+seedBackHistory()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
