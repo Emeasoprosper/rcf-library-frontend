@@ -34,6 +34,39 @@ export default defineConfig({
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
+        // "RCF Library" in the phone's / computer's Share menu for documents:
+        // sharing a file to it opens the upload page with the file attached
+        // (handled in public/push-sw.js, picked up by SubmitResource.jsx).
+        share_target: {
+          action: '/share-target',
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url',
+            files: [
+              {
+                name: 'file',
+                accept: [
+                  'application/pdf', '.pdf',
+                  'application/msword', '.doc',
+                  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.docx',
+                  'application/vnd.ms-powerpoint', '.ppt',
+                  'application/vnd.openxmlformats-officedocument.presentationml.presentation', '.pptx',
+                  'application/vnd.ms-excel', '.xls',
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.xlsx',
+                  'application/epub+zip', '.epub',
+                  'text/plain', '.txt',
+                  'application/rtf', '.rtf',
+                  'image/*',
+                  'audio/*',
+                  'video/*',
+                ],
+              },
+            ],
+          },
+        },
         icons: [
           {
             src: '/android-chrome-192x192.png',

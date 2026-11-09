@@ -61,3 +61,40 @@ self.addEventListener('notificationclick', (event) => {
     })()
   )
 })
+// ---------- Share to the app ----------
+// The app is in the phone's Share menu for documents (manifest share_target
+// in vite.config.js). A share arrives here as a POST to /share-target: the
+// files are kept in a cache and the upload page opens, which picks them up
+// (src/lib/sharedFiles.js). Registered here, before Workbox's own handlers.
+const SHARED_CACHE = 'rcf-shared-files'
+const MAX_SHARED_FILES = 10
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'POST') return
+  if (new URL(event.request.url).pathname !== '/share-target') return
+  event.respondWith(
+    (async () => {
+      try {
+        const form = await event.request.formData()
+        const files = form.getAll('file').filter((f) => f && typeof f === 'object' && f.size > 0)
+        await caches.delete(SHARED_CACHE)
+        const cache = await caches.open(SHARED_CACHE)
+        let i = 0
+        for (const f of files.slice(0, MAX_SHARED_FILES)) {
+          await cache.put(
+            `/shared-file/${i++}`,
+            new Response(f, {
+              headers: {
+                'Content-Type': f.type || 'application/octet-stream',
+                'X-File-Name': encodeURIComponent(f.name || `shared-file-${i}`),
+              },
+            })
+          )
+        }
+      } catch {
+        // Nothing usable came through: the upload page still opens.
+      }
+      return Response.redirect(new URL('/contribute/submit', self.location.origin).href, 303)
+    })()
+  )
+})

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/layout/TopAppBar'
-import MultiFileUpload from '../components/ui/MultiFileUpload'
+import MultiFileUpload, { makeUploadEntry } from '../components/ui/MultiFileUpload'
 import { uploadResourceFile, resourcesApi } from '../services/api'
 import { createRipple } from '../lib/ripple'
+import { takeSharedFiles } from '../lib/sharedFiles'
 
 const resourceTypes = [
   {
@@ -83,6 +84,17 @@ function SubmitResource() {
   const [progress, setProgress] = useState(0)
   const [uploadError, setUploadError] = useState('')
   const [categories, setCategories] = useState([])
+  // Files shared into the app from the phone's Share menu: shown at Step 1,
+  // and already attached once they pick what kind of material it is.
+  const [shared, setShared] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    takeSharedFiles().then((list) => {
+      if (!cancelled && list.length) setShared(list)
+    })
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     resourcesApi
@@ -107,7 +119,8 @@ function SubmitResource() {
     createRipple(event)
     window.setTimeout(() => {
       setSelectedType(type.id)
-      setFiles([])
+      setFiles(shared.map(makeUploadEntry))
+      setShared([])
       setPhase('upload')
     }, 160)
   }
@@ -202,9 +215,25 @@ function SubmitResource() {
 
       {phase === 'type' && (
         <main className="pb-32 pt-[68px] md:pt-24 px-margin-mobile">
+          {shared.length > 0 && (
+            <section className="mb-stack-md p-stack-md rounded-xl border border-primary/40 bg-primary/10 flex items-start gap-3">
+              <span className="material-symbols-outlined text-primary flex-none">upload_file</span>
+              <div className="min-w-0">
+                <p className="font-label-md text-label-md text-on-surface">
+                  {shared.length === 1 ? 'Ready to upload:' : `${shared.length} files ready to upload:`}
+                </p>
+                {shared.slice(0, 3).map((f) => (
+                  <p key={f.name} className="font-label-sm text-label-sm text-on-surface-variant truncate">{f.name}</p>
+                ))}
+                {shared.length > 3 && <p className="font-label-sm text-label-sm text-on-surface-variant">and {shared.length - 3} more</p>}
+              </div>
+            </section>
+          )}
           <section className="mb-stack-lg">
             <p className="font-body-md text-body-md text-on-surface-variant">
-              What kind of material are you contributing? This decides which file types we'll ask for next.
+              {shared.length > 0
+                ? `What kind of material ${shared.length === 1 ? 'is it' : 'are they'}? Tap one and your ${shared.length === 1 ? 'file is' : 'files are'} added straight away.`
+                : "What kind of material are you contributing? This decides which file types we'll ask for next."}
             </p>
           </section>
 

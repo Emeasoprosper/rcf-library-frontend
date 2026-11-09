@@ -4,7 +4,7 @@ import TopAppBar from '../components/layout/TopAppBar'
 import BottomNav from '../components/layout/BottomNav'
 import LibraryLoader from '../components/ui/LibraryLoader'
 import { communityApi } from '../services/api'
-import { getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush } from '../lib/pushNotifications'
+import { getPushSubscriptionStatus, askPhoneForPush, unsubscribeFromPush } from '../lib/pushNotifications'
 
 const OPTIONS = [
   { key: 'daily', icon: 'auto_awesome', title: 'Verse of the day', hint: 'A Bible verse and a study tip every morning at 7am.' },
@@ -49,11 +49,17 @@ function NotificationSettings() {
   }, [])
 
   const handleEnable = async () => {
+    // The phone's Allow dialog is asked for first, straight from the tap
+    // (askPhoneForPush), before anything else, so it reliably pops up.
+    const asking = askPhoneForPush()
     setBusy(true)
     setError('')
     try {
-      await subscribeToPush()
-      setStatus('subscribed')
+      const result = await asking
+      if (result === 'granted') setStatus('subscribed')
+      else if (result === 'denied') setError('Notifications are blocked for this app. Allow them in your phone or browser settings, then try again.')
+      else if (result === 'unsupported') setError('This device or browser does not support notifications. On iPhone, add the app to your Home Screen first.')
+      else setError('Notifications were not turned on.')
     } catch (err) {
       setError(err.message || 'Could not turn on notifications.')
     } finally {

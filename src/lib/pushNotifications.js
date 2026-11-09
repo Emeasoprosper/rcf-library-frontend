@@ -23,10 +23,28 @@ export async function getPushSubscriptionStatus() {
   return sub ? 'subscribed' : 'unsubscribed'
 }
 
+// The phone's own Allow / Block dialog. Must be called straight from a tap,
+// with nothing awaited before it: phones (iPhones especially) and some
+// browsers only show the dialog while the tap is "fresh", and silently
+// ignore the request if anything was waited on first.
+export function requestPhonePermission() {
+  if (typeof Notification === 'undefined') return Promise.resolve('unsupported')
+  if (Notification.permission !== 'default') return Promise.resolve(Notification.permission)
+  try {
+    // Older Safari only supports the callback form.
+    return new Promise((resolve) => {
+      const maybe = Notification.requestPermission(resolve)
+      if (maybe && typeof maybe.then === 'function') maybe.then(resolve, () => resolve(Notification.permission))
+    })
+  } catch {
+    return Promise.resolve(Notification.permission)
+  }
+}
+
 export async function subscribeToPush() {
   if (!(await isPushSupported())) throw new Error('Push notifications are not supported on this device/browser.')
 
-  const permission = await Notification.requestPermission()
+  const permission = Notification.permission === 'default' ? await requestPhonePermission() : Notification.permission
   if (permission !== 'granted') throw new Error('Notification permission was not granted.')
 
   const reg = await navigator.serviceWorker.ready
@@ -43,16 +61,22 @@ export async function subscribeToPush() {
 // dialog (no in-app popup). If the phone already allows notifications but this
 // device isn't subscribed yet (new phone, cleared data), it subscribes quietly.
 // Returns the permission that ends up set: 'granted' | 'denied' | 'default' | 'unsupported'.
-export async function askPhoneForPush() {
-  if (!(await isPushSupported()) || typeof Notification === 'undefined') return 'unsupported'
-  if (Notification.permission === 'denied') return 'denied'
-  if (Notification.permission === 'granted' && (await getPushSubscriptionStatus()) === 'subscribed') return 'granted'
-  try {
-    await subscribeToPush()
-    return 'granted'
-  } catch {
-    return Notification.permission
+export function askPhoneForPush() {
+  if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return Promise.resolve('unsupported')
   }
+  if (Notification.permission === 'denied') return Promise.resolve('denied')
+  // Ask first, synchronously inside the tap; subscribe afterwards.
+  const asked = requestPhonePermission()
+  return asked.then(async (permission) => {
+    if (permission !== 'granted') return permission
+    try {
+      if ((await getPushSubscriptionStatus()) !== 'subscribed') await subscribeToPush()
+      return 'granted'
+    } catch {
+      return Notification.permission
+    }
+  })
 }
 
 export async function unsubscribeFromPush() {

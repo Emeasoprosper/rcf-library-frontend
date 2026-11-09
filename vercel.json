@@ -8,6 +8,7 @@
     { "source": "/robots.txt", "destination": "/api/robots" },
     { "source": "/library/:id", "destination": "/api/book?id=:id" },
     { "source": "/s/:token", "destination": "/api/book?token=:token" },
+    { "source": "/share-target", "destination": "/api/share-target" },
     { "source": "/collections/:id", "destination": "/api/collection?id=:id" },
     { "source": "/((?!api/|backend/|assets/).*)", "destination": "/index.html" }
   ]
