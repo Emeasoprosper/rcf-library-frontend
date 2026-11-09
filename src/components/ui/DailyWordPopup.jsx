@@ -28,7 +28,7 @@ function DeckCard({ cardRef, label, text, by, drag, leaving }) {
       }}
     >
       <span className="w-11 h-11 flex-none rounded-full overflow-hidden ring-2 ring-black/5 bg-[#16235e]">
-        <img src="/android-chrome-192x192.png" alt="" className="w-full h-full object-cover" draggable="false" />
+        <img src="/android-chrome-192x192.png?v=2" alt="" className="w-full h-full object-cover" draggable="false" />
       </span>
       <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#16235e]/50">{label}</p>
       <div data-fit-region className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">

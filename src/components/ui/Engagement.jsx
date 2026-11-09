@@ -315,7 +315,7 @@ function QuoteCard({ tone, label, text, by, id, compact = false }) {
       } ${navy ? 'bg-[#16235e] text-white' : 'bg-white text-[#3f3f46] border border-black/5'}`}
     >
       <span className={`${compact ? 'w-8 h-8' : 'w-11 h-11 md:w-12 md:h-12'} flex-none rounded-full overflow-hidden ring-2 ${navy ? 'ring-white/30 bg-white' : 'ring-black/5 bg-[#16235e]'}`}>
-        <img src="/android-chrome-192x192.png" alt="" className="w-full h-full object-cover" />
+        <img src="/android-chrome-192x192.png?v=2" alt="" className="w-full h-full object-cover" />
       </span>
       <p className={`${compact ? 'mt-1.5 text-[9px]' : 'mt-2 text-[10px]'} font-semibold uppercase tracking-[0.2em] ${navy ? 'text-white/55' : 'text-[#16235e]/50'}`}>{label}</p>
       <div data-fit-region className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
