@@ -53,8 +53,38 @@ async function fetchWithTimeout(url, ms) {
   }
 }
 
+// Share-button links (/s/:token): the backend's /s/:token answers with a
+// redirect to /library/:id, which tells us which book it is.
+async function idFromShareToken(token) {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), BACKEND_FETCH_TIMEOUT_MS)
+    const resp = await fetch(`${BACKEND_ORIGIN}/s/${encodeURIComponent(token)}`, { redirect: 'manual', signal: controller.signal })
+    clearTimeout(timer)
+    const match = (resp.headers.get('location') || '').match(/\/library\/([^/?#]+)/)
+    return match ? match[1] : null
+  } catch {
+    return null
+  }
+}
+
 export default async function handler(req, res) {
-  const { id } = req.query
+  let { id } = req.query
+  const { token } = req.query
+
+  // /s/:token: show the same preview as the book's own page. People still
+  // land on /s/:token in the app, which signs them in and opens the book.
+  if (!id && token && !Array.isArray(token)) {
+    id = await idFromShareToken(token)
+    if (!id) {
+      const proto = req.headers['x-forwarded-proto'] || 'https'
+      const shell = await fetch(`${proto}://${req.headers.host}/index.html`).then((r) => r.text()).catch(() => '')
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      res.setHeader('Cache-Control', 'no-store')
+      res.status(shell ? 200 : 502).send(shell || 'Unable to load app shell.')
+      return
+    }
+  }
 
   if (!id || Array.isArray(id)) {
     res.status(400).send('Bad request')
