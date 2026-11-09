@@ -34,10 +34,6 @@ window.__rcfStarted = true
 // parents behind it so Back goes resource -> Library -> Home, then exits.
 seedBackHistory()
 
-// The opening screen (index.html, installed app only) fades out once the
-// app has drawn its first screen behind it.
-requestAnimationFrame(() => requestAnimationFrame(() => window.__hideBootSplash?.()))
-
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>

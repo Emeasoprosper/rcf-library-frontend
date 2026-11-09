@@ -64,55 +64,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!--
-      Opening screen when the installed app starts: the logo (same place and
-      background as the phone's own launch screen, so the switch is seamless)
-      and "Powered by Aurenix" at the bottom. Shown only in the installed app,
-      once per launch; main.jsx fades it out when the app is ready.
-    -->
-    <div id="boot-splash" aria-hidden="true">
-      <img class="boot-logo" src="/brand/rcf-logo-dark.png" alt="" />
-      <div class="boot-powered">
-        <span>Powered by</span>
-        <img src="/brand/aurenix-dark.png" alt="Aurenix" />
-      </div>
-    </div>
-    <style>
-      #boot-splash { display: none; position: fixed; inset: 0; z-index: 2147483000; background: #0A0A0A;
-        flex-direction: column; align-items: center; justify-content: center; transition: opacity .35s ease; }
-      #boot-splash.show { display: flex; }
-      #boot-splash.hide { opacity: 0; pointer-events: none; }
-      #boot-splash .boot-logo { width: min(46vw, 230px); height: auto; animation: boot-in .5s ease both; }
-      #boot-splash .boot-powered { position: absolute; bottom: max(48px, calc(env(safe-area-inset-bottom) + 32px));
-        display: flex; flex-direction: column; align-items: center; gap: 10px; animation: boot-in .6s .15s ease both; }
-      #boot-splash .boot-powered span { font: 500 11px/1 Inter, system-ui, sans-serif; letter-spacing: .18em;
-        text-transform: uppercase; color: #8a8f98; }
-      #boot-splash .boot-powered img { height: 26px; width: auto; }
-      @keyframes boot-in { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
-      @media (prefers-reduced-motion: reduce) { #boot-splash .boot-logo, #boot-splash .boot-powered { animation: none } }
-    </style>
-    <script>
-      ;(function () {
-        var el = document.getElementById('boot-splash')
-        var installed = window.matchMedia('(display-mode: standalone)').matches ||
-          window.matchMedia('(display-mode: fullscreen)').matches || window.navigator.standalone === true
-        var shown = false
-        try { shown = sessionStorage.getItem('rcf_boot_splash') === '1'; sessionStorage.setItem('rcf_boot_splash', '1') } catch (e) {}
-        if (!installed || shown) { el.parentNode.removeChild(el); return }
-        el.className = 'show'
-        window.__bootSplashAt = Date.now()
-        window.__hideBootSplash = function () {
-          if (!el.parentNode) return
-          var wait = Math.max(0, 1300 - (Date.now() - window.__bootSplashAt))
-          setTimeout(function () {
-            el.className = 'show hide'
-            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el) }, 400)
-          }, wait)
-        }
-        // Never stay stuck on it, whatever happens with the app.
-        setTimeout(window.__hideBootSplash, 6000)
-      })()
-    </script>
     <script>
       // Self-repair. After an update, a phone can keep an old saved copy of
       // this page that points at app files which no longer exist, and the
