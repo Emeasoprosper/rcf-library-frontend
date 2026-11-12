@@ -120,51 +120,139 @@ export function WobblyProgress({ pct = 0, label = 'Uploading…' }) {
   )
 }
 
-// ---------- Rocket launch: the "it's done" popup after an upload ----------
+// ---------- Rocket: the full-screen "upload done" scene ----------
+// Glossy white-lavender rocket with purple shading, a round window and a long
+// flickering orange flame.
 function Rocket() {
   return (
-    <svg width="56" height="104" viewBox="0 0 56 104" aria-hidden="true">
+    <svg width="92" height="230" viewBox="0 0 92 230" aria-hidden="true" className="overflow-visible">
+      <defs>
+        <linearGradient id="rcfRkBody" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#c4b5fd" />
+          <stop offset="38%" stopColor="#ffffff" />
+          <stop offset="62%" stopColor="#f5f3ff" />
+          <stop offset="100%" stopColor="#8b5cf6" />
+        </linearGradient>
+        <linearGradient id="rcfRkFin" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ede9fe" />
+          <stop offset="100%" stopColor="#a78bfa" />
+        </linearGradient>
+        <linearGradient id="rcfRkFlame" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fff7ed" />
+          <stop offset="18%" stopColor="#fde68a" />
+          <stop offset="45%" stopColor="#fb923c" />
+          <stop offset="80%" stopColor="#f97316" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+        </linearGradient>
+        <radialGradient id="rcfRkWin" cx="0.35" cy="0.35" r="0.7">
+          <stop offset="0%" stopColor="#e0e7ff" />
+          <stop offset="55%" stopColor="#6366f1" />
+          <stop offset="100%" stopColor="#312e81" />
+        </radialGradient>
+        <filter id="rcfRkGlow" x="-60%" y="-20%" width="220%" height="160%">
+          <feGaussianBlur stdDeviation="5" />
+        </filter>
+      </defs>
+      {/* flame: soft glow behind, sharp core in front, both flicker */}
       <g className="rcf-flame-a">
-        <path d="M18 72 Q28 104 38 72 Z" fill="#f97316" />
+        <path d="M30 128 Q46 236 62 128 Z" fill="url(#rcfRkFlame)" filter="url(#rcfRkGlow)" opacity="0.9" />
       </g>
       <g className="rcf-flame-b">
-        <path d="M22 72 Q28 94 34 72 Z" fill="#facc15" />
+        <path d="M35 128 Q46 210 57 128 Z" fill="url(#rcfRkFlame)" />
       </g>
-      <path d="M28 2 C44 16 46 44 40 72 L16 72 C10 44 12 16 28 2 Z" fill="#f8fafc" />
-      <path d="M28 2 C36 9 40 18 42 28 L14 28 C16 18 20 9 28 2 Z" fill="#ef4444" />
-      <circle cx="28" cy="42" r="7" fill="#38bdf8" stroke="#0f172a" strokeWidth="2.5" />
-      <path d="M16 56 L4 72 L16 70 Z" fill="#ef4444" />
-      <path d="M40 56 L52 72 L40 70 Z" fill="#ef4444" />
-      <rect x="25" y="58" width="6" height="14" rx="2" fill="#cbd5e1" />
+      {/* fins */}
+      <path d="M26 92 C14 104 8 118 8 134 L28 124 Z" fill="url(#rcfRkFin)" />
+      <path d="M66 92 C78 104 84 118 84 134 L64 124 Z" fill="url(#rcfRkFin)" />
+      {/* body */}
+      <path d="M46 4 C70 26 74 70 66 128 L26 128 C18 70 22 26 46 4 Z" fill="url(#rcfRkBody)" />
+      {/* nozzle */}
+      <path d="M32 128 L60 128 L56 138 L36 138 Z" fill="#a78bfa" />
+      {/* window ring + glass + shine */}
+      <circle cx="46" cy="58" r="13" fill="#ede9fe" />
+      <circle cx="46" cy="58" r="9.5" fill="url(#rcfRkWin)" />
+      <circle cx="42.5" cy="54.5" r="2.6" fill="#fff" opacity="0.85" />
+      {/* long highlight down the body */}
+      <path d="M38 22 C33 44 32 84 34 120" stroke="#fff" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.7" />
+      {/* centre fin */}
+      <path d="M46 100 L49 132 L43 132 Z" fill="#a78bfa" />
     </svg>
   )
 }
 
+// Full screen: the rocket keeps flying in the middle while stars stream
+// past (we're "keeping pace" with it). Finish: it sinks back a little, then
+// blasts off out of the top and we go back.
 export function RocketSuccess({ title, body, actionLabel, onAction }) {
-  const [stars] = useState(() =>
-    Array.from({ length: 22 }, () => ({ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, delay: `${Math.random() * 2}s`, size: Math.random() > 0.7 ? 3 : 2 }))
+  const [launching, setLaunching] = useState(false)
+  const [streaks] = useState(() =>
+    Array.from({ length: 46 }, () => ({
+      left: `${Math.random() * 100}%`,
+      len: 18 + Math.random() * 70,
+      dur: 0.7 + Math.random() * 1.6,
+      delay: -Math.random() * 2.5,
+      op: 0.25 + Math.random() * 0.6,
+    }))
   )
+  const [dots] = useState(() =>
+    Array.from({ length: 30 }, () => ({ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, delay: `${Math.random() * 2}s`, size: Math.random() > 0.75 ? 3 : 1.5 }))
+  )
+
+  const finish = () => {
+    if (launching) return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce) return onAction()
+    setLaunching(true)
+    setTimeout(onAction, 1500)
+  }
+
   return (
-    <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="rcf-pop w-full max-w-sm rounded-[28px] bg-surface-container border border-outline shadow-2xl overflow-hidden">
-        <div className="relative h-52 overflow-hidden bg-gradient-to-b from-[#050a24] via-[#121a4a] to-[#2b2f77]">
-          {stars.map((s, i) => (
-            <span key={i} className="rcf-twinkle absolute rounded-full bg-white" style={{ left: s.left, top: s.top, width: s.size, height: s.size, animationDelay: s.delay }} />
-          ))}
-          <span className="absolute -right-6 -top-6 w-20 h-20 rounded-full bg-amber-100/90 shadow-[0_0_40px_rgba(253,230,138,0.6)]" />
-          {/* rocket travels from below the panel up and out of the top */}
-          <div className="rcf-rocket-up absolute left-1/2 bottom-0 -ml-7">
-            <Rocket />
-            {[0, 1, 2, 3].map((i) => (
-              <span key={i} className="rcf-smoke absolute left-1/2 top-[96px] w-5 h-5 -ml-2.5 rounded-full bg-white/50" style={{ animationDelay: `${i * 0.12}s` }} />
-            ))}
-          </div>
-          <div className="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-[#2b2f77] to-transparent" />
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className={`fixed inset-0 z-[300] overflow-hidden bg-[radial-gradient(ellipse_at_50%_35%,#2a2470_0%,#0d0f33_55%,#04051a_100%)] ${launching ? 'rcf-warp' : ''}`}
+    >
+      {/* far stars twinkling */}
+      {dots.map((s, i) => (
+        <span key={`d${i}`} className="rcf-twinkle absolute rounded-full bg-white" style={{ left: s.left, top: s.top, width: s.size, height: s.size, animationDelay: s.delay }} />
+      ))}
+      {/* speed streaks flowing down past the rocket */}
+      {streaks.map((s, i) => (
+        <span
+          key={`s${i}`}
+          className="rcf-streak absolute top-0 w-[2px] rounded-full bg-gradient-to-b from-transparent to-white"
+          style={{ left: s.left, height: s.len, opacity: s.op, animationDuration: `${s.dur}s`, animationDelay: `${s.delay}s` }}
+        />
+      ))}
+      {/* purple glow under the rocket */}
+      <div className="absolute left-1/2 top-[44%] -translate-x-1/2 w-72 h-72 rounded-full bg-violet-500/25 blur-3xl" />
+
+      {/* the rocket, flying in place */}
+      <div className="absolute left-1/2 top-[10%] sm:top-[12%] -translate-x-1/2">
+        <div className={launching ? 'rcf-rocket-blastoff' : 'rcf-rocket-cruise'}>
+          <Rocket />
         </div>
-        <div className="p-6 text-center">
-          <h2 className="font-display text-[22px] font-extrabold text-on-surface">{title}</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-2">{body}</p>
-          <button onClick={onAction} className="rcf-press mt-5 w-full h-12 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-semibold">
+      </div>
+
+      {/* write-up and Finish */}
+      <div
+        className={`absolute inset-x-0 bottom-0 px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-24 bg-gradient-to-t from-[#04051a] via-[#04051a]/85 to-transparent text-center transition-all duration-500 ${
+          launching ? 'opacity-0 translate-y-6' : 'opacity-100'
+        }`}
+      >
+        <div className="max-w-sm mx-auto rcf-rise">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-400/15 text-emerald-300 font-label-sm text-label-sm mb-3">
+            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+            Upload successful
+          </span>
+          <h2 className="font-display text-[28px] leading-tight font-extrabold text-white">{title}</h2>
+          <p className="font-body-md text-body-md text-white/70 mt-2">{body}</p>
+          <button
+            onClick={finish}
+            disabled={launching}
+            className="rcf-press mt-6 w-full h-14 rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-orange-400 text-white font-label-lg text-label-lg font-bold shadow-[0_10px_30px_rgba(168,85,247,0.45)] flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]">rocket_launch</span>
             {actionLabel}
           </button>
         </div>

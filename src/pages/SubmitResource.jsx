@@ -185,13 +185,13 @@ function SubmitResource() {
     return (
       <div className="min-h-screen bg-background">
         <RocketSuccess
-          title="Launched for review! 🚀"
+          title="Awaiting admin review"
           body={
             files.length > 1
-              ? `Your ${files.length} resources are now with our reviewers. You'll be notified as each is approved.`
-              : "Your resource is now with our reviewers. You'll be notified once it's approved."
+              ? `Your ${files.length} resources are on their way to the admins. You'll be notified as each one is approved.`
+              : "Your resource is on its way to the admins. You'll be notified once it's approved."
           }
-          actionLabel="Back to Contribute"
+          actionLabel="Finish"
           onAction={() => navigate('/contribute')}
         />
       </div>
