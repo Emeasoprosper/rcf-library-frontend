@@ -79,12 +79,15 @@ function SavedAnimation({ rect, title, onDone }) {
   const safeWrapRef = useRef(null)
   const doorRef = useRef(null)
   const dialRef = useRef(null)
-  // flying -> locked -> thinking (the cloud stays until they close it)
+  // flying -> locked (door shut, check pops) -> leaving (safe shrinks away)
+  // -> thinking (the thought cloud, on its own, until they close it).
+  // Each step is scheduled from the moment the book lands, in order, so a
+  // later step can never be overwritten by an earlier one (that race left
+  // the safe stuck on screen with no cloud).
   const [stage, setStage] = useState('flying')
   const [closing, setClosing] = useState(false)
 
-  // Cloud shrinks back into its bubbles, the bubbles pop away in reverse,
-  // then the safe leaves.
+  // Cloud shrinks back into its bubbles, the bubbles pop away in reverse.
   const dismiss = (then) => {
     if (closing) return
     setClosing(true)
@@ -99,8 +102,7 @@ function SavedAnimation({ rect, title, onDone }) {
     const book = bookRef.current
     if (!safe || !book) return undefined
     const timers = []
-    // The thought cloud puffs out shortly after the lock clicks.
-    const finish = () => timers.push(setTimeout(() => setStage('thinking'), 420))
+    const later = (ms, fn) => timers.push(setTimeout(fn, ms))
 
     if (reduceMotion()) {
       doorRef.current.style.transform = 'rotateY(0deg)'
@@ -141,8 +143,9 @@ function SavedAnimation({ rect, title, onDone }) {
       })
       dialRef.current?.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(270deg)' }], { duration: 520, delay: 300, easing: 'cubic-bezier(0.3,1.4,0.5,1)', fill: 'forwards' })
       safe.animate([{ transform: 'none' }, { transform: 'scale(1.08) rotate(-2deg)' }, { transform: 'scale(0.98) rotate(1deg)' }, { transform: 'none' }], { duration: 420, delay: 300 })
-      timers.push(setTimeout(() => setStage('locked'), 650))
-      finish()
+      later(650, () => setStage('locked'))      // check + sparkles
+      later(1700, () => setStage('leaving'))    // safe shrinks away
+      later(2150, () => setStage('thinking'))   // then the thought cloud
     }
     return () => {
       fly.cancel()
@@ -151,7 +154,8 @@ function SavedAnimation({ rect, title, onDone }) {
   }, [rect])
 
   const thinking = stage === 'thinking'
-  const locked = stage !== 'flying'
+  const locked = stage === 'locked'
+  const safeGone = stage === 'leaving' || thinking
 
   return (
     <div
@@ -172,8 +176,14 @@ function SavedAnimation({ rect, title, onDone }) {
         <span className="absolute left-1 top-1 bottom-1 w-1 rounded-full bg-black/15" />
       </div>
 
-      <div className={`absolute left-1/2 -translate-x-1/2 bottom-[112px] md:bottom-16 flex flex-col items-center transition-all duration-300 ${closing ? 'opacity-0 translate-y-4 delay-500' : ''}`}>
-        {thinking && <ThoughtCloud title={title} closing={closing} onClose={() => dismiss()} onOpen={() => dismiss(() => navigate('/downloads'))} />}
+      {/* the thought cloud, centred, once the safe has gone */}
+      {thinking && (
+        <div className="absolute inset-0 flex items-center justify-center px-4">
+          <ThoughtCloud title={title} closing={closing} onClose={() => dismiss()} onOpen={() => dismiss(() => navigate('/downloads'))} />
+        </div>
+      )}
+
+      <div className={`absolute left-1/2 -translate-x-1/2 bottom-[112px] md:bottom-16 flex flex-col items-center ${safeGone ? 'rcf-safe-leave' : ''}`}>
         <div ref={safeWrapRef} className="relative">
           <Safe doorRef={doorRef} dialRef={dialRef} />
           {locked && (
@@ -192,9 +202,10 @@ function SavedAnimation({ rect, title, onDone }) {
   )
 }
 
-// Comic thought cloud above the safe: three bubbles grow out of the safe one
-// after another, then the cloud puffs out of the last one. Closing plays it
-// backwards. Shown after every download so nobody wonders where it went.
+// Comic thought cloud, shown once the safe has gone: a small bubble, a bigger
+// one, a bigger one again, then the biggest (the cloud with the words) puffs
+// out. Closing plays it backwards. Shown after every download so nobody
+// wonders where it went.
 const CLOUD_FONT = 'https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap'
 const PUFFS = [
   'left-5 -top-6 w-16 h-16',
@@ -227,15 +238,15 @@ function ThoughtCloud({ title, closing, onClose, onOpen }) {
 
   // in: small -> medium -> big bubble, then the cloud. out: the reverse.
   const bubbles = [
-    { size: 24, shift: 46, inDelay: 220, outDelay: 200 },
-    { size: 15, shift: 26, inDelay: 110, outDelay: 320 },
+    { size: 26, shift: 46, inDelay: 400, outDelay: 200 },
+    { size: 16, shift: 26, inDelay: 200, outDelay: 320 },
     { size: 9, shift: 10, inDelay: 0, outDelay: 430 },
   ]
   const comic = { fontFamily: '"Patrick Hand", "Comic Sans MS", "Segoe Print", cursive' }
 
   return (
     <div className="pointer-events-auto flex flex-col items-center mb-1" onClick={(e) => e.stopPropagation()}>
-      <div className={closing ? 'rcf-cloud-out' : 'rcf-cloud-in'} style={{ animationDelay: closing ? '0ms' : '340ms' }}>
+      <div className={closing ? 'rcf-cloud-out' : 'rcf-cloud-in'} style={{ animationDelay: closing ? '0ms' : '620ms' }}>
         <div className="rcf-cloud-bob relative w-[min(330px,calc(100vw-40px))] mt-10" style={{ filter: CLOUD_OUTLINE }}>
           {PUFFS.map((p) => (
             <span key={p} className={`absolute ${p} rounded-full bg-white`} aria-hidden="true" />
