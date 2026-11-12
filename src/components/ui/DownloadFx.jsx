@@ -79,23 +79,32 @@ function SavedAnimation({ rect, title, onDone }) {
   const safeWrapRef = useRef(null)
   const doorRef = useRef(null)
   const dialRef = useRef(null)
-  const [stage, setStage] = useState('flying') // flying -> locked
-  const doneRef = useRef(onDone)
-  doneRef.current = onDone
+  // flying -> locked -> thinking (the cloud stays until they close it)
+  const [stage, setStage] = useState('flying')
+  const [closing, setClosing] = useState(false)
+
+  // Cloud shrinks back into its bubbles, the bubbles pop away in reverse,
+  // then the safe leaves.
+  const dismiss = (then) => {
+    if (closing) return
+    setClosing(true)
+    setTimeout(() => {
+      onDone()
+      then?.()
+    }, reduceMotion() ? 0 : 760)
+  }
 
   useEffect(() => {
-    const onDone = () => doneRef.current()
     const safe = safeWrapRef.current
     const book = bookRef.current
     if (!safe || !book) return undefined
     const timers = []
-    // Long enough to read the "saved in the app, works offline" line.
-    const finish = () => timers.push(setTimeout(onDone, 3800))
+    // The thought cloud puffs out shortly after the lock clicks.
+    const finish = () => timers.push(setTimeout(() => setStage('thinking'), 420))
 
     if (reduceMotion()) {
       doorRef.current.style.transform = 'rotateY(0deg)'
-      setStage('locked')
-      finish()
+      setStage('thinking')
       return () => timers.forEach(clearTimeout)
     }
 
@@ -141,18 +150,33 @@ function SavedAnimation({ rect, title, onDone }) {
     }
   }, [rect])
 
+  const thinking = stage === 'thinking'
+  const locked = stage !== 'flying'
+
   return (
-    <div className="fixed inset-0 z-[320] pointer-events-none" aria-live="polite">
+    <div
+      className="fixed inset-0 z-[320] pointer-events-none"
+      aria-live="polite"
+      role={thinking ? 'dialog' : undefined}
+      aria-modal={thinking ? 'true' : undefined}
+      aria-label={thinking ? 'Your book is saved for offline reading' : undefined}
+    >
+      {/* soft dim so they can stop and read; tapping it closes the cloud */}
+      <div
+        className={`absolute inset-0 bg-black/45 backdrop-blur-[1px] transition-opacity duration-500 ${thinking && !closing ? 'opacity-100 pointer-events-auto' : 'opacity-0'}`}
+        onClick={() => dismiss()}
+      />
       {/* the flying book */}
       <div ref={bookRef} className="absolute left-0 top-0 w-11 h-14 rounded-[8px] bg-gradient-to-br from-orange-400 to-amber-500 shadow-xl flex items-center justify-center" style={{ opacity: 0 }}>
         <span className="material-symbols-outlined text-white text-[24px]">menu_book</span>
         <span className="absolute left-1 top-1 bottom-1 w-1 rounded-full bg-black/15" />
       </div>
 
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-[112px] md:bottom-16 flex flex-col items-center">
+      <div className={`absolute left-1/2 -translate-x-1/2 bottom-[112px] md:bottom-16 flex flex-col items-center transition-all duration-300 ${closing ? 'opacity-0 translate-y-4 delay-500' : ''}`}>
+        {thinking && <ThoughtCloud title={title} closing={closing} onClose={() => dismiss()} onOpen={() => dismiss(() => navigate('/downloads'))} />}
         <div ref={safeWrapRef} className="relative">
           <Safe doorRef={doorRef} dialRef={dialRef} />
-          {stage === 'locked' && (
+          {locked && (
             <>
               <span className="rcf-pop absolute -top-3 -right-3 w-9 h-9 rounded-full bg-green-500 text-white shadow-lg flex items-center justify-center ring-4 ring-background">
                 <span className="material-symbols-outlined text-[22px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}>check</span>
@@ -163,25 +187,103 @@ function SavedAnimation({ rect, title, onDone }) {
             </>
           )}
         </div>
-        <div className={`mt-4 transition-all duration-300 ${stage === 'locked' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-          <div className="pointer-events-auto flex items-center gap-3 rounded-2xl bg-surface-container border border-outline shadow-2xl pl-4 pr-2 py-2 max-w-[92vw]">
-            <div className="min-w-0">
-              <p className="font-label-md text-label-md font-semibold text-on-surface max-w-[220px] truncate">
-                Saved in the app{title ? ` · ${title}` : ''}
-              </p>
-              <p className="font-label-sm text-label-sm text-on-surface-variant max-w-[220px]">
-                Open it anytime from Downloads, even offline with no data.
-              </p>
+      </div>
+    </div>
+  )
+}
+
+// Comic thought cloud above the safe: three bubbles grow out of the safe one
+// after another, then the cloud puffs out of the last one. Closing plays it
+// backwards. Shown after every download so nobody wonders where it went.
+const CLOUD_FONT = 'https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap'
+const PUFFS = [
+  'left-5 -top-6 w-16 h-16',
+  'left-[30%] -top-9 w-24 h-24',
+  'right-7 -top-6 w-20 h-20',
+  '-left-4 top-[30%] w-14 h-14',
+  '-right-4 top-[22%] w-16 h-16',
+  'left-9 -bottom-4 w-16 h-16',
+  'left-[42%] -bottom-5 w-14 h-14',
+  'right-10 -bottom-5 w-20 h-20',
+]
+// Same outline all round the union of the puffs, plus a soft shadow.
+const CLOUD_OUTLINE =
+  'drop-shadow(2.5px 0 0 #1f1a33) drop-shadow(-2.5px 0 0 #1f1a33) drop-shadow(0 2.5px 0 #1f1a33) drop-shadow(0 -2.5px 0 #1f1a33) drop-shadow(0 14px 22px rgba(0,0,0,0.35))'
+
+function ThoughtCloud({ title, closing, onClose, onOpen }) {
+  useEffect(() => {
+    if (document.querySelector(`link[href="${CLOUD_FONT}"]`)) return
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = CLOUD_FONT
+    document.head.appendChild(link)
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  // in: small -> medium -> big bubble, then the cloud. out: the reverse.
+  const bubbles = [
+    { size: 24, shift: 46, inDelay: 220, outDelay: 200 },
+    { size: 15, shift: 26, inDelay: 110, outDelay: 320 },
+    { size: 9, shift: 10, inDelay: 0, outDelay: 430 },
+  ]
+  const comic = { fontFamily: '"Patrick Hand", "Comic Sans MS", "Segoe Print", cursive' }
+
+  return (
+    <div className="pointer-events-auto flex flex-col items-center mb-1" onClick={(e) => e.stopPropagation()}>
+      <div className={closing ? 'rcf-cloud-out' : 'rcf-cloud-in'} style={{ animationDelay: closing ? '0ms' : '340ms' }}>
+        <div className="rcf-cloud-bob relative w-[min(330px,calc(100vw-40px))] mt-10" style={{ filter: CLOUD_OUTLINE }}>
+          {PUFFS.map((p) => (
+            <span key={p} className={`absolute ${p} rounded-full bg-white`} aria-hidden="true" />
+          ))}
+          <div className="relative bg-white rounded-[46px] px-6 pt-5 pb-5 text-[#1f1a33]" style={comic}>
+            <p className="text-[24px] leading-none text-center">Phew! It's safe 📚</p>
+            {title && <p className="text-[15px] text-center text-[#6b6488] mt-1 truncate">"{title}"</p>}
+            <ul className="mt-3 flex flex-col gap-1.5 text-[17px] leading-snug">
+              <li className="flex gap-2"><span aria-hidden="true">📥</span><span>It's in <b>Downloads</b>, inside this app.</span></li>
+              <li className="flex gap-2"><span aria-hidden="true">📴</span><span>Read it anytime <b>offline, with no data</b>. Try it with your data off!</span></li>
+              <li className="flex gap-2"><span aria-hidden="true">🙈</span><span>You won't see it in your phone's file manager or gallery. It lives in the app.</span></li>
+            </ul>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={onOpen}
+                className="rcf-press flex-1 h-11 rounded-full bg-[#1f1a33] text-white text-[17px]"
+                style={comic}
+              >
+                Open Downloads
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rcf-press flex-1 h-11 rounded-full border-2 border-[#1f1a33] text-[#1f1a33] text-[17px]"
+                style={comic}
+              >
+                Got it
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => { onDone(); navigate('/downloads') }}
-              className="rcf-press flex-none h-8 px-3 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold"
-            >
-              Open
-            </button>
           </div>
         </div>
+      </div>
+      {/* the trail of thought bubbles from the safe up to the cloud */}
+      <div className="flex flex-col items-center gap-1.5 mt-4 mb-1">
+        {bubbles.map((b) => (
+          <span
+            key={b.size}
+            className={`block rounded-full bg-white ${closing ? 'rcf-bubble-out' : 'rcf-bubble-in'}`}
+            style={{
+              width: b.size,
+              height: b.size,
+              marginLeft: b.shift,
+              boxShadow: '0 0 0 2.5px #1f1a33',
+              animationDelay: `${closing ? b.outDelay : b.inDelay}ms`,
+            }}
+          />
+        ))}
       </div>
     </div>
   )

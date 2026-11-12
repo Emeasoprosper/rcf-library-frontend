@@ -4,6 +4,7 @@
 //   if (!(await confirmOfflineDownload())) return   // before fetching
 //   playDownloadSaved({ from: button, title })      // after saveOffline()
 import { hasSeenOfflineDownloadInfo, markOfflineDownloadInfoSeen } from './offlineDownloadInfo'
+import { noteFirstUse } from './feedbackMoments'
 
 export const NOTICE_EVENT = 'rcf:download-notice'
 export const SAVED_EVENT = 'rcf:download-saved'
@@ -33,4 +34,5 @@ export function playDownloadSaved({ from = null, title = '' } = {}) {
   const el = from?.currentTarget || from
   const rect = typeof el?.getBoundingClientRect === 'function' ? el.getBoundingClientRect() : el?.width ? el : null
   window.dispatchEvent(new CustomEvent(SAVED_EVENT, { detail: { rect, title } }))
+  noteFirstUse('download')
 }

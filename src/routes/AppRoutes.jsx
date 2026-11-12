@@ -55,6 +55,7 @@ const AdminHomeRails = lazy(() => import('../pages/admin/AdminHomeRails'))
 const AdminAnalytics = lazy(() => import('../pages/admin/AdminAnalytics'))
 const AdminWhatsApp = lazy(() => import('../pages/admin/AdminWhatsApp'))
 const AdminBirthdays = lazy(() => import('../pages/admin/AdminBirthdays'))
+const AdminReviews = lazy(() => import('../pages/admin/AdminReviews'))
 
 // Shown for the moment a page's code is still downloading.
 function PageLoading() {
@@ -153,6 +154,7 @@ function AppRoutes() {
       <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
       <Route path="/admin/whatsapp" element={<AdminRoute><AdminWhatsApp /></AdminRoute>} />
       <Route path="/admin/birthdays" element={<AdminRoute><AdminBirthdays /></AdminRoute>} />
+      <Route path="/admin/reviews" element={<AdminRoute><AdminReviews /></AdminRoute>} />
       <Route path="/library/:id" element={<ResourceDetail />} />
       <Route path="/collections/:id" element={<CollectionPage />} />
     </Routes>

@@ -417,7 +417,9 @@ export const communityApi = {
     apiFetch('/push/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
   unsubscribePush: (payload) =>
     apiFetch('/push/subscribe', { method: 'DELETE', body: JSON.stringify(payload) }),
-  submitRating: (stars) => apiFetch('/ratings', { method: 'POST', body: JSON.stringify({ stars }) }),
+  // payload: a star count, or { stars, review?, kind?, tags?, trigger? }
+  submitRating: (payload) =>
+    apiFetch('/ratings', { method: 'POST', body: JSON.stringify(typeof payload === 'number' ? { stars: payload } : payload) }),
   submitFeedback: (type, message) => apiFetch('/feedback', { method: 'POST', body: JSON.stringify({ type, message }) }),
 }
 
@@ -498,6 +500,12 @@ export const adminApi = {
   lockStatus: (id) => apiFetch(`/admin/uploads/${id}/lock-status`),
   systemErrors: () => apiFetch('/admin/system/errors'),
   ratingsSummary: () => apiFetch('/admin/ratings-summary'),
+  reviews: (params = {}) => {
+    const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString()
+    return apiFetch(`/admin/reviews${q ? `?${q}` : ''}`)
+  },
+  resolveReview: (id, resolved) =>
+    apiFetch(`/admin/reviews/${id}`, { method: 'PATCH', body: JSON.stringify({ resolved }) }),
   feedback: () => apiFetch('/admin/feedback'),
   registrationStats: () => apiFetch('/admin/registration-stats'),
   needsOrganizing: () => apiFetch('/admin/resources/needs-organizing'),

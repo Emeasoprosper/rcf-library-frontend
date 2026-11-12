@@ -6,6 +6,7 @@ import { uploadResourceFile, resourcesApi } from '../services/api'
 import { createRipple } from '../lib/ripple'
 import { takeSharedFiles } from '../lib/sharedFiles'
 import { WobblyProgress, RocketSuccess } from '../components/ui/TransferFx'
+import { noteFirstUse } from '../lib/feedbackMoments'
 
 const resourceTypes = [
   {
@@ -174,6 +175,7 @@ function SubmitResource() {
         setProgress(Math.round((completed / total) * 100))
       }
       setSubmitted(true)
+      noteFirstUse('upload')
     } catch (err) {
       setUploadError(err.message || 'Upload failed. Please try again.')
     } finally {

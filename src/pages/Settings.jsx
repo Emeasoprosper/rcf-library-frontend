@@ -6,6 +6,7 @@ import ToggleSwitch from '../components/ui/ToggleSwitch'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
 import { TOUR_FORCE_START_KEY } from '../contexts/TourContext'
+import { openFeedback } from '../lib/feedbackMoments'
 
 import { useLanguage, AVAILABLE_LANGUAGES } from '../contexts/LanguageContext'
 
@@ -336,6 +337,27 @@ function Settings() {
             >
               <span className="material-symbols-outlined text-on-surface-variant">help</span>
               <span className="font-body-md text-body-md text-on-surface flex-grow">Help & Support</span>
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+            </button>
+
+            <button
+              onClick={() => openFeedback('settings')}
+              className="flex items-center gap-4 p-stack-md rounded-xl bg-surface-container border border-outline text-left"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant">reviews</span>
+              <span className="flex-grow">
+                <span className="block font-body-md text-body-md text-on-surface">Rate the app</span>
+                <span className="block font-label-sm text-label-sm text-on-surface-variant">Stars, a review, or a complaint</span>
+              </span>
+              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
+            </button>
+
+            <button
+              onClick={() => openFeedback('settings_complaint', { complaint: true })}
+              className="flex items-center gap-4 p-stack-md rounded-xl bg-surface-container border border-outline text-left"
+            >
+              <span className="material-symbols-outlined text-on-surface-variant">report</span>
+              <span className="font-body-md text-body-md text-on-surface flex-grow">Report a problem</span>
               <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
             </button>
 

@@ -12,12 +12,15 @@
 //   t.progress(42)      // 0-100, or null when the size is unknown
 //   t.end()
 
+import { noteFirstUse } from './feedbackMoments'
+
 export const TRANSFER_EVENT = 'rcf:transfers'
 export const BOOKMARK_EVENT = 'rcf:bookmark-saved'
 
 // "Saved for later" toast with a bookmark dropping into place.
 export function playBookmarkSaved(title = '') {
   window.dispatchEvent(new CustomEvent(BOOKMARK_EVENT, { detail: { title, saved: true } }))
+  noteFirstUse('save')
 }
 
 // Tapping Save again unsaves: "Removed from saved", bookmark lifting away.
