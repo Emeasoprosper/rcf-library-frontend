@@ -9,7 +9,9 @@ const API_BASE =
     ? '/backend'
     : import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
 
-const NO_REFRESH_PATHS = ['/auth/refresh', '/auth/google', '/auth/logout', '/auth/login', '/auth/signup', '/auth/handoff']
+import { beginTransfer, trackTransfer } from '../lib/transferFx'
+
+const NO_REFRESH_PATHS =['/auth/refresh', '/auth/google', '/auth/logout', '/auth/login', '/auth/signup', '/auth/handoff']
 
 async function rawFetch(path, options) {
   return fetch(`${API_BASE}${path}`, {
@@ -52,13 +54,25 @@ export function keepSessionFresh() {
   }
 }
 
+// Requests that send something the person is waiting on (a message, a save,
+// a post) are tracked so a slow one shows "taking longer than expected,
+// please don't leave" (see lib/transferFx.js). Reads, and the quiet
+// background writes below, are not: they'd pop it up for no visible reason.
+const BACKGROUND_WRITES = /^\/(presence\/heartbeat|analytics\/|auth\/|push\/subscribe|notifications\/[^/]+\/read|resources\/[^/]+\/(progress|download)$|reading-space\/sessions)/
+
 export async function apiFetch(path, options = {}, _isRetry = false) {
+  const method = (options.method || 'GET').toUpperCase()
+  if (_isRetry || method === 'GET' || BACKGROUND_WRITES.test(path)) return apiFetchInner(path, options, _isRetry)
+  return trackTransfer({ kind: 'request' }, () => apiFetchInner(path, options, _isRetry))
+}
+
+async function apiFetchInner(path, options, _isRetry) {
   const res = await rawFetch(path, options)
 
   if (res.status === 401 && !_isRetry && !NO_REFRESH_PATHS.includes(path)) {
     try {
       await refreshSession()
-      return apiFetch(path, options, true)
+      return apiFetchInner(path, options, true)
     } catch {
       window.dispatchEvent(new Event('auth:expired'))
       throw new Error('Your session expired — please sign in again.')
@@ -84,6 +98,15 @@ async function rawFetchOk(path, options) {
 
 
 export function uploadResourceFile(formData, onProgress) {
+  const t = beginTransfer({ kind: 'upload', title: String(formData.get('title') || '') })
+  const report = (pct) => {
+    t.progress(pct)
+    onProgress?.(pct)
+  }
+  return sendResourceFile(formData, report).finally(() => t.end())
+}
+
+function sendResourceFile(formData, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `${API_BASE}/uploads`)
@@ -99,7 +122,7 @@ export function uploadResourceFile(formData, onProgress) {
       if (xhr.status === 401) {
         try {
           await rawFetchOk('/auth/refresh', { method: 'POST' })
-          uploadResourceFile(formData, onProgress).then(resolve).catch(reject)
+          sendResourceFile(formData, onProgress).then(resolve).catch(reject)
           return
         } catch {
           window.dispatchEvent(new Event('auth:expired'))
@@ -299,11 +322,40 @@ export const resourcesApi = {
   thumbnailUrl: (id) => `${API_BASE}/resources/${id}/thumbnail`,
   createShareLink: (id) => apiFetch(`/resources/${id}/share`, { method: 'POST' }),
   resolveShareToken: (token) => apiFetch(`/resources/share/${token}/resolve`),
-  downloadFileForOffline: async (id) => {
-    const res = await fetch(`${API_BASE}/resources/${id}/download-file`, { credentials: 'include' })
-    if (!res.ok) throw new Error('Failed to download file')
-    const blob = await res.blob()
-    return { blob, mimeType: res.headers.get('Content-Type') }
+  // Streams the file so the floating download ring (TransferFx) can show
+  // a real percentage. Without a Content-Length it shows a spinning ring.
+  // title is just the label shown next to the ring.
+  downloadFileForOffline: async (id, { title = '', onProgress } = {}) => {
+    const t = beginTransfer({ kind: 'download', title })
+    try {
+      const res = await fetch(`${API_BASE}/resources/${id}/download-file`, { credentials: 'include' })
+      if (!res.ok) throw new Error('Failed to download file')
+      const mimeType = res.headers.get('Content-Type')
+      const total = Number(res.headers.get('Content-Length')) || 0
+      if (!res.body?.getReader) {
+        const blob = await res.blob()
+        t.progress(100)
+        return { blob, mimeType }
+      }
+      const reader = res.body.getReader()
+      const chunks = []
+      let loaded = 0
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        chunks.push(value)
+        loaded += value.length
+        const pct = total ? (loaded / total) * 100 : null
+        t.progress(pct == null ? null : Math.min(pct, 99))
+        onProgress?.(pct)
+      }
+      t.progress(100)
+      onProgress?.(100)
+      return { blob: new Blob(chunks, mimeType ? { type: mimeType } : undefined), mimeType }
+    } finally {
+      // Let the ring sit on 100% for a beat before the "saved" animation.
+      setTimeout(() => t.end(), 350)
+    }
   },
 }
 
@@ -371,6 +423,7 @@ export const communityApi = {
 
 export const adminApi = {
   dashboard: () => apiFetch('/admin/dashboard'),
+  birthdays: () => apiFetch('/admin/birthdays'),
   pendingUploads: (params = {}) => {
     const query = new URLSearchParams(params).toString()
     return apiFetch(`/admin/uploads${query ? `?${query}` : ''}`)

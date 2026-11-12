@@ -155,11 +155,21 @@ function BirthdayCelebration() {
   const [index, setIndex] = useState(0)
   const touchStartX = useRef(null)
 
+  // Checks on start-up, and again whenever the app comes back to the
+  // foreground on a new day. Phones keep the installed app alive in the
+  // background for days; checking only on start-up meant someone who opened
+  // it yesterday never saw today's birthdays.
+  const openRef = useRef(false)
+  useEffect(() => { openRef.current = open }, [open])
   useEffect(() => {
     if (!isAuthenticated) return undefined
     let cancelled = false
-    // A short delay so it never collides with the app's own start-up.
-    const timer = setTimeout(() => {
+    let checkedDay = null
+    let timer = null
+    const check = () => {
+      const day = lagosDate()
+      if (cancelled || openRef.current || checkedDay === day) return
+      checkedDay = day
       birthdaysApi
         .today()
         .then((res) => {
@@ -172,9 +182,22 @@ function BirthdayCelebration() {
           setIndex(0)
           setOpen(true)
         })
-        .catch(() => {})
-    }, 1200)
-    return () => { cancelled = true; clearTimeout(timer) }
+        .catch(() => { checkedDay = null }) // try again next time
+    }
+    // A short delay so it never collides with the app's own start-up.
+    timer = setTimeout(check, 1200)
+    const onVisible = () => { if (!document.hidden) check() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    // Also catch midnight while the app sits open on screen.
+    const minute = setInterval(onVisible, 60 * 1000)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+      clearInterval(minute)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
   }, [isAuthenticated, user?.id])
 
   const music = usePopupMusic(MUSIC_SRC, { active: open && Boolean(data), loop: true, volume: 0.5 })

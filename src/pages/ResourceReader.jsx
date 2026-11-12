@@ -378,10 +378,11 @@ function ResourceReader() {
     }
     if (!(await confirmOfflineDownload())) return
     setDownloading(true)
-    startSlowWatch()
+    // No startSlowWatch() here: the download's own floating ring and the
+    // global "taking longer than expected" popup (TransferFx) cover it.
     try {
       await resourcesApi.download(id)
-      const { blob, mimeType } = await resourcesApi.downloadFileForOffline(id)
+      const { blob, mimeType } = await resourcesApi.downloadFileForOffline(id, { title: resource?.title })
       await saveOffline(id, blob, mimeType, {
         title: resource?.title,
         author: resource?.author,
@@ -402,7 +403,6 @@ function ResourceReader() {
       alert('Download failed — please try again.')
     } finally {
       setDownloading(false)
-      stopSlowWatch()
     }
   }
 

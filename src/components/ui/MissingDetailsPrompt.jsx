@@ -12,6 +12,7 @@ import {
   RCF_OPTIONS,
   JOIN_REASON_OPTIONS,
   HEARD_FROM_OPTIONS,
+  optionKey,
 } from './stepOptions'
 import './onboarding.css'
 
@@ -82,14 +83,14 @@ function OptionList({ options, onPick, disabled }) {
     <div className={`ob-options ${options.length > 2 ? 'is-grid' : ''}`}>
       {options.map((opt, i) => (
         <button
-          key={String(opt.value)}
+          key={optionKey(opt)}
           type="button"
           disabled={disabled}
           onClick={() => {
-            setPicked(opt.value)
+            setPicked(optionKey(opt))
             onPick(opt.value)
           }}
-          className={`ob-btn ${i === 0 ? 'is-primary' : ''} ${picked === opt.value ? 'is-selected' : ''}`}
+          className={`ob-btn ${i === 0 ? 'is-primary' : ''} ${picked === optionKey(opt) ? 'is-selected' : ''}`}
         >
           <span className="ob-emoji" aria-hidden="true">{opt.emoji}</span>
           {opt.label}

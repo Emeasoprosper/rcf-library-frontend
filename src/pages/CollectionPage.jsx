@@ -8,6 +8,7 @@ import CollectionPickerSheet from './admin/CollectionPickerSheet'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
 import { resourceCollectionsApi, adminApi, resourcesApi } from '../services/api'
 import { saveOffline, isOfflineAvailable } from '../lib/offlineStorage'
+import { playBookmarkSaved, playBookmarkRemoved } from '../lib/transferFx'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import { confirmOfflineDownload, playDownloadSaved } from '../lib/downloadFx'
 import { useAuth } from '../contexts/AuthContext'
@@ -111,12 +112,16 @@ function ResourceListRow({ resource, isAdmin, onRemove, onMove, onDownload, onTo
           <button
             onClick={async () => {
               setMenuOpen(false)
-              await onToggleSave(resource, saved)
-              setSaved((v) => !v)
+              if (await onToggleSave(resource, saved)) setSaved((v) => !v)
             }}
             className="flex items-center gap-2 w-full text-left px-4 py-2.5 font-label-sm text-label-sm text-on-surface hover:bg-surface-container"
           >
-            <span className="material-symbols-outlined text-[18px]">{saved ? 'bookmark' : 'bookmark_border'}</span>
+            <span
+              className={`material-symbols-outlined text-[18px] ${saved ? 'text-orange-500' : ''}`}
+              style={saved ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              {saved ? 'bookmark' : 'bookmark_border'}
+            </span>
             {saved ? 'Remove from Saved' : 'Save'}
           </button>
           <button
@@ -372,10 +377,19 @@ function CollectionPage() {
 
   const handleToggleSave = async (resource, currentlySaved) => {
     if (goSignInFirst()) return
-    if (currentlySaved) {
-      await resourcesApi.unbookmark(resource.id).catch(() => {})
-    } else {
-      await resourcesApi.bookmark(resource.id).catch(() => {})
+    // Returns whether it worked, so the row only flips once the server agrees.
+    try {
+      if (currentlySaved) {
+        await resourcesApi.unbookmark(resource.id)
+        playBookmarkRemoved(resource.title)
+      } else {
+        await resourcesApi.bookmark(resource.id)
+        playBookmarkSaved(resource.title)
+      }
+      return true
+    } catch {
+      alert('Could not update saved status — please try again.')
+      return false
     }
   }
 
@@ -388,7 +402,7 @@ function CollectionPage() {
     if (!(await confirmOfflineDownload())) return false
     try {
       await resourcesApi.download(resource.id)
-      const { blob, mimeType } = await resourcesApi.downloadFileForOffline(resource.id)
+      const { blob, mimeType } = await resourcesApi.downloadFileForOffline(resource.id, { title: resource.title })
       await saveOffline(resource.id, blob, mimeType, {
         title: resource.title,
         thumbnailUrl: resourcesApi.thumbnailUrl(resource.id),

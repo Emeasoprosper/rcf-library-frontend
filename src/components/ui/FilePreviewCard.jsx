@@ -37,6 +37,21 @@ const kindIcon = {
 
 const ANALYZABLE_KINDS = new Set(['pdf', 'image'])
 
+// One AI analysis per File object for the whole page session. If a card
+// remounts for any reason (another file deleted, going back a step), it
+// reuses the finished (or still-running) result instead of asking again.
+const analysisCache = new WeakMap()
+function analyzeOnce(file, resourceTypeSlug, thumbnail) {
+  let pending = analysisCache.get(file)
+  if (!pending) {
+    pending = enqueueAnalysis(() => analyzeResource(file, resourceTypeSlug, thumbnail))
+    // A failed attempt shouldn't be cached forever — allow a retry later.
+    pending.catch(() => analysisCache.delete(file))
+    analysisCache.set(file, pending)
+  }
+  return pending
+}
+
 function FilePreviewCard({
   file,
   name,
@@ -77,6 +92,11 @@ function FilePreviewCard({
   const [analyzing, setAnalyzing] = useState(false)
   const [courseNotFound, setCourseNotFound] = useState(null)
   const analysisStartedRef = useRef(false)
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
 
   const kind = getFileKind(file)
   const gradient = getFileGradient(`${file.name}-${file.size}`)
@@ -132,12 +152,14 @@ function FilePreviewCard({
 
     analysisStartedRef.current = true
 
-    let cancelled = false
+    // Only bail if the card is actually gone. A per-effect "cancelled" flag
+    // fired whenever `thumbnail` changed (images finish reading after the
+    // analysis starts), which threw the AI result away mid-flight.
     setAnalyzing(true)
 
-    enqueueAnalysis(() => analyzeResource(file, resourceTypeSlug, kind === 'pdf' ? thumbnail : null))
+    analyzeOnce(file, resourceTypeSlug, kind === 'pdf' ? thumbnail : null)
       .then(({ suggestion, detected }) => {
-        if (cancelled) return
+        if (!mountedRef.current) return
 
         if (suggestion) {
           if (!name?.trim() && suggestion.title) onNameChange(suggestion.title)
@@ -182,10 +204,8 @@ function FilePreviewCard({
         console.warn(`[FilePreviewCard] AI analysis skipped for ${file.name}:`, err.message)
       })
       .finally(() => {
-        if (!cancelled) setAnalyzing(false)
+        if (mountedRef.current) setAnalyzing(false)
       })
-
-    return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file, kind, thumbnail, thumbnailFailed])
 

@@ -20,6 +20,7 @@ import {
   RCF_OPTIONS,
   JOIN_REASON_OPTIONS,
   HEARD_FROM_OPTIONS,
+  optionKey,
 } from '../components/ui/stepOptions'
 
 const LEVELS = ['100', '200', '300', '400', '500', 'PG']
@@ -36,19 +37,31 @@ const STEPS = [
 const inputClass =
   'w-full h-14 px-4 rounded-2xl bg-surface-container-low border border-outline text-on-surface font-body-md focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all'
 
+// Highlights the exact card tapped (two cards can share a value, e.g.
+// "Not yet" / "No, I'm not"); coming back to a step with an answer already
+// saved highlights the first card with that value.
 function Cards({ options, selected, onPick }) {
+  const [pickedKey, setPickedKey] = useState(null)
+  const firstMatch = options.find((o) => o.value === selected)
+  const activeKey = pickedKey && options.some((o) => optionKey(o) === pickedKey && o.value === selected)
+    ? pickedKey
+    : firstMatch ? optionKey(firstMatch) : null
   return (
     <div className="grid grid-cols-2 gap-3">
       {options.map((opt, i) => (
-        <OptionCard
-          key={String(opt.value)}
-          theme={CARD_ROTATION[i % CARD_ROTATION.length]}
-          emoji={opt.emoji}
-          label={opt.label}
-          selected={selected === opt.value}
-          tall={options.length <= 2}
-          onClick={() => onPick(opt.value)}
-        />
+        <div key={optionKey(opt)} className={options.length % 2 === 1 && i === options.length - 1 ? 'col-span-2' : ''}>
+          <OptionCard
+            theme={CARD_ROTATION[i % CARD_ROTATION.length]}
+            emoji={opt.emoji}
+            label={opt.label}
+            selected={activeKey === optionKey(opt)}
+            tall={options.length <= 2}
+            onClick={() => {
+              setPickedKey(optionKey(opt))
+              onPick(opt.value)
+            }}
+          />
+        </div>
       ))}
     </div>
   )

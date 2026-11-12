@@ -18,10 +18,16 @@ export const GENDER_OPTIONS = [
   { value: 'Male', label: 'Male', emoji: '👨🏾' },
   { value: 'Female', label: 'Female', emoji: '👩🏾' },
 ]
+// "Not yet" and "No, I'm not" both save as not a member (false); the id
+// keeps them apart on screen.
 export const RCF_OPTIONS = [
-  { value: true, label: "Yes, I'm in RCF", emoji: '🙌' },
-  { value: false, label: 'Not yet', emoji: '👋' },
+  { id: 'yes', value: true, label: "Yes, I'm in RCF", emoji: '🙌' },
+  { id: 'not-yet', value: false, label: 'Not yet', emoji: '👋' },
+  { id: 'no', value: false, label: "No, I'm not", emoji: '🙂' },
 ]
+
+// Stable key for an option: its id when it has one, else its value.
+export const optionKey = (opt) => opt.id ?? String(opt.value)
 export const JOIN_REASON_OPTIONS = [
   { value: 'Find study materials for school', label: 'Study materials', emoji: '📚' },
   { value: 'Grow spiritually', label: 'Grow spiritually', emoji: '🙏' },

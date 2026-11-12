@@ -89,7 +89,8 @@ function SavedAnimation({ rect, title, onDone }) {
     const book = bookRef.current
     if (!safe || !book) return undefined
     const timers = []
-    const finish = () => timers.push(setTimeout(onDone, 1900))
+    // Long enough to read the "saved in the app, works offline" line.
+    const finish = () => timers.push(setTimeout(onDone, 3800))
 
     if (reduceMotion()) {
       doorRef.current.style.transform = 'rotateY(0deg)'
@@ -163,16 +164,21 @@ function SavedAnimation({ rect, title, onDone }) {
           )}
         </div>
         <div className={`mt-4 transition-all duration-300 ${stage === 'locked' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-surface-container border border-outline shadow-2xl pl-4 pr-1.5 py-1.5">
-            <span className="font-label-md text-label-md font-semibold text-on-surface max-w-[180px] truncate">
-              Saved offline{title ? ` · ${title}` : ''}
-            </span>
+          <div className="pointer-events-auto flex items-center gap-3 rounded-2xl bg-surface-container border border-outline shadow-2xl pl-4 pr-2 py-2 max-w-[92vw]">
+            <div className="min-w-0">
+              <p className="font-label-md text-label-md font-semibold text-on-surface max-w-[220px] truncate">
+                Saved in the app{title ? ` · ${title}` : ''}
+              </p>
+              <p className="font-label-sm text-label-sm text-on-surface-variant max-w-[220px]">
+                Open it anytime from Downloads, even offline with no data.
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => { onDone(); navigate('/downloads') }}
-              className="rcf-press h-8 px-3 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold"
+              className="rcf-press flex-none h-8 px-3 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold"
             >
-              View
+              Open
             </button>
           </div>
         </div>

@@ -9,6 +9,8 @@ import { getMediaKind } from '../lib/mediaKind'
 import { isRunningAsInstalledApp } from '../lib/pwaInstall'
 import DownloadGateModal from '../components/ui/DownloadGateModal'
 import { confirmOfflineDownload, playDownloadSaved } from '../lib/downloadFx'
+import { ProgressRing, BookmarkBurst } from '../components/ui/TransferFx'
+import { playBookmarkSaved, playBookmarkRemoved } from '../lib/transferFx'
 import { useActiveResource } from '../contexts/ActiveResourceContext'
 import { useAuth } from '../contexts/AuthContext'
 import { ResourceDetailSkeleton } from '../components/ui/PageSkeletons'
@@ -113,6 +115,8 @@ function ResourceDetail() {
   const [error, setError] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
+  const [downloadPct, setDownloadPct] = useState(null)
+  const [saveBurst, setSaveBurst] = useState(0)
   const [saved, setSaved] = useState(false)
   const [savingBookmark, setSavingBookmark] = useState(false)
   const [showGate, setShowGate] = useState(false)
@@ -181,9 +185,13 @@ function ResourceDetail() {
     if (!(await confirmOfflineDownload())) return
 
     setDownloading(true)
+    setDownloadPct(null)
     try {
       await resourcesApi.download(id)
-      const { blob, mimeType } = await resourcesApi.downloadFileForOffline(id)
+      const { blob, mimeType } = await resourcesApi.downloadFileForOffline(id, {
+        title: resource?.title,
+        onProgress: setDownloadPct,
+      })
       await saveOffline(id, blob, mimeType, {
         title: resource?.title,
         author: resource?.author,
@@ -219,9 +227,12 @@ function ResourceDetail() {
       if (saved) {
         await resourcesApi.unbookmark(id)
         setSaved(false)
+        playBookmarkRemoved(resource?.title)
       } else {
         await resourcesApi.bookmark(id)
         setSaved(true)
+        setSaveBurst((n) => n + 1)
+        playBookmarkSaved(resource?.title)
       }
     } catch {
       alert('Could not update saved status — please try again.')
@@ -325,12 +336,17 @@ function ResourceDetail() {
           <button
             onClick={handleToggleSave}
             disabled={savingBookmark}
-            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center disabled:opacity-60"
+            className="relative w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center disabled:opacity-60"
             aria-label={saved ? 'Remove from saved' : 'Save for later'}
           >
             <span className="material-symbols-outlined text-white">
-              {savingBookmark ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : saved ? <span className="material-symbols-outlined text-orange-500" style={{ fontVariationSettings: "'FILL' 1" }}>bookmark</span> : 'bookmark_border'}
+              {savingBookmark ? (
+                <span className="rcf-bookmark-wiggle material-symbols-outlined">bookmark</span>
+              ) : saved ? (
+                <span key={saveBurst} className={`material-symbols-outlined text-orange-500 ${saveBurst ? 'rcf-heart-beat' : ''}`} style={{ fontVariationSettings: "'FILL' 1" }}>bookmark</span>
+              ) : 'bookmark_border'}
             </span>
+            {saved && saveBurst > 0 && <BookmarkBurst key={`b${saveBurst}`} />}
           </button>
         </div>
       </div>
@@ -401,12 +417,16 @@ function ResourceDetail() {
         <button
           onClick={handleDownload}
           disabled={downloading || downloaded}
-          className="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center"
-          aria-label="Download for offline"
+          className="relative w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center"
+          aria-label={downloading ? `Downloading${downloadPct != null ? `, ${Math.round(downloadPct)}%` : ''}` : 'Download for offline'}
         >
-          <span className="material-symbols-outlined text-orange-500">
-            {downloading ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : downloaded ? <span className="material-symbols-outlined text-green-500" style={{ fontVariationSettings: "'FILL' 1" }}>download_done</span> : 'download'}
-          </span>
+          {downloading ? (
+            <ProgressRing pct={downloadPct} size={56} stroke={4} />
+          ) : (
+            <span className="material-symbols-outlined text-orange-500">
+              {downloaded ? <span className="material-symbols-outlined text-green-500" style={{ fontVariationSettings: "'FILL' 1" }}>download_done</span> : 'download'}
+            </span>
+          )}
         </button>
       </div>
 

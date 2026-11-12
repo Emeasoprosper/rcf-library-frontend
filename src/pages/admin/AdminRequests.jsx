@@ -231,6 +231,17 @@ function AdminRequests() {
                     </p>
                   )}
 
+                  {group.details?.some((d) => d.source === 'whatsapp') && (
+                    <div className="flex items-start gap-2 mb-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <span className="material-symbols-outlined text-emerald-400 text-[16px] mt-0.5">chat</span>
+                      <p className="font-label-sm text-label-sm text-on-surface-variant">
+                        <span className="text-emerald-400 font-semibold">Asked on WhatsApp.</span>{' '}
+                        Link it to a library resource when you fulfil this: Bro Paul DMs them the link and tells them to
+                        download it in the app and read it offline with no data.
+                      </p>
+                    </div>
+                  )}
+
                   {group.notes.length > 0 && (
                     <p className="font-label-sm text-label-sm text-on-surface-variant mb-2 italic">
                       "{group.notes[0]}"

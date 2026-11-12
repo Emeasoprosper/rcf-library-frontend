@@ -5,6 +5,7 @@ import MultiFileUpload, { makeUploadEntry } from '../components/ui/MultiFileUplo
 import { uploadResourceFile, resourcesApi } from '../services/api'
 import { createRipple } from '../lib/ripple'
 import { takeSharedFiles } from '../lib/sharedFiles'
+import { WobblyProgress, RocketSuccess } from '../components/ui/TransferFx'
 
 const resourceTypes = [
   {
@@ -182,20 +183,17 @@ function SubmitResource() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background text-on-surface font-body-md flex flex-col items-center justify-center px-margin-mobile text-center">
-        <span className="material-symbols-outlined text-primary text-5xl mb-stack-md">check_circle</span>
-        <h2 className="font-headline-lg text-headline-lg font-display text-on-surface mb-2">Submitted for Review</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mb-stack-lg max-w-xs">
-          {files.length > 1
-            ? `Your ${files.length} resources are now with our reviewers. You'll be notified as each is approved.`
-            : "Your resource is now with our reviewers. You'll be notified once it's approved."}
-        </p>
-        <button
-          onClick={() => navigate('/contribute')}
-          className="w-full max-w-xs py-4 bg-primary text-on-primary rounded-lg font-headline-md text-headline-md active:scale-[0.98] hover:opacity-90 transition-all"
-        >
-          Back to Contribute
-        </button>
+      <div className="min-h-screen bg-background">
+        <RocketSuccess
+          title="Launched for review! 🚀"
+          body={
+            files.length > 1
+              ? `Your ${files.length} resources are now with our reviewers. You'll be notified as each is approved.`
+              : "Your resource is now with our reviewers. You'll be notified once it's approved."
+          }
+          actionLabel="Back to Contribute"
+          onAction={() => navigate('/contribute')}
+        />
       </div>
     )
   }
@@ -284,16 +282,13 @@ function SubmitResource() {
 
               {uploading && (
                 <div className="p-stack-md rounded-xl bg-surface-container border border-outline">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="font-label-md text-label-md text-on-surface">Uploading…</p>
-                    <p className="font-label-md text-label-md text-on-surface-variant">{progress}%</p>
-                  </div>
-                  <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all duration-150 ease-out"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
+                  <WobblyProgress
+                    pct={progress}
+                    label={progress >= 100 ? 'Finishing up…' : files.length > 1 ? `Uploading ${files.length} files…` : 'Uploading…'}
+                  />
+                  <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">
+                    Please keep this page open until it's done.
+                  </p>
                 </div>
               )}
             </div>
