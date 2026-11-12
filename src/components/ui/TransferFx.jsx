@@ -125,7 +125,7 @@ export function WobblyProgress({ pct = 0, label = 'Uploading…' }) {
 // flickering orange flame.
 function Rocket() {
   return (
-    <svg width="92" height="230" viewBox="0 0 92 230" aria-hidden="true" className="overflow-visible">
+    <svg width="92" height="260" viewBox="0 0 92 260" aria-hidden="true" className="overflow-visible">
       <defs>
         <linearGradient id="rcfRkBody" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#c4b5fd" />
@@ -155,10 +155,10 @@ function Rocket() {
       </defs>
       {/* flame: soft glow behind, sharp core in front, both flicker */}
       <g className="rcf-flame-a">
-        <path d="M30 128 Q46 236 62 128 Z" fill="url(#rcfRkFlame)" filter="url(#rcfRkGlow)" opacity="0.9" />
+        <path d="M28 128 Q46 290 64 128 Z" fill="url(#rcfRkFlame)" filter="url(#rcfRkGlow)" opacity="0.9" />
       </g>
       <g className="rcf-flame-b">
-        <path d="M35 128 Q46 210 57 128 Z" fill="url(#rcfRkFlame)" />
+        <path d="M35 128 Q46 250 57 128 Z" fill="url(#rcfRkFlame)" />
       </g>
       {/* fins */}
       <path d="M26 92 C14 104 8 118 8 134 L28 124 Z" fill="url(#rcfRkFin)" />
@@ -224,13 +224,15 @@ export function RocketSuccess({ title, body, actionLabel, onAction }) {
           style={{ left: s.left, height: s.len, opacity: s.op, animationDuration: `${s.dur}s`, animationDelay: `${s.delay}s` }}
         />
       ))}
-      {/* purple glow under the rocket */}
-      <div className="absolute left-1/2 top-[44%] -translate-x-1/2 w-72 h-72 rounded-full bg-violet-500/25 blur-3xl" />
-
-      {/* the rocket, flying in place */}
-      <div className="absolute left-1/2 top-[10%] sm:top-[12%] -translate-x-1/2">
+      {/* The rocket, flying in place, centred in the open space above the
+          write-up (the write-up takes roughly the bottom 40%). */}
+      <div className="absolute inset-x-0 top-0 bottom-[38%] flex items-center justify-center pointer-events-none">
+        {/* purple glow behind it */}
+        <div className="absolute w-72 h-72 rounded-full bg-violet-500/25 blur-3xl" />
         <div className={launching ? 'rcf-rocket-blastoff' : 'rcf-rocket-cruise'}>
-          <Rocket />
+          <div className="scale-[1.15] sm:scale-125 origin-center">
+            <Rocket />
+          </div>
         </div>
       </div>
 
