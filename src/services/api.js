@@ -426,6 +426,11 @@ export const communityApi = {
 export const adminApi = {
   dashboard: () => apiFetch('/admin/dashboard'),
   birthdays: () => apiFetch('/admin/birthdays'),
+  aiLibrary: () => apiFetch('/admin/ai-library'),
+  createAiNotes: (payload) => apiFetch('/admin/ai-library/notes', { method: 'POST', body: JSON.stringify(payload) }),
+  retryAiJob: (id) => apiFetch(`/admin/ai-library/jobs/${id}/retry`, { method: 'POST' }),
+  setAiBookStatus: (id, status) =>
+    apiFetch(`/admin/ai-library/resources/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   pendingUploads: (params = {}) => {
     const query = new URLSearchParams(params).toString()
     return apiFetch(`/admin/uploads${query ? `?${query}` : ''}`)

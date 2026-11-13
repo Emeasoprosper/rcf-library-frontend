@@ -21,9 +21,12 @@ function RequestMaterial() {
   // manual visit to this page.
   const prefillTitle = location.state?.prefillTitle || ''
   const [form, setForm] = useState({ title: prefillTitle, courseCode: '', notes: '' })
+  const [kind, setKind] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  // What the AI did with a lecture-notes request: 'queued' | 'exists' + link.
+  const [aiNotes, setAiNotes] = useState(null)
 
   const [myRequests, setMyRequests] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(true)
@@ -53,10 +56,13 @@ function RequestMaterial() {
         department: user?.department || null,
         level: user?.level || null,
         searchQuery: prefillTitle || null,
+        type: kind || null,
       }
-      const { request } = await communityApi.createRequest({ ...form, details })
-      setMyRequests((prev) => [request, ...prev])
+      const { request, aiNotes: ai } = await communityApi.createRequest({ ...form, details })
+      setMyRequests((prev) => [ai?.status === 'exists' ? { ...request, status: 'fulfilled' } : request, ...prev])
+      setAiNotes(ai && ['queued', 'exists'].includes(ai.status) ? ai : null)
       setForm({ title: '', courseCode: '', notes: '' })
+      setKind('')
       setSent(true)
       setTimeout(() => setSent(false), 1800)
     } catch (err) {
@@ -82,7 +88,58 @@ function RequestMaterial() {
           </p>
         </section>
 
+        {aiNotes && (
+          <section className="mt-stack-md p-stack-md rounded-2xl border border-primary/40 bg-primary/10 flex items-start gap-3">
+            <span className="material-symbols-outlined text-primary text-[26px] flex-none">{aiNotes.status === 'queued' ? 'edit_note' : 'menu_book'}</span>
+            <div className="min-w-0">
+              {aiNotes.status === 'queued' ? (
+                <>
+                  <p className="font-body-md text-body-md font-semibold text-on-surface">We're writing your lecture notes now ✍️</p>
+                  <p className="font-label-md text-label-md text-on-surface-variant mt-0.5">
+                    Full notes with a scheme of work, clear explanations, worked examples and practice questions. It takes a few minutes; you'll get a notification with the link when they're ready.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-body-md text-body-md font-semibold text-on-surface">Good news: we already have notes for this 📚</p>
+                  <button type="button" onClick={() => navigate(`/library/${aiNotes.resourceId}`)} className="mt-1 font-label-md text-label-md text-primary font-semibold">
+                    Open them →
+                  </button>
+                </>
+              )}
+            </div>
+          </section>
+        )}
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-gutter mt-stack-lg">
+          <div>
+            <label className="font-label-md text-label-md text-on-surface-variant">What kind of material?</label>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {[
+                ['lecture_notes', 'Lecture notes', 'edit_note'],
+                ['past_question', 'Past questions', 'quiz'],
+                ['book', 'Book', 'menu_book'],
+                ['', 'Other', 'more_horiz'],
+              ].map(([value, label, icon]) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setKind(value)}
+                  className={`h-9 px-3.5 rounded-full border flex items-center gap-1.5 font-label-md text-label-md transition-colors ${
+                    kind === value ? 'bg-primary text-on-primary border-primary' : 'border-outline text-on-surface-variant hover:border-on-surface-variant'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">{icon}</span>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {kind === 'lecture_notes' && (
+              <p className="font-label-sm text-label-sm text-on-surface-variant mt-2">
+                ✨ If we don't have notes for this course yet, our AI will write comprehensive ones for you. Add the course code for the best result.
+              </p>
+            )}
+          </div>
           <div>
             <label className="font-label-md text-label-md text-on-surface-variant">What are you looking for?</label>
             <input

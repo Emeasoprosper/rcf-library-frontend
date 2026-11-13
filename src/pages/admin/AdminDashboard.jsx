@@ -19,6 +19,7 @@ const quickLinks = [
   { to: '/admin/analytics', icon: 'bar_chart', label: 'Analytics', gradient: 'from-orange-500 to-amber-400' },
   { to: '/admin/birthdays', icon: 'cake', label: 'Birthdays', gradient: 'from-pink-500 to-orange-400' },
   { to: '/admin/reviews', icon: 'reviews', label: 'Reviews & Complaints', gradient: 'from-amber-500 to-rose-400' },
+  { to: '/admin/ai-library', icon: 'auto_awesome', label: 'AI Library', gradient: 'from-violet-500 to-fuchsia-400' },
   { to: '/admin/whatsapp', icon: 'smart_toy', label: 'WhatsApp Bot', gradient: 'from-emerald-500 to-green-400', superadminOnly: true },
 ]
 
