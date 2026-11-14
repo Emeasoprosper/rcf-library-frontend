@@ -326,7 +326,24 @@ function AdminAiLibrary() {
 
             {/* queue */}
             <section className="py-stack-lg border-b border-outline">
-              <h2 className="font-label-md text-label-md uppercase tracking-[0.14em] text-on-surface-variant">Writing queue</h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-label-md text-label-md uppercase tracking-[0.14em] text-on-surface-variant">Writing queue</h2>
+                {data.jobs.some((j) => j.status === 'failed') && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await adminApi.retryAllFailedAi()
+                        await load()
+                      } catch (err) {
+                        setError(err.message || 'Could not retry.')
+                      }
+                    }}
+                    className="h-8 px-3.5 rounded-full bg-violet-500 text-white font-label-sm text-label-sm font-semibold"
+                  >
+                    Retry all failed ({data.jobs.filter((j) => j.status === 'failed').length})
+                  </button>
+                )}
+              </div>
               {data.jobs.length === 0 ? (
                 <p className="py-6 font-body-md text-body-md text-on-surface-variant">Nothing yet. Notes appear here when someone asks or you start some above.</p>
               ) : (

@@ -433,6 +433,7 @@ export const adminApi = {
     apiFetch('/admin/requests/generate-notes', { method: 'POST', body: JSON.stringify(payload) }),
   createAiNotes: (payload) => apiFetch('/admin/ai-library/notes', { method: 'POST', body: JSON.stringify(payload) }),
   retryAiJob: (id) => apiFetch(`/admin/ai-library/jobs/${id}/retry`, { method: 'POST' }),
+  retryAllFailedAi: () => apiFetch('/admin/ai-library/retry-failed', { method: 'POST' }),
   setAiBookStatus: (id, status) =>
     apiFetch(`/admin/ai-library/resources/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   pendingUploads: (params = {}) => {
