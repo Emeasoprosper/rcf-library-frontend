@@ -53,7 +53,7 @@ function AiNotesPanel({ group, onGenerate, busy, onOpen }) {
           <div className="flex items-center justify-between gap-2">
             <p className="flex items-center gap-1.5 font-label-md text-label-md font-semibold text-violet-300">
               <span className="material-symbols-outlined text-[18px] animate-pulse">edit_note</span>
-              {job.status === 'queued' ? 'Waiting to be written…' : 'Generating notes…'}
+              {job.waiting ? 'Paused: free AI limit reached' : job.status === 'queued' ? 'Waiting to be written…' : 'Generating notes…'}
             </p>
             <span className="font-label-md text-label-md tabular-nums text-violet-200">{job.progress || 0}%</span>
           </div>
@@ -63,8 +63,8 @@ function AiNotesPanel({ group, onGenerate, busy, onOpen }) {
               style={{ width: `${Math.max(job.progress || 0, job.status === 'running' ? 4 : 2)}%` }}
             />
           </div>
-          <p className="mt-1 font-label-sm text-label-sm text-on-surface-variant truncate">
-            {job.status === 'queued' ? 'In the queue: one course is written at a time.' : job.step || 'Starting'}
+          <p className={`mt-1 font-label-sm text-label-sm truncate ${job.waiting ? 'text-amber-400' : 'text-on-surface-variant'}`} title={job.step || ''}>
+            {job.status === 'queued' ? job.step || 'In the queue: one course is written at a time.' : job.step || 'Starting'}
           </p>
         </>
       ) : job?.status === 'done' ? (

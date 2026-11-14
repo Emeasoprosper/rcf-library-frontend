@@ -67,9 +67,16 @@ function Job({ job, onRetry, onRegenerate, onOpen }) {
               style={{ width: `${Math.max(job.progress || 0, job.status === 'running' ? 4 : 0)}%` }}
             />
           </div>
-          <p className="mt-1 font-label-sm text-label-sm text-on-surface-variant truncate">
-            {job.status === 'queued' ? 'In the queue (one course is written at a time)' : `${job.progress || 0}% · ${job.step || 'Starting'}`}
+          <p className={`mt-1 font-label-sm text-label-sm truncate ${job.retry_after ? 'text-amber-400' : 'text-on-surface-variant'}`} title={job.step || ''}>
+            {job.status === 'queued'
+              ? job.step || 'In the queue (one course is written at a time)'
+              : `${job.progress || 0}% · ${job.step || 'Starting'}`}
           </p>
+          {job.retry_after && (
+            <button onClick={() => onRetry(job)} className="mt-1.5 h-8 px-3 rounded-full border border-outline font-label-sm text-label-sm text-on-surface hover:bg-surface-container-high">
+              Try now
+            </button>
+          )}
         </div>
       )}
       {job.status === 'failed' && (
