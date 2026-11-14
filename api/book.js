@@ -155,6 +155,13 @@ export default async function handler(req, res) {
   // og:image (different path) is never touched.
   seoBlock = seoBlock.split(backendCanonical).join(frontendCanonical)
 
+  // Preview images go through this site's cached /api/cover (api/cover.js),
+  // so WhatsApp gets the cover instantly even while the backend sleeps.
+  seoBlock = seoBlock.replace(
+    /https?:\/\/[^"'\s]+?(\/api\/(?:resources|resource-collections)\/[0-9a-f-]{36}\/(?:thumbnail|cover))/gi,
+    (match, path) => (match.startsWith(BACKEND_ORIGIN) ? `${FRONTEND_ORIGIN}/api/cover?src=${encodeURIComponent(path)}` : match)
+  )
+
   // Drop the placeholder <title> from index.html so there's exactly one
   // <title> tag, then inject our SEO block right after <head>.
   let finalHtml = indexHtml.replace(/<title>[\s\S]*?<\/title>/, '')

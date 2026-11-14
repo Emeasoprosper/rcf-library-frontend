@@ -83,6 +83,13 @@ export default async function handler(req, res) {
     .join('\n  ')
   seoBlock = seoBlock.split(backendCanonical).join(frontendCanonical)
 
+  // Preview images go through this site's cached /api/cover (api/cover.js),
+  // so WhatsApp gets the cover instantly even while the backend sleeps.
+  seoBlock = seoBlock.replace(
+    /https?:\/\/[^"'\s]+?(\/api\/(?:resources|resource-collections)\/[0-9a-f-]{36}\/(?:thumbnail|cover))/gi,
+    (match, path) => (match.startsWith(BACKEND_ORIGIN) ? `${FRONTEND_ORIGIN}/api/cover?src=${encodeURIComponent(path)}` : match)
+  )
+
   let finalHtml = indexHtml.replace(/<title>[\s\S]*?<\/title>/, '')
   finalHtml = finalHtml.replace('<head>', `<head>\n  ${seoBlock}`)
 

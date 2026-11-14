@@ -41,7 +41,7 @@ const JOB_STYLE = {
   failed: ['Failed', 'bg-rose-500/15 text-rose-400'],
 }
 
-function Job({ job, onRetry, onOpen }) {
+function Job({ job, onRetry, onRegenerate, onOpen }) {
   const [label, chip] = JOB_STYLE[job.status] || JOB_STYLE.queued
   const active = job.status === 'running' || job.status === 'queued'
   return (
@@ -75,15 +75,22 @@ function Job({ job, onRetry, onOpen }) {
       {job.status === 'failed' && (
         <div className="mt-2 flex items-center gap-3">
           <p className="flex-1 min-w-0 font-label-sm text-label-sm text-rose-400 truncate" title={job.error}>{job.error}</p>
-          <button onClick={() => onRetry(job)} className="flex-none h-8 px-3 rounded-full border border-outline font-label-sm text-label-sm text-on-surface hover:bg-surface-container-high">
-            Retry
+          <button onClick={() => onRetry(job)} className="flex-none h-8 px-3 rounded-full bg-violet-500 text-white font-label-sm text-label-sm font-semibold">
+            Regenerate
           </button>
         </div>
       )}
-      {job.status === 'done' && job.resource_id && (
-        <button onClick={() => onOpen(job.resource_id)} className="mt-1.5 font-label-sm text-label-sm font-semibold text-primary">
-          Open the notes →
-        </button>
+      {job.status === 'done' && (
+        <div className="mt-1.5 flex items-center gap-4">
+          {job.resource_id && (
+            <button onClick={() => onOpen(job.resource_id)} className="font-label-sm text-label-sm font-semibold text-primary">
+              Open the notes →
+            </button>
+          )}
+          <button onClick={() => onRegenerate(job)} className="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface">
+            Regenerate
+          </button>
+        </div>
       )}
     </div>
   )
@@ -171,6 +178,16 @@ function AdminAiLibrary() {
       await load()
     } catch (err) {
       setError(err.message || 'Could not retry.')
+    }
+  }
+
+  // Writes a fresh version of finished notes (it becomes "… II").
+  const regenerate = async (job) => {
+    try {
+      await adminApi.createAiNotes({ courseCode: job.course_code || '', title: job.title || job.resource_title || '' })
+      await load()
+    } catch (err) {
+      setError(err.message || 'Could not regenerate.')
     }
   }
 
@@ -286,7 +303,7 @@ function AdminAiLibrary() {
               {data.jobs.length === 0 ? (
                 <p className="py-6 font-body-md text-body-md text-on-surface-variant">Nothing yet. Notes appear here when someone asks or you start some above.</p>
               ) : (
-                data.jobs.slice(0, 20).map((job) => <Job key={job.id} job={job} onRetry={retry} onOpen={open} />)
+                data.jobs.slice(0, 20).map((job) => <Job key={job.id} job={job} onRetry={retry} onRegenerate={regenerate} onOpen={open} />)
               )}
             </section>
 

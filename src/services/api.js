@@ -429,6 +429,8 @@ export const adminApi = {
   dashboard: () => apiFetch('/admin/dashboard'),
   birthdays: () => apiFetch('/admin/birthdays'),
   aiLibrary: () => apiFetch('/admin/ai-library'),
+  generateRequestNotes: (payload) =>
+    apiFetch('/admin/requests/generate-notes', { method: 'POST', body: JSON.stringify(payload) }),
   createAiNotes: (payload) => apiFetch('/admin/ai-library/notes', { method: 'POST', body: JSON.stringify(payload) }),
   retryAiJob: (id) => apiFetch(`/admin/ai-library/jobs/${id}/retry`, { method: 'POST' }),
   setAiBookStatus: (id, status) =>

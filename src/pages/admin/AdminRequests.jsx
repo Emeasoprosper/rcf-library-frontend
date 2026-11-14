@@ -41,6 +41,69 @@ function ResourceThumb({ url }) {
   )
 }
 
+// The AI lecture-notes status for one request card: writing (with live
+// progress), done (open / regenerate), failed (regenerate), or not started.
+function AiNotesPanel({ group, onGenerate, busy, onOpen }) {
+  const job = group.aiJob
+  const active = job && (job.status === 'queued' || job.status === 'running')
+  return (
+    <div className="mb-2 rounded-xl border border-violet-500/30 bg-violet-500/[0.07] px-3 py-2.5">
+      {active ? (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <p className="flex items-center gap-1.5 font-label-md text-label-md font-semibold text-violet-300">
+              <span className="material-symbols-outlined text-[18px] animate-pulse">edit_note</span>
+              {job.status === 'queued' ? 'Waiting to be written…' : 'Generating notes…'}
+            </p>
+            <span className="font-label-md text-label-md tabular-nums text-violet-200">{job.progress || 0}%</span>
+          </div>
+          <div className="mt-1.5 h-1.5 rounded-full bg-violet-950/60 overflow-hidden">
+            <div
+              className={`h-full rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400 transition-[width] duration-700 ${job.status === 'queued' ? 'animate-pulse' : ''}`}
+              style={{ width: `${Math.max(job.progress || 0, job.status === 'running' ? 4 : 2)}%` }}
+            />
+          </div>
+          <p className="mt-1 font-label-sm text-label-sm text-on-surface-variant truncate">
+            {job.status === 'queued' ? 'In the queue: one course is written at a time.' : job.step || 'Starting'}
+          </p>
+        </>
+      ) : job?.status === 'done' ? (
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-emerald-400 text-[18px]">check_circle</span>
+          <p className="flex-1 font-label-md text-label-md text-on-surface">AI notes written</p>
+          {job.resourceId && (
+            <button onClick={() => onOpen(job.resourceId)} className="font-label-sm text-label-sm font-semibold text-primary">Open</button>
+          )}
+          <button onClick={() => onGenerate(group)} disabled={busy} className="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface disabled:opacity-50">
+            Regenerate
+          </button>
+        </div>
+      ) : job?.status === 'failed' ? (
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-rose-400 text-[18px]">error</span>
+          <p className="flex-1 min-w-0 font-label-sm text-label-sm text-rose-300 truncate" title={job.error}>Failed: {job.error}</p>
+          <button
+            onClick={() => onGenerate(group)}
+            disabled={busy}
+            className="flex-none h-8 px-3 rounded-full bg-violet-500 text-white font-label-sm text-label-sm font-semibold disabled:opacity-50"
+          >
+            {busy ? 'Starting…' : 'Regenerate'}
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => onGenerate(group)}
+          disabled={busy}
+          className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg text-violet-300 font-label-md text-label-md font-semibold hover:bg-violet-500/10 disabled:opacity-50"
+        >
+          <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+          {busy ? 'Starting…' : 'Write notes with AI'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function AdminRequests() {
   const [requests, setRequests] = useState([])
   const [fulfilled, setFulfilled] = useState([])
@@ -74,6 +137,36 @@ function AdminRequests() {
   useEffect(() => {
     fetchRequests()
   }, [fetchRequests])
+
+  // Live progress while any request's notes are being written.
+  const writing = requests.some((r) => r.aiJob && (r.aiJob.status === 'queued' || r.aiJob.status === 'running'))
+  useEffect(() => {
+    if (!writing) return undefined
+    const t = setInterval(async () => {
+      try {
+        const { items } = await adminApi.requests()
+        setRequests(items)
+      } catch {
+        // try again next tick
+      }
+    }, 5000)
+    return () => clearInterval(t)
+  }, [writing])
+
+  const [generatingId, setGeneratingId] = useState(null)
+  const generateNotes = async (group) => {
+    setGeneratingId(group.id)
+    setError('')
+    try {
+      await adminApi.generateRequestNotes({ requestIds: group.memberIds, courseCode: group.courseCode, title: group.title })
+      const { items } = await adminApi.requests()
+      setRequests(items)
+    } catch (err) {
+      setError(err.message || 'Could not start the notes.')
+    } finally {
+      setGeneratingId(null)
+    }
+  }
 
   // Debounced library search while the fulfil panel is open. Skipped once
   // a resource is picked, or when the box holds a pasted link/ID instead.
@@ -230,6 +323,13 @@ function AdminRequests() {
                       Searched: "{detailSummary.searchQueries.join('", "')}"
                     </p>
                   )}
+
+                  <AiNotesPanel
+                    group={group}
+                    busy={generatingId === group.id}
+                    onGenerate={generateNotes}
+                    onOpen={(id) => window.open(`/library/${id}`, '_blank')}
+                  />
 
                   {group.details?.some((d) => d.source === 'whatsapp') && (
                     <div className="flex items-start gap-2 mb-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
