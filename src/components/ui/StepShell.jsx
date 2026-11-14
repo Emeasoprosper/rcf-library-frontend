@@ -4,6 +4,8 @@
 // on the left, question on the right.
 
 import { STEP_THEMES } from './stepOptions'
+import CursorTrail from '../auth/CursorTrail'
+import PeekingOwl from '../auth/PeekingOwl'
 
 export function Progress({ step, total }) {
   return (
@@ -58,18 +60,21 @@ function StepShell({ mode = 'modal', theme = 'blue', art, step, total, title, su
       className={
         isModal
           ? 'fixed inset-0 z-[300] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm md:p-6'
-          : 'min-h-screen w-full flex items-stretch md:items-center justify-center bg-surface-container-lowest md:p-8'
+          : 'min-h-screen w-full flex items-stretch justify-center bg-surface-container-lowest'
       }
       role={isModal ? 'dialog' : undefined}
       aria-modal={isModal ? 'true' : undefined}
       aria-label={isModal ? title : undefined}
     >
+      {/* Full-page sign-up on desktop: same cursor trail as sign-in */}
+      {!isModal && <CursorTrail />}
       <div
-        className={`rcf-pop relative w-full bg-surface-container text-on-surface overflow-hidden flex flex-col md:grid md:grid-cols-[0.95fr_1.05fr] ${
+        className={`rcf-pop relative w-full bg-surface-container text-on-surface overflow-hidden flex flex-col ${
           isModal
-            ? 'max-h-[94vh] rounded-t-[28px] md:rounded-[32px] md:max-w-4xl md:min-h-[560px]'
-            : 'min-h-screen md:min-h-[640px] md:max-w-5xl md:rounded-[32px]'
-        } md:shadow-2xl md:border md:border-outline`}
+            ? 'md:grid md:grid-cols-[0.95fr_1.05fr] max-h-[94vh] rounded-t-[28px] md:rounded-[32px] md:max-w-4xl md:min-h-[560px] md:shadow-2xl md:border md:border-outline'
+            : // Desktop: full screen, picture panel left, questions right (like sign-in).
+              'md:grid md:grid-cols-[1.08fr_1fr] min-h-screen'
+        }`}
       >
         {/* Picture panel: top on mobile, left on desktop */}
         <div
@@ -77,9 +82,15 @@ function StepShell({ mode = 'modal', theme = 'blue', art, step, total, title, su
         >
           <span className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-white/10" aria-hidden="true" />
           <span className="absolute bottom-6 right-8 w-16 h-16 rounded-full bg-white/10" aria-hidden="true" />
-          <div key={stepKey} className="rcf-pop w-[58%] max-w-[260px] md:w-[70%] md:max-w-[340px]">
+          <div key={stepKey} className={`rcf-pop w-[58%] max-w-[260px] md:w-[70%] ${isModal ? 'md:max-w-[340px]' : 'md:max-w-[420px] md:-mt-24'}`}>
             {art}
           </div>
+          {/* the owl watching from the bottom, full-page desktop only */}
+          {!isModal && (
+            <div className="hidden md:flex absolute bottom-0 inset-x-0 justify-center pointer-events-none">
+              <PeekingOwl className="w-[260px] lg:w-[300px] h-auto" />
+            </div>
+          )}
           {onClose && (
             <button
               type="button"
@@ -94,7 +105,7 @@ function StepShell({ mode = 'modal', theme = 'blue', art, step, total, title, su
 
         {/* Question panel */}
         <div className="flex flex-col min-h-0 flex-grow">
-          <div className="flex items-center justify-between gap-3 px-6 pt-5 md:px-10 md:pt-9">
+          <div className={`flex items-center justify-between gap-3 px-6 pt-5 md:px-10 md:pt-9 ${isModal ? '' : 'md:px-14 lg:px-20 md:pt-14'}`}>
             {total > 1 ? <Progress step={step} total={total} /> : <span />}
             {onClose && (
               <button
@@ -108,7 +119,7 @@ function StepShell({ mode = 'modal', theme = 'blue', art, step, total, title, su
             )}
           </div>
 
-          <div key={stepKey} className="rcf-step flex-grow overflow-y-auto px-6 pt-4 pb-4 md:px-10 md:pt-6">
+          <div key={stepKey} className={`rcf-step flex-grow overflow-y-auto px-6 pt-4 pb-4 md:px-10 md:pt-6 ${isModal ? '' : 'md:px-14 lg:px-20 md:max-w-[640px]'}`}>
             <h2 className="font-display text-[30px] md:text-[40px] leading-[1.05] font-extrabold tracking-tight text-on-surface">
               {title}
             </h2>
@@ -116,7 +127,7 @@ function StepShell({ mode = 'modal', theme = 'blue', art, step, total, title, su
             <div className="mt-6">{children}</div>
           </div>
 
-          {footer && <div className="px-6 pb-6 pt-3 md:px-10 md:pb-9 border-t border-outline/60">{footer}</div>}
+          {footer && <div className={`px-6 pb-6 pt-3 md:px-10 md:pb-9 border-t border-outline/60 ${isModal ? '' : 'md:px-14 lg:px-20'}`}>{footer}</div>}
         </div>
       </div>
     </div>

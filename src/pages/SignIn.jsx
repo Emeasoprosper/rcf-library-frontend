@@ -5,6 +5,8 @@ import SplashLight from '../assets/SplashLight.webp'
 import SplashDark from '../assets/SplashDark.webp'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../services/api'
+import AuthShowcase from '../components/auth/AuthShowcase'
+import CursorTrail from '../components/auth/CursorTrail'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_REDIRECT_LOGIN_URI = `${import.meta.env.VITE_API_BASE_URL}/auth/google/redirect-callback`
@@ -28,7 +30,10 @@ function SignIn() {
   const [error, setError] = useState('')
   const [checking, setChecking] = useState(true)
 
-  const [showEmailForm, setShowEmailForm] = useState(false)
+  // Desktop shows the email fields straight away (there's room); phones
+  // keep the "Sign in with email" button first.
+  const [isDesktop] = useState(() => window.matchMedia?.('(min-width: 768px)').matches ?? false)
+  const [showEmailForm, setShowEmailForm] = useState(isDesktop)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -88,7 +93,8 @@ function SignIn() {
           theme: 'filled_black',
           size: 'large',
           shape: 'rectangular',
-          width: 320,
+          // Matches the visible button's width so every part of it is clickable.
+          width: isDesktop ? 400 : 320,
           text: 'continue_with',
         })
         setChecking(false)
@@ -175,24 +181,29 @@ function SignIn() {
   }
 
   return (
-    <main
-      className="flex flex-col min-h-screen w-full px-margin-mobile py-16 text-on-surface"
-      style={{ background: 'radial-gradient(circle at 50% 20%, #1a1a1a 0%, #000000 70%)' }}
-    >
-      <div className="flex-1 flex flex-col items-center justify-center text-center gap-stack-md max-w-sm w-full mx-auto">
-        <img src="/signIn.png" alt="RCF MOUAU Library" className="w-40 h-40 object-contain" />
+    <main className="min-h-screen w-full md:grid md:grid-cols-[1.08fr_1fr] bg-black text-on-surface">
+      {/* Desktop: the night-sky library and the owl watching the cursor */}
+      <AuthShowcase />
+      <CursorTrail />
+
+      <section
+        className="relative flex flex-col min-h-screen w-full px-margin-mobile py-16 md:py-10 md:px-12 md:justify-center md:bg-[#0b0f16] md:overflow-y-auto"
+        style={isDesktop ? undefined : { background: 'radial-gradient(circle at 50% 20%, #1a1a1a 0%, #000000 70%)' }}
+      >
+      <div className="flex-1 md:flex-none flex flex-col items-center md:items-start justify-center text-center md:text-left gap-stack-md max-w-sm md:max-w-[400px] w-full mx-auto md:mb-8">
+        <img src="/signIn.png" alt="RCF MOUAU Library" className="w-40 h-40 object-contain md:hidden" />
 
         <div className="flex flex-col gap-stack-sm">
-          <h1 className="font-headline-lg text-headline-lg font-display text-white">
-            Sign in to continue
+          <h1 className="font-headline-lg text-headline-lg md:text-[32px] md:leading-tight font-display text-white">
+            {isDesktop ? 'Sign in to RCF Library' : 'Sign in to continue'}
           </h1>
           <p className="font-body-md text-white/60">
-            Use your Google account to access the library.
+            {isDesktop ? 'New here? Enter your email and we\'ll create your free account.' : 'Use your Google account to access the library.'}
           </p>
         </div>
       </div>
 
-      <div className="w-full max-w-sm flex flex-col gap-gutter mx-auto items-center">
+      <div className="w-full max-w-sm md:max-w-[400px] flex flex-col gap-gutter mx-auto items-center">
         <div className="relative w-full h-12">
           <button
             type="button"
@@ -245,7 +256,7 @@ function SignIn() {
               }}
               placeholder="Email address"
               autoComplete="email"
-              autoFocus
+              autoFocus={!isDesktop}
               className="w-full h-12 rounded-md bg-white/5 border border-white/20 px-4 text-white font-body-md placeholder:text-white/40 focus:outline-none focus:border-white/50"
             />
 
@@ -344,7 +355,7 @@ function SignIn() {
                 setGoogleOnly(false)
                 setAccountExistsConflict(false)
               }}
-              className="font-label-sm text-label-sm text-white/50 hover:text-white/80"
+              className="md:hidden font-label-sm text-label-sm text-white/50 hover:text-white/80"
             >
               Back
             </button>
@@ -359,6 +370,7 @@ function SignIn() {
           By continuing, you agree to the library's terms of use.
         </p>
       </div>
+      </section>
     </main>
   )
 }

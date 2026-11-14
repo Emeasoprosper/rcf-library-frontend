@@ -379,6 +379,8 @@ export const analyticsApi = {
 }
 
 export const communityApi = {
+  // Bro Paul's WhatsApp number (as linked right now) for the chat button.
+  broPaul: () => apiFetch('/bro-paul'),
   createRequest: (payload) => apiFetch('/requests', { method: 'POST', body: JSON.stringify(payload) }),
   myRequests: () => apiFetch('/me/requests'),
   createSuggestion: (payload) => apiFetch('/suggestions', { method: 'POST', body: JSON.stringify(payload) }),

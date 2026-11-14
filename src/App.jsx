@@ -23,6 +23,7 @@ import PushPermissionAsk from './components/ui/PushPermissionAsk'
 import DownloadFx from './components/ui/DownloadFx'
 import TransferFx from './components/ui/TransferFx'
 import FeedbackPrompt from './components/ui/FeedbackPrompt'
+import BroPaulButton from './components/ui/BroPaulButton'
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner'
 import { PresenceProvider } from './contexts/PresenceContext'
 import FloatingStudyButton from './components/ui/FloatingStudyButton'
@@ -53,6 +54,7 @@ function App() {
             <DownloadFx />
             <TransferFx />
             <FeedbackPrompt />
+            <BroPaulButton />
             <LeaveSiteDialog />
             <AmbientOwl />
             <NotificationsModal />
