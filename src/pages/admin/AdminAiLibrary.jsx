@@ -257,8 +257,28 @@ function AdminAiLibrary() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm ${provider ? 'bg-primary/15 text-primary' : 'bg-rose-500/15 text-rose-400'}`}>
                   <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
-                  {provider ? `Writing with ${provider.name === 'claude' ? 'Claude' : 'Gemini (free)'} · ${provider.model}` : 'No AI key on the server'}
+                  {provider
+                    ? `Writing with ${provider.name === 'claude' ? 'Claude' : provider.name === 'groq' ? 'Groq (free)' : 'Gemini (free)'} · ${provider.model}`
+                    : 'No AI key on the server'}
                 </span>
+                {data.worker?.lastSeen && (
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm ${
+                      data.worker.online ? 'bg-sky-500/15 text-sky-300' : 'bg-surface-container-high text-on-surface-variant'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${data.worker.online ? 'bg-sky-400 animate-pulse' : 'bg-on-surface-variant/50'}`} />
+                    {data.worker.online
+                      ? `Your Kaggle AI is online · ${data.worker.model || 'own model'} · ${data.worker.jobsDone} written`
+                      : `Your Kaggle AI is off (last seen ${timeAgo(data.worker.lastSeen)})`}
+                  </span>
+                )}
+                {provider?.backups?.includes('groq') && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label-sm text-label-sm bg-emerald-500/15 text-emerald-400">
+                    <span className="material-symbols-outlined text-[16px]">sync_alt</span>
+                    Backup when Gemini runs out: Groq (free)
+                  </span>
+                )}
               </div>
               <div className="mt-4 grid grid-cols-3 gap-4">
                 {[
