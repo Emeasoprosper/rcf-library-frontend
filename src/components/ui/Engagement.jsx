@@ -17,10 +17,8 @@ import { Medal, AnimatedFlame } from './Illustrations'
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const SEEN_KEY = 'rcf_badges_seen'
 
-// tone 'amber' = the calmer single-accent ring used on the home page.
-export function GoalRing({ done, goal, size = 92, className = '', stroke = 9, tone = 'default' }) {
-  const gradId = tone === 'amber' ? 'rcfGoalGradAmber' : 'rcfGoalGrad'
-  const colors = tone === 'amber' ? ['#fbbf24', '#f59e0b'] : ['#4caf50', '#38bdf8']
+export function GoalRing({ done, goal, size = 92, className = '' }) {
+  const stroke = 9
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
   const target = goal > 0 ? Math.min(done / goal, 1) : 0
@@ -37,7 +35,7 @@ export function GoalRing({ done, goal, size = 92, className = '', stroke = 9, to
         cx={size / 2}
         cy={size / 2}
         r={r}
-        stroke={`url(#${gradId})`}
+        stroke="url(#rcfGoalGrad)"
         strokeWidth={stroke}
         strokeLinecap="round"
         fill="none"
@@ -46,9 +44,9 @@ export function GoalRing({ done, goal, size = 92, className = '', stroke = 9, to
         style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.2,0.8,0.2,1)' }}
       />
       <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={colors[0]} />
-          <stop offset="100%" stopColor={colors[1]} />
+        <linearGradient id="rcfGoalGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#4caf50" />
+          <stop offset="100%" stopColor="#38bdf8" />
         </linearGradient>
       </defs>
     </svg>
@@ -415,7 +413,7 @@ function BookOfTheDay() {
   return (
     <Link
       to={`/library/${book.id}`}
-      className="group rcf-lift relative overflow-hidden rounded-2xl p-3.5 flex gap-3.5 items-center text-white shadow-lg"
+      className="group rcf-lift relative overflow-hidden rounded-2xl p-3 flex gap-3.5 items-center text-white shadow-lg"
       style={{ background: bg || 'linear-gradient(135deg,#7a3d0c,#3a1e08)' }}
     >
       <span className="absolute inset-0 bg-gradient-to-r from-black/0 to-black/35 pointer-events-none" aria-hidden="true" />
@@ -439,160 +437,35 @@ function BookOfTheDay() {
   )
 }
 
-// ---------- Home page: calm, unified cards ----------
-// One surface style for every home card, amber as the only accent (the
-// Book of the Day keeps its cover colours). No emoji, clear labels.
-const HOME_CARD = 'rounded-2xl bg-surface-container border border-outline/70'
-const CARD_LABEL = 'text-[11px] font-semibold uppercase tracking-[0.14em] text-on-surface-variant'
-
-function RowChevron() {
-  return (
-    <span className="flex-none w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-colors group-hover:text-on-surface">
-      <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-    </span>
-  )
-}
-
-// Streak and weekly goal side by side in one panel.
-function TodayPanel({ streak, week }) {
-  const hit = week.goal > 0 && week.done >= week.goal
-  const left = Math.max(0, week.goal - week.done)
-  return (
-    <Link to="/achievements" className={`group rcf-lift ${HOME_CARD} grid grid-cols-2 divide-x divide-outline/60 overflow-hidden`}>
-      <div className="p-4 min-w-0">
-        <p className={CARD_LABEL}>Streak</p>
-        <div className="mt-1.5 flex items-center gap-1.5">
-          <span className="font-display text-[28px] font-extrabold leading-none tabular-nums text-on-surface">{streak.current}</span>
-          <span className="text-[13px] text-on-surface-variant">day{streak.current === 1 ? '' : 's'}</span>
-          <span
-            className={`material-symbols-outlined text-[20px] ${streak.readToday ? 'text-amber-500' : 'text-on-surface-variant/40'}`}
-            style={{ fontVariationSettings: "'FILL' 1" }}
-            aria-hidden="true"
-          >
-            local_fire_department
-          </span>
-        </div>
-        <div className="mt-3 flex justify-between max-w-[190px]">
-          {week.days.map((d, i) => (
-            <span key={d.date} className="flex flex-col items-center gap-1" title={d.read ? 'Read' : d.today ? 'Today' : ''}>
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${d.read ? 'bg-amber-500' : d.today ? 'ring-2 ring-inset ring-amber-500/70' : 'bg-on-surface/15'} ${d.future ? 'opacity-40' : ''}`}
-              />
-              <span className="text-[9.5px] text-on-surface-variant">{DAY_LETTERS[i]}</span>
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="p-4 min-w-0 flex items-center gap-3">
-        <div className="relative flex-none text-on-surface">
-          <GoalRing done={week.done} goal={week.goal} size={54} stroke={5} tone="amber" />
-          <span className="absolute inset-0 flex items-center justify-center">
-            {hit ? (
-              <span className="material-symbols-outlined text-amber-500 text-[22px]" style={{ fontVariationSettings: "'wght' 700" }}>check</span>
-            ) : (
-              <span className="font-display text-[15px] font-extrabold tabular-nums">{week.done}</span>
-            )}
-          </span>
-        </div>
-        <div className="min-w-0">
-          <p className={CARD_LABEL}>Weekly goal</p>
-          <p className="mt-1 text-[15px] font-semibold leading-tight text-on-surface">{hit ? 'Reached' : `${left} to go`}</p>
-          <p className="text-[12px] text-on-surface-variant">{week.done} of {week.goal} this week</p>
-        </div>
-      </div>
-    </Link>
-  )
-}
-
 // Home entry to /reading-path: invites the quiz, or shows their reader type.
 function ReadingPathCard() {
   const path = loadPath()
   const type = path && TYPES.find((t) => t.key === path.type)
+  // Same paper "reader card" look as the result on /reading-path.
   return (
-    <Link to="/reading-path" className={`group rcf-lift ${HOME_CARD} p-4 flex items-center gap-3.5`}>
-      <span className="flex-none w-11 h-11 rounded-xl bg-amber-500/12 text-amber-500 flex items-center justify-center">
-        <span className="material-symbols-outlined text-[24px]">explore</span>
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className={CARD_LABEL}>Reader card</p>
-        <p className="mt-0.5 text-[15px] font-semibold leading-snug text-on-surface truncate">{type ? type.title : 'What should you read next?'}</p>
-        <p className="text-[12.5px] text-on-surface-variant truncate">
-          {type ? 'Your shelves and reading log are ready' : 'Five questions, books picked for you'}
+    <Link
+      to="/reading-path"
+      className="group rcf-lift relative overflow-hidden rounded-md flex items-stretch shadow-[0_16px_32px_-20px_rgba(0,0,0,0.7)]"
+      style={{ background: '#f3ead8', color: '#2a2118' }}
+    >
+      <span className="w-2 flex-none" style={{ background: '#d9a441' }} aria-hidden="true" />
+      <div className="min-w-0 flex-1 px-4 py-3.5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] opacity-60">RCF Library · Reader card</p>
+        <p className="mt-1 text-[19px] font-bold leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          {type ? type.title : 'What should you read next?'}
+        </p>
+        <p className="text-[13px] opacity-75 mt-0.5">
+          {type ? 'Your shelves and reading log are ready.' : 'Answer five questions and get books picked for you.'}
         </p>
       </div>
-      <RowChevron />
+      <span className="flex-none self-center pr-4 text-[13px] font-semibold underline underline-offset-4 decoration-[#d9a441] decoration-2 group-hover:opacity-80">
+        {type ? 'Open' : 'Start'}
+      </span>
     </Link>
   )
 }
 
-function BadgesRow({ badges }) {
-  const earned = badges.filter((b) => b.earned)
-  const next = badges.filter((b) => !b.earned).slice(0, 3)
-  return (
-    <Link to="/achievements" className={`group rcf-lift ${HOME_CARD} p-4 block`}>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className={CARD_LABEL}>Badges</p>
-          <p className="mt-0.5 text-[15px] font-semibold text-on-surface">
-            {earned.length} <span className="font-normal text-on-surface-variant">of {badges.length} earned</span>
-          </p>
-        </div>
-        <RowChevron />
-      </div>
-      <div className="mt-3 flex gap-1 overflow-x-auto no-scrollbar">
-        {[...earned, ...next].map((b) => <BadgeTile key={b.key} badge={b} size="sm" />)}
-      </div>
-    </Link>
-  )
-}
-
-// One quote card at a time with a clear Verse / Study tip switch above it,
-// instead of a half-hidden swipe row.
-function DailyWord() {
-  const [tab, setTab] = useState('verse')
-  const v = verseOfTheDay()
-  const t = tipOfTheDay()
-  const day = lagosToday()
-  const tabs = [
-    ['verse', 'Verse of the day'],
-    ['tip', 'Study tip'],
-  ]
-  return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex items-center justify-between gap-3">
-        <p className={CARD_LABEL}>Daily word</p>
-        <div role="tablist" aria-label="Daily word" className="relative grid grid-cols-2 p-1 rounded-full bg-surface-container border border-outline/70">
-          <span
-            className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-amber-500 transition-transform duration-300 ease-out"
-            style={{ transform: tab === 'tip' ? 'translateX(100%)' : 'none' }}
-            aria-hidden="true"
-          />
-          {tabs.map(([key, label]) => (
-            <button
-              key={key}
-              role="tab"
-              aria-selected={tab === key}
-              onClick={() => setTab(key)}
-              className={`relative z-10 h-8 px-3.5 rounded-full text-[12.5px] font-semibold whitespace-nowrap transition-colors ${tab === key ? 'text-black' : 'text-on-surface-variant hover:text-on-surface'}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div key={tab} className="rcf-pop w-full max-w-[440px] mx-auto md:max-w-none">
-        {tab === 'verse' ? (
-          <QuoteCard tone="navy" label="Verse of the day" text={v.text} by={v.ref} id={`${day}-verse`} />
-        ) : (
-          <QuoteCard tone="light" label="Study tip of the day" text={t.text} by="RCF Library" id={`${day}-tip`} />
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Everything for the home page before the news. Mobile: one column.
-// Desktop: two balanced columns (today, book, reader card, badges | daily word).
+// Everything for the home page: streak + goal, verse, tip, badge strip.
 export function HomeEngagement() {
   const [data, setData] = useState(null)
   const [fresh, setFresh] = useState([])
@@ -608,17 +481,34 @@ export function HomeEngagement() {
       .catch(() => {})
   }, [])
 
+  const earned = data?.badges.filter((b) => b.earned) || []
+  const next = data?.badges.filter((b) => !b.earned).slice(0, 3) || []
+
+  // Kept compact on purpose: the home page shouldn't open with a wall of cards.
   return (
-    <section className="px-margin-mobile mb-stack-lg grid gap-3 md:grid-cols-2 md:gap-4 md:items-start">
-      <div className="flex flex-col gap-3 md:gap-4 min-w-0">
-        {data && <TodayPanel streak={data.streak} week={data.week} />}
-        <BookOfTheDay />
-        <ReadingPathCard />
-        {data && <BadgesRow badges={data.badges} />}
-      </div>
-      <div className="min-w-0 mt-1 md:mt-0">
-        <DailyWord />
-      </div>
+    <section className="px-margin-mobile mb-stack-lg flex flex-col gap-2.5">
+      {data && (
+        <div className="grid grid-cols-2 gap-2.5">
+          <StreakCard streak={data.streak} week={data.week} compact />
+          <WeeklyGoalCard week={data.week} compact />
+        </div>
+      )}
+      <BookOfTheDay />
+      <ReadingPathCard />
+      <DailyQuotes compact />
+      {data && (
+        <Link to="/achievements" className="group rcf-lift rounded-2xl px-3.5 py-3 bg-surface-container border border-outline block">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[14px] font-semibold text-on-surface">
+              Badges <span className="text-on-surface-variant font-normal">· {earned.length} of {data.badges.length}</span>
+            </p>
+            <CardAction>See all</CardAction>
+          </div>
+          <div className="flex gap-1 overflow-x-auto no-scrollbar">
+            {[...earned, ...next].map((b) => <BadgeTile key={b.key} badge={b} size="sm" />)}
+          </div>
+        </Link>
+      )}
       {fresh.length > 0 && <BadgeUnlocked badges={fresh} onClose={clearFresh} />}
     </section>
   )
