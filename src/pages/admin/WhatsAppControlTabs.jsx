@@ -165,9 +165,54 @@ export function SettingsTab() {
           <Switch checked={!!settings.chatLogAutoDelete} onChange={(v) => save({ chatLogAutoDelete: v })} label="Delete the oldest when full" />
         </div>
       </Card>
+      <ContactsCard />
       {saving && <p className="font-label-sm text-label-sm text-on-surface-variant">Saving…</p>}
       <Note error={error} ok={ok} />
     </div>
+  )
+}
+
+// Everyone who has chatted with him privately, as one contacts file:
+// open it on the phone and all of them are added at once.
+function ContactsCard() {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [ok, setOk] = useState('')
+  const download = async () => {
+    setBusy(true)
+    setError('')
+    setOk('')
+    try {
+      const count = await adminApi.downloadWhatsappContacts()
+      setOk(count ? `${count} contact${count === 1 ? '' : 's'} downloaded. Open the file on your phone to save them all.` : 'No contacts with a visible number yet.')
+    } catch (err) {
+      setError(err.message || 'Could not download.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Card className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <span className="material-symbols-outlined text-emerald-500">contacts</span>
+        <div className="min-w-0 flex-grow">
+          <p className="font-body-md text-body-md font-semibold text-on-surface">His contacts</p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">
+            Everyone who has chatted with Bro Paul privately, with the name they told him and what he remembers about them. Open the file on your phone to save them all in one go.
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={download}
+        disabled={busy}
+        className="rcf-press self-start flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 text-white font-label-md text-label-md font-semibold disabled:opacity-50"
+      >
+        <span className="material-symbols-outlined text-[20px]">download</span>
+        {busy ? 'Preparing…' : 'Download contacts'}
+      </button>
+      <Note error={error} ok={ok} />
+    </Card>
   )
 }
 

@@ -485,6 +485,22 @@ export const adminApi = {
   sendWhatsappMessage: (jid, text) =>
     apiFetch('/admin/whatsapp/send', { method: 'POST', body: JSON.stringify({ jid, text }) }),
   listWhatsappOutbox: () => apiFetch('/admin/whatsapp/outbox'),
+  // Everyone Bro Paul has chatted with, as a .vcf the phone imports.
+  downloadWhatsappContacts: async () => {
+    const res = await fetch(`${API_BASE}/admin/whatsapp/contacts.vcf`, { credentials: 'include' })
+    if (!res.ok) throw new Error(`Could not get the contacts (${res.status})`)
+    const count = Number(res.headers.get('X-Contact-Count') || 0)
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'bro-paul-contacts.vcf'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
+    return count
+  },
   listWhatsappActivity: (category) =>
     apiFetch(`/admin/whatsapp/activity${category ? `?category=${encodeURIComponent(category)}` : ''}`),
   // introduce = Bro Paul introduces himself there (also starts a new group).
