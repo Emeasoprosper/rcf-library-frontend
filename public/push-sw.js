@@ -61,6 +61,28 @@ self.addEventListener('notificationclick', (event) => {
     })()
   )
 })
+// ---------- Switch open pages to a new version ----------
+// The new worker takes over at once (autoUpdate), but a page already open,
+// or the installed app resumed from the background, kept running the old
+// code until it was closed and reopened, sometimes twice. That's how
+// phones kept showing the old sign-in screen after the "We're upgrading"
+// notice went live. Now, when an update takes over, every open page reloads
+// into the new version. A first visit (no older version) is never reloaded.
+let replacingOlderVersion = false
+self.addEventListener('install', () => {
+  replacingOlderVersion = Boolean(self.registration.active)
+})
+self.addEventListener('activate', (event) => {
+  if (!replacingOlderVersion) return
+  event.waitUntil(
+    (async () => {
+      await self.clients.claim()
+      const windows = await self.clients.matchAll({ type: 'window' })
+      await Promise.all(windows.map((c) => ('navigate' in c ? c.navigate(c.url).catch(() => {}) : null)))
+    })()
+  )
+})
+
 // ---------- Share to the app ----------
 // The app is in the phone's Share menu for documents (manifest share_target
 // in vite.config.js). A share arrives here as a POST to /share-target: the
