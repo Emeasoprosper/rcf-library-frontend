@@ -6,6 +6,8 @@ import App from './App.jsx'
 import './lib/pushSound.js'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { seedBackHistory } from './lib/backNav.js'
+import { MAINTENANCE_MODE } from './maintenance.js'
+import Maintenance from './pages/Maintenance.jsx'
 
 // Captured as early as possible — beforeinstallprompt fires only once per
 // page load, often before React finishes mounting InstallPrompt.jsx. If
@@ -34,12 +36,18 @@ window.__rcfStarted = true
 // parents behind it so Back goes resource -> Library -> Home, then exits.
 seedBackHistory()
 
+// Under construction: only the "We're upgrading" screen, nothing that
+// signs in or calls the backend. Switch off in src/maintenance.js.
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
+    {MAINTENANCE_MODE ? (
+      <Maintenance />
+    ) : (
+      <BrowserRouter>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </BrowserRouter>
+    )}
   </StrictMode>,
 )
