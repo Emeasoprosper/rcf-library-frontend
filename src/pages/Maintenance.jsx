@@ -1,5 +1,43 @@
 // Shown instead of the whole app while MAINTENANCE_MODE is on (src/maintenance.js).
 // Self-contained styles so it looks right even with nothing else loaded.
+import { useLayoutEffect, useRef, useState } from 'react'
+
+// Space kept around the card on every side: 16px on phones, a bit more on
+// bigger screens so it never touches the edges.
+const gapFor = (vw, vh) => Math.max(16, Math.min(vw, vh) * 0.05)
+
+// The card is designed at one size and scaled to fit the screen, so it is
+// never cut off on short phones nor tiny on big screens: equal space all
+// round, scrolling never needed.
+function useFitScale(ref) {
+  const [scale, setScale] = useState(1)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const fit = () => {
+      const vw = window.visualViewport?.width || window.innerWidth
+      const vh = window.visualViewport?.height || window.innerHeight
+      const w = el.offsetWidth
+      const h = el.offsetHeight
+      if (!w || !h) return
+      // Shrink to fit; grow a little on big screens, but not past 1.25x.
+      const gap = gapFor(vw, vh)
+      setScale(Math.min((vw - gap * 2) / w, (vh - gap * 2) / h, 1.25))
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    window.addEventListener('resize', fit)
+    window.visualViewport?.addEventListener('resize', fit)
+    document.fonts?.ready.then(fit).catch(() => {})
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', fit)
+      window.visualViewport?.removeEventListener('resize', fit)
+    }
+  }, [ref])
+  return scale
+}
 
 const STEPS = [
   { icon: 'auto_stories', label: 'Library & books', done: true },
@@ -8,6 +46,8 @@ const STEPS = [
 ]
 
 export default function Maintenance() {
+  const cardRef = useRef(null)
+  const scale = useFitScale(cardRef)
   return (
     <div className="mt-wrap">
       <style>{CSS}</style>
@@ -15,7 +55,7 @@ export default function Maintenance() {
       <div className="mt-glow mt-glow-b" />
       <div className="mt-grid" />
 
-      <main className="mt-card" role="main">
+      <main ref={cardRef} className="mt-card" role="main" style={{ '--mt-scale': scale }}>
         <div className="mt-logo-ring">
           <img src="/logoapp.jpg" alt="RCF MOUAU Library" className="mt-logo" />
         </div>
@@ -66,11 +106,10 @@ export default function Maintenance() {
 
 const CSS = `
 .mt-wrap {
-  position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden;
+  position: fixed; inset: 0; overflow: hidden;
   background: #070707; color: #f4f4f4;
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   display: flex; align-items: center; justify-content: center;
-  padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
 }
 .mt-glow { position: fixed; border-radius: 50%; filter: blur(90px); opacity: .55; pointer-events: none; }
 .mt-glow-a { width: 420px; height: 420px; background: #ff7a1a; top: -140px; right: -120px; animation: mt-float 14s ease-in-out infinite; }
@@ -83,7 +122,8 @@ const CSS = `
   -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
 }
 .mt-card {
-  position: relative; width: 100%; max-width: 480px; text-align: center;
+  position: relative; flex: none; box-sizing: border-box; width: 440px; text-align: center;
+  scale: var(--mt-scale, 1); transform-origin: center;
   background: rgba(22, 22, 22, .72); border: 1px solid rgba(255,255,255,.08);
   border-radius: 28px; padding: 36px 24px 28px;
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
@@ -103,7 +143,7 @@ const CSS = `
   padding: 6px 12px; border-radius: 999px;
 }
 .mt-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff7a1a; box-shadow: 0 0 0 0 rgba(255,122,26,.7); animation: mt-pulse 1.8s infinite; }
-.mt-title { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(30px, 8vw, 40px); line-height: 1.12; margin: 18px 0 12px; font-weight: 700; }
+.mt-title { font-family: 'Playfair Display', Georgia, serif; font-size: 38px; line-height: 1.12; margin: 18px 0 12px; font-weight: 700; }
 .mt-accent { background: linear-gradient(90deg, #ffffff, #ff9a4d 60%, #ff7a1a); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .mt-text { color: #b9b9b9; font-size: 15px; line-height: 1.6; margin: 0 auto 22px; max-width: 400px; }
 .mt-progress { height: 8px; border-radius: 999px; background: #262626; overflow: hidden; margin-bottom: 20px; }
