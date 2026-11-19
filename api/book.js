@@ -25,7 +25,7 @@
 //    ResourceDetail component. Crawlers see real tags; humans see the
 //    real interactive app.
 
-const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://rcf-library-backend.onrender.com'
+const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://rcf-library-backend-b3g4.onrender.com'
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://rcf-mouau-library.vercel.app'
 
 // Render free-tier backends cold-start slowly. Don't let a sleeping

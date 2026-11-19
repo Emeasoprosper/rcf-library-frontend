@@ -3,7 +3,7 @@
 // Same approach as api/book.js: pull the SEO tags from the backend's
 // /collections/:id page and inject them into the real index.html.
 
-const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://rcf-library-backend.onrender.com'
+const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://rcf-library-backend-b3g4.onrender.com'
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://rcf-mouau-library.vercel.app'
 const BACKEND_FETCH_TIMEOUT_MS = 8000
 

@@ -11,7 +11,7 @@
 // newly-approved resource shows up automatically — no manual entry,
 // no redeploy needed.
 
-const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://rcf-library-backend.onrender.com'
+const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://rcf-library-backend-b3g4.onrender.com'
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://rcf-mouau-library.vercel.app'
 
 export default async function handler(req, res) {

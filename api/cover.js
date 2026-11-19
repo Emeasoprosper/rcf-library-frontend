@@ -13,7 +13,7 @@
 //   /api/cover?src=/api/resources/<id>/thumbnail
 //   /api/cover?src=/api/resource-collections/<id>/cover
 
-const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://rcf-library-backend.onrender.com'
+const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://rcf-library-backend-b3g4.onrender.com'
 const ALLOWED = /^\/api\/(resources\/[0-9a-f-]{36}\/thumbnail|resource-collections\/[0-9a-f-]{36}\/cover)$/i
 
 export default async function handler(req, res) {
