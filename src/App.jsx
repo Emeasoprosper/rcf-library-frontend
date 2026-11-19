@@ -27,8 +27,16 @@ import BroPaulButton from './components/ui/BroPaulButton'
 import NetworkStatusBanner from './components/ui/NetworkStatusBanner'
 import { PresenceProvider } from './contexts/PresenceContext'
 import FloatingStudyButton from './components/ui/FloatingStudyButton'
+import { useLocation } from 'react-router-dom'
+
+// Pages that stand alone: no header, side navs, notifications or Bro Paul
+// button around them. Sign-in is its own full-screen space.
+const STANDALONE_PATHS = ['/signin', '/splash', '/complete-profile']
 
 function App() {
+  const { pathname } = useLocation()
+  const standalone = STANDALONE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+
   return (
     <AppLoader>
       <LanguageProvider>
@@ -39,10 +47,10 @@ function App() {
           <PresenceProvider>
             <LayoutModeSync />
             <NetworkStatusBanner />
-            <DesktopHeader />
-            <LeftSidebarNav />
+            {!standalone && <DesktopHeader />}
+            {!standalone && <LeftSidebarNav />}
             <AppRoutes />
-            <RightSidebarPanel />
+            {!standalone && <RightSidebarPanel />}
             <InstallPrompt />
             <ApkUpdateBanner />
             <SpotlightTour />
@@ -54,10 +62,10 @@ function App() {
             <DownloadFx />
             <TransferFx />
             <FeedbackPrompt />
-            <BroPaulButton />
+            {!standalone && <BroPaulButton />}
             <LeaveSiteDialog />
             <AmbientOwl />
-            <NotificationsModal />
+            {!standalone && <NotificationsModal />}
             <FloatingStudyButton />
           </PresenceProvider>
           </NotificationsModalProvider>
