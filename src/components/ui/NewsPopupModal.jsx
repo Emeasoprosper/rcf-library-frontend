@@ -77,7 +77,7 @@ function NewsPopupModalBody({ news, onClose, onViewAll }) {
               {news.title}
             </h2>
 
-            <p className="font-body-md text-body-md text-on-surface-variant line-clamp-3">
+            <p className="font-body-md text-body-md text-on-surface-variant line-clamp-3 whitespace-pre-line">
               {news.message}
             </p>
           </div>

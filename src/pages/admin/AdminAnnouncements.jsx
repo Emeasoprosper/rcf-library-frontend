@@ -642,7 +642,7 @@ function AdminAnnouncements() {
                       </span>
                     </button>
                   </div>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant">{item.message}</p>
+                  <p className="font-label-sm text-label-sm text-on-surface-variant whitespace-pre-line">{item.message}</p>
                   {item.attachment_url && (
                     <img
                       src={item.attachment_url}
