@@ -32,6 +32,24 @@ window.addEventListener('appinstalled', () => {
 // Tells the self-repair script in index.html that the app code loaded.
 window.__rcfStarted = true
 
+// Look for a new version of the site whenever the app comes back to the
+// front, and every 30 minutes while it's open. Phones only check on a fresh
+// page load otherwise, so the installed app (resumed from the background)
+// could keep showing an old version, e.g. the "We're upgrading" screen,
+// for days. When a new version installs, push-sw.js reloads open pages.
+if ('serviceWorker' in navigator) {
+  let lastCheck = 0
+  const checkForUpdate = () => {
+    if (Date.now() - lastCheck < 60 * 1000) return
+    lastCheck = Date.now()
+    navigator.serviceWorker.getRegistration().then((reg) => reg?.update()).catch(() => {})
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate() })
+  window.addEventListener('focus', checkForUpdate)
+  window.addEventListener('online', checkForUpdate)
+  setInterval(checkForUpdate, 30 * 60 * 1000)
+}
+
 // Opened from a link (e.g. a resource shared on WhatsApp): put the page's
 // parents behind it so Back goes resource -> Library -> Home, then exits.
 seedBackHistory()
