@@ -34,14 +34,7 @@ function timeAgo(dateString) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-const notificationIcon = {
-  announcement: 'campaign',
-  news: 'newspaper',
-  advert: 'ads_click',
-  resource_approved: 'check_circle',
-  resource_rejected: 'error',
-  request_resolved: 'inbox',
-}
+import { notificationStyle } from '../lib/notificationStyle'
 
 function openReaderItem(item, kind, { isDesktop, openResource, navigate }) {
   if (kind !== 'book' && isDesktop) {
@@ -313,7 +306,8 @@ function Home() {
 
   const updates = notifications.map((n) => ({
     id: n.id,
-    previewIcon: notificationIcon[n.type] || 'notifications',
+    previewIcon: notificationStyle(n.type).icon,
+    previewTone: notificationStyle(n.type).tone,
     thumbnailUrl: n.thumbnail_url,
     count: 1,
     text: n.title,

@@ -5,7 +5,24 @@
 // the original single-thumbnailUrl-on-the-front-layer behavior (e.g.
 // notification badges elsewhere in the app), so nothing else that
 // already uses this component is affected.
-function StackedPreview({ id, thumbnailUrl, thumbnails, icon = 'notifications', count = 1, size = 40, width, height }) {
+// `tone` (e.g. 'bg-emerald-500/15 text-emerald-400') colours the icon tile
+// shown when there's no picture, or when the picture fails to load.
+import { useState } from 'react'
+
+function Layer({ src, icon, tone, isFront }) {
+  const [failed, setFailed] = useState(false)
+  if (src && !failed) {
+    return <img src={src} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />
+  }
+  if (!isFront) return null
+  return (
+    <span className={`w-full h-full flex items-center justify-center ${tone || 'text-on-surface-variant'}`}>
+      <span className="material-symbols-outlined text-lg">{icon}</span>
+    </span>
+  )
+}
+
+function StackedPreview({ id, thumbnailUrl, thumbnails, icon = 'notifications', tone, count = 1, size = 40, width, height }) {
   const w = width ?? size
   const h = height ?? size
   const layerCount = thumbnails ? thumbnails.length : count
@@ -29,13 +46,7 @@ function StackedPreview({ id, thumbnailUrl, thumbnails, icon = 'notifications', 
               zIndex: i,
             }}
           >
-            {layerThumbnail ? (
-              <img src={layerThumbnail} alt="" className="w-full h-full object-cover" />
-            ) : (
-              isFront && (
-                <span className="material-symbols-outlined text-on-surface-variant text-lg">{icon}</span>
-              )
-            )}
+            <Layer key={layerThumbnail || 'none'} src={layerThumbnail} icon={icon} tone={tone} isFront={isFront} />
           </div>
         )
       })}

@@ -12,14 +12,7 @@ import { communityApi } from '../../services/api'
 import { useNotificationsModal } from '../../contexts/NotificationsModalContext'
 import logo from '../../assets/RCFmouau.svg'
 
-const notificationIcon = {
-  announcement: 'campaign',
-  news: 'newspaper',
-  advert: 'ads_click',
-  resource_approved: 'check_circle',
-  resource_rejected: 'error',
-  request_resolved: 'inbox',
-}
+import { notificationStyle } from '../../lib/notificationStyle'
 
 function timeAgo(dateString) {
   const seconds = Math.floor((Date.now() - new Date(dateString)) / 1000)
@@ -60,7 +53,8 @@ function LeftSidebarNav() {
 
   const updates = notifications.map((n) => ({
     id: n.id,
-    previewIcon: notificationIcon[n.type] || 'notifications',
+    previewIcon: notificationStyle(n.type).icon,
+    previewTone: notificationStyle(n.type).tone,
     thumbnailUrl: n.thumbnail_url,
     count: 1,
     text: n.title,

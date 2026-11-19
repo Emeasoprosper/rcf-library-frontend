@@ -3,6 +3,9 @@
 // the same day (day number -> position in the book list), and it is cached
 // on the device so it doesn't change while the day lasts.
 const KEY = 'rcf_book_of_the_day'
+// The saved pick holds full cover links, so it only counts for the backend
+// it came from (a moved backend would leave a dead cover for the day).
+const API = import.meta.env.VITE_API_BASE_URL || ''
 
 const lagosDay = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' })
 
@@ -10,7 +13,7 @@ export async function fetchBookOfTheDay(listResources) {
   const day = lagosDay()
   try {
     const cached = JSON.parse(localStorage.getItem(KEY) || 'null')
-    if (cached?.day === day && cached.item) return cached.item
+    if (cached?.day === day && cached.api === API && cached.item) return cached.item
   } catch { /* storage blocked */ }
 
   const base = { type: 'book', sort: 'recent' }
@@ -23,6 +26,6 @@ export async function fetchBookOfTheDay(listResources) {
   const pick = index === 0 ? first : await listResources({ ...base, pageSize: 1, page: index + 1 })
   const item = pick?.items?.[0] || first.items?.[0] || null
 
-  try { localStorage.setItem(KEY, JSON.stringify({ day, item })) } catch { /* storage blocked */ }
+  try { localStorage.setItem(KEY, JSON.stringify({ day, api: API, item })) } catch { /* storage blocked */ }
   return item
 }

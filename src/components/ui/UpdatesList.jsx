@@ -24,6 +24,7 @@ function UpdatesList({ updates, onSeeAll, onDelete, title = 'Updates' }) {
                 id={update.id}
                 thumbnailUrl={update.thumbnailUrl}
                 icon={update.previewIcon}
+                tone={update.previewTone}
                 count={update.count}
                 size={48}
               />
