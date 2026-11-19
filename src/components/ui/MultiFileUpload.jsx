@@ -121,6 +121,8 @@ function MultiFileUpload({ files, onFilesChange, accept, authorLabel = 'Author',
           onCollectionChoiceChange={(collectionChoice) => updateFile(id, { collectionChoice })}
           onCreateCategory={onCreateCategory}
           onThumbnailChange={(blob) => updateFile(id, { thumbnailBlob: blob })}
+          duplicate={entry.duplicate}
+          onDuplicateChange={(duplicate) => updateFile(id, { duplicate })}
           onRemove={() => removeFile(id)}
         />
         )

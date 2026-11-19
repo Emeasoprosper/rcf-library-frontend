@@ -5,7 +5,7 @@ import { renderVideoFirstFrame } from '../../lib/videoThumbnail'
 import { renderDocxFirstPage } from '../../lib/docxThumbnail'
 import { extractAudioCoverArt } from '../../lib/audioThumbnail'
 import { formatBytes } from '../../lib/formatBytes'
-import { analyzeResource } from '../../services/api'
+import { analyzeResource, checkDuplicateFile } from '../../services/api'
 import { enqueueAnalysis } from '../../lib/analysisQueue'
 import PreviewEditModal from './PreviewEditModal'
 import DocumentTypeIcon from './DocumentTypeIcon'
@@ -52,6 +52,17 @@ function analyzeOnce(file, resourceTypeSlug, thumbnail) {
   return pending
 }
 
+const duplicateCache = new WeakMap()
+function duplicateOnce(file) {
+  let pending = duplicateCache.get(file)
+  if (!pending) {
+    pending = checkDuplicateFile(file)
+    pending.catch(() => duplicateCache.delete(file))
+    duplicateCache.set(file, pending)
+  }
+  return pending
+}
+
 function FilePreviewCard({
   file,
   name,
@@ -83,6 +94,8 @@ function FilePreviewCard({
   onCollectionChoiceChange,
   onCreateCategory,
   onThumbnailChange,
+  duplicate = null,
+  onDuplicateChange,
   onRemove,
 }) {
   const [thumbnail, setThumbnail] = useState(null)
@@ -137,6 +150,16 @@ function FilePreviewCard({
     buildThumbnail()
     return () => { cancelled = true }
   }, [file, kind])
+
+  // Already in the library? Checked once per file, the moment it's picked.
+  useEffect(() => {
+    let cancelled = false
+    duplicateOnce(file)
+      .then((dup) => { if (!cancelled && dup) onDuplicateChange?.(dup) })
+      .catch(() => {}) // the server checks again on submit anyway
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file])
 
   useEffect(() => {
     if (kind !== 'audio') return
@@ -274,7 +297,20 @@ function FilePreviewCard({
           <p className="font-label-sm text-label-sm text-white/70 truncate">
             {categoryNames?.trim() || 'Uncategorized'} · {formatBytes(file.size)}
           </p>
-          {analyzing && (
+          {duplicate && (
+            <div className="mt-1 p-2 rounded-lg bg-red-950/70 border border-red-400/40">
+              <p className="font-label-sm text-label-sm text-red-100">
+                {duplicate.status === 'pending' ? 'Already uploaded and waiting for review' : 'Already in the library'}: <span className="font-semibold">{duplicate.title}</span>
+              </p>
+              <p className="font-label-sm text-label-sm text-red-200/80">This file can't be added again. Remove it to continue.</p>
+              {duplicate.status !== 'pending' && (
+                <a href={`/library/${duplicate.id}`} onClick={(e) => e.stopPropagation()} className="font-label-sm text-label-sm text-white underline">
+                  Open it in the library
+                </a>
+              )}
+            </div>
+          )}
+          {analyzing && !duplicate && (
             <p className="font-label-sm text-label-sm text-white/50 italic">Analyzing…</p>
           )}
           {!analyzing && thumbnailFailed && (

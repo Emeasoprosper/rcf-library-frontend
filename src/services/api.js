@@ -149,6 +149,17 @@ function sendResourceFile(formData, onProgress) {
   })
 }
 
+// Is this exact file already in the library? Fingerprinted here in the
+// browser (nothing is uploaded). Returns { id, title, url, message } or null.
+// Very big files are left to the server's check when they're submitted.
+export async function checkDuplicateFile(file) {
+  if (!globalThis.crypto?.subtle || file.size > 150 * 1024 * 1024) return null
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+  const sha = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+  const { duplicate } = await apiFetch(`/uploads/duplicate?sha=${sha}`)
+  return duplicate || null
+}
+
 export function analyzeResource(file, resourceTypeSlug, thumbnailDataUrl) {
   const formData = new FormData()
   formData.append('file', file)

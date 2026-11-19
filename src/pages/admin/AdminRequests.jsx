@@ -180,7 +180,8 @@ function AdminRequests() {
     const timer = setTimeout(async () => {
       setSearching(true)
       try {
-        const { items } = await adminApi.resources({ status: 'approved', search: q, pageSize: 5 })
+        // Forgiving search: close spellings and short forms count too.
+        const { items } = await adminApi.resources({ status: 'approved', search: q, pageSize: 8, fuzzy: 1 })
         if (!cancelled) {
           setResourceResults(items || [])
           setSearchedFor(q)
@@ -425,6 +426,7 @@ function AdminRequests() {
                                   <div className="min-w-0 flex-1">
                                     <p className="font-body-md text-body-md text-on-surface truncate">{r.title}</p>
                                     <p className="font-label-sm text-label-sm text-on-surface-variant truncate">
+                                      {r.match === 'similar' && <span className="text-amber-500">Similar name · </span>}
                                       {r.author || 'Unknown author'}
                                     </p>
                                   </div>

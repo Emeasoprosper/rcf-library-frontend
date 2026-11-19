@@ -115,7 +115,8 @@ function SubmitResource() {
   }
 
   const selectedTypeData = resourceTypes.find((t) => t.id === selectedType)
-  const canSubmit = files.length > 0 && files.every((f) => f.name.trim() !== '') && !uploading
+  const duplicates = files.filter((f) => f.duplicate)
+  const canSubmit = files.length > 0 && duplicates.length === 0 && files.every((f) => f.name.trim() !== '') && !uploading
 
   const handleSelectType = (event, type) => {
     createRipple(event)
@@ -275,6 +276,16 @@ function SubmitResource() {
                 onCreateCategory={handleCreateCategory}
                 resourceTypeSlug={selectedTypeData?.slug}
               />
+
+              {duplicates.length > 0 && (
+                <div className="p-stack-md rounded-xl bg-error/10 border border-error/30">
+                  <p className="font-body-md text-body-md text-error">
+                    {duplicates.length === 1
+                      ? 'One of these files is already in the library, so it can’t be added again. Remove it to submit the rest.'
+                      : `${duplicates.length} of these files are already in the library, so they can’t be added again. Remove them to submit the rest.`}
+                  </p>
+                </div>
+              )}
 
               {uploadError && (
                 <div className="p-stack-md rounded-xl bg-error/10 border border-error/30">
