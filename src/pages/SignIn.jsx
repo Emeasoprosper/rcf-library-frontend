@@ -181,16 +181,16 @@ function SignIn() {
   }
 
   return (
-    <main className="min-h-screen w-full md:grid md:grid-cols-[1.08fr_1fr] bg-black text-on-surface">
+    <main className="min-h-screen md:h-[100dvh] md:min-h-0 md:overflow-hidden w-full md:grid md:grid-cols-[1.08fr_1fr] bg-black text-on-surface">
       {/* Desktop: the night-sky library and the owl watching the cursor */}
       <AuthShowcase />
       <CursorTrail />
 
       <section
-        className="relative flex flex-col min-h-screen w-full px-margin-mobile py-16 md:py-10 md:px-12 md:justify-center md:bg-[#0b0f16] md:overflow-y-auto"
+        className="relative flex flex-col min-h-screen md:min-h-0 md:h-full w-full px-margin-mobile py-16 md:py-[4vh] md:px-12 md:justify-center md:bg-[#0b0f16] md:overflow-y-auto"
         style={isDesktop ? undefined : { background: 'radial-gradient(circle at 50% 20%, #1a1a1a 0%, #000000 70%)' }}
       >
-      <div className="flex-1 md:flex-none flex flex-col items-center md:items-start justify-center text-center md:text-left gap-stack-md max-w-sm md:max-w-[400px] w-full mx-auto md:mb-8">
+      <div className="flex-1 md:flex-none flex flex-col items-center md:items-start justify-center text-center md:text-left gap-stack-md max-w-sm md:max-w-[400px] w-full mx-auto md:mb-[3vh]">
         <img src="/signIn.png" alt="RCF MOUAU Library" className="w-40 h-40 object-contain md:hidden" />
 
         <div className="flex flex-col gap-stack-sm">

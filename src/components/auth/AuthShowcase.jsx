@@ -31,28 +31,30 @@ function AuthShowcase({ title = 'Your library. Everywhere. Even offline.', subti
         <span key={i} className="rcf-twinkle absolute rounded-full bg-white" style={{ left: s.left, top: s.top, width: s.size, height: s.size, animationDelay: s.delay }} aria-hidden="true" />
       ))}
 
-      <div className="relative z-10 px-12 lg:px-16 pt-12 flex-1 flex flex-col">
+      {/* Sizes follow the screen height (vh) so the whole panel fits in one
+          screen without scrolling, from small laptops to big monitors. */}
+      <div className="relative z-10 px-12 lg:px-16 pt-[4.5vh] flex-1 min-h-0 flex flex-col">
         <div className="flex items-center gap-3">
           <img src="/logoapp.jpg" alt="" className="w-10 h-10 rounded-xl object-cover bg-white" />
           <span className="font-label-md text-label-md tracking-[0.2em] uppercase text-white/70">RCF MOUAU Library</span>
         </div>
 
-        <h1 className="mt-14 font-display text-[44px] lg:text-[54px] leading-[1.02] font-extrabold tracking-tight max-w-xl">
+        <h1 className="mt-[4vh] font-display text-[clamp(28px,5.4vh,54px)] leading-[1.02] font-extrabold tracking-tight max-w-xl">
           {title}
         </h1>
-        <p className="mt-4 text-[17px] text-white/70 max-w-lg">{subtitle}</p>
+        <p className="mt-[1.6vh] text-[clamp(14px,2vh,17px)] text-white/70 max-w-lg">{subtitle}</p>
 
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="mt-8 self-start flex items-center gap-1 font-label-md text-label-md font-semibold text-white"
+          className="mt-[3vh] self-start flex items-center gap-1 font-label-md text-label-md font-semibold text-white"
           aria-expanded={open}
         >
           See what's included
           <span className={`material-symbols-outlined text-[20px] transition-transform duration-300 ${open ? '' : 'rotate-180'}`}>keyboard_arrow_up</span>
         </button>
         <div className={`grid transition-[grid-template-rows,opacity] duration-500 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-          <ul className="overflow-hidden flex flex-col gap-4 pt-4 max-w-lg">
+          <ul className="overflow-hidden flex flex-col gap-[1.6vh] pt-[1.6vh] max-w-lg">
             {INCLUDED.map(([icon, head, text]) => (
               <li key={head} className="flex gap-3">
                 <span className="material-symbols-outlined text-orange-400 text-[22px] mt-0.5">{icon}</span>
@@ -67,8 +69,8 @@ function AuthShowcase({ title = 'Your library. Everywhere. Even offline.', subti
       </div>
 
       {/* the owl, peeking over the books, watching you */}
-      <div className="relative z-10 mt-6 flex justify-center">
-        <PeekingOwl className="w-[340px] lg:w-[400px] h-auto drop-shadow-[0_-10px_40px_rgba(249,115,22,0.18)]" />
+      <div className="relative z-10 mt-[2vh] flex-none flex justify-center">
+        <PeekingOwl className="h-[28vh] w-auto max-w-[400px] drop-shadow-[0_-10px_40px_rgba(249,115,22,0.18)]" />
       </div>
     </aside>
   )
