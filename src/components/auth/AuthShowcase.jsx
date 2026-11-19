@@ -1,16 +1,9 @@
 // RCFMOUAULIBRARYreact/student-dashboard/src/components/auth/AuthShowcase.jsx
 // Desktop sign-in left panel: a night-sky library scene in RCF's own colours
-// (deep ink, warm orange and teal glows), the headline, what's included, and
-// the owl peeking up from behind the books at the bottom, watching the cursor.
-import { useState } from 'react'
+// (deep ink, warm orange and teal glows), the headline, and the big owl
+// peeking up from behind the books (one wears the RCF logo), watching the
+// cursor. `owlCovering` makes it cover its eyes while a password is typed.
 import PeekingOwl from './PeekingOwl'
-
-const INCLUDED = [
-  ['menu_book', 'Books, past questions and lecture notes', 'For every MOUAU department and level.'],
-  ['offline_pin', 'Read offline, with no data', 'Download once, read anywhere.'],
-  ['auto_awesome', 'Notes written for your course', 'Ask for lecture notes we don\'t have and our AI writes them.'],
-  ['chat', 'Bro Paul on WhatsApp', 'Ask for any material right from your chats.'],
-]
 
 const STARS = Array.from({ length: 36 }, (_, i) => ({
   left: `${(i * 37) % 100}%`,
@@ -19,10 +12,13 @@ const STARS = Array.from({ length: 36 }, (_, i) => ({
   delay: `${(i % 9) * 0.35}s`,
 }))
 
-function AuthShowcase({ title = 'Your library. Everywhere. Even offline.', subtitle = 'The RCF MOUAU digital library: study materials, devotionals and more, free for every member.' }) {
-  const [open, setOpen] = useState(true)
+function AuthShowcase({
+  title = 'Your library. Everywhere. Even offline.',
+  subtitle = 'The RCF MOUAU digital library: study materials, devotionals and more, free for every member.',
+  owlCovering = false,
+}) {
   return (
-    <aside className="relative hidden md:flex flex-col overflow-hidden bg-[#060b14] text-white">
+    <aside className="relative hidden md:flex flex-col h-full min-h-0 overflow-hidden bg-[#060b14] text-white">
       {/* sky glows */}
       <span className="absolute -top-32 -left-24 w-[520px] h-[520px] rounded-full bg-orange-500/20 blur-[110px]" aria-hidden="true" />
       <span className="absolute top-1/3 -right-32 w-[460px] h-[460px] rounded-full bg-teal-400/15 blur-[110px]" aria-hidden="true" />
@@ -31,46 +27,20 @@ function AuthShowcase({ title = 'Your library. Everywhere. Even offline.', subti
         <span key={i} className="rcf-twinkle absolute rounded-full bg-white" style={{ left: s.left, top: s.top, width: s.size, height: s.size, animationDelay: s.delay }} aria-hidden="true" />
       ))}
 
-      {/* Sizes follow the screen height (vh) so the whole panel fits in one
-          screen without scrolling, from small laptops to big monitors. */}
-      <div className="relative z-10 px-12 lg:px-16 pt-[4.5vh] flex-1 min-h-0 flex flex-col">
-        <div className="flex items-center gap-3">
-          <img src="/logoapp.jpg" alt="" className="w-10 h-10 rounded-xl object-cover bg-white" />
-          <span className="font-label-md text-label-md tracking-[0.2em] uppercase text-white/70">RCF MOUAU Library</span>
-        </div>
-
-        <h1 className="mt-[4vh] font-display text-[clamp(28px,5.4vh,54px)] leading-[1.02] font-extrabold tracking-tight max-w-xl">
+      {/* Sizes follow the screen height (vh) so everything fits one screen. */}
+      <div className="relative z-10 px-12 lg:px-16 pt-[7vh] flex-none">
+        <h1 className="font-display text-[clamp(28px,5.6vh,56px)] leading-[1.02] font-extrabold tracking-tight max-w-xl">
           {title}
         </h1>
-        <p className="mt-[1.6vh] text-[clamp(14px,2vh,17px)] text-white/70 max-w-lg">{subtitle}</p>
-
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="mt-[3vh] self-start flex items-center gap-1 font-label-md text-label-md font-semibold text-white"
-          aria-expanded={open}
-        >
-          See what's included
-          <span className={`material-symbols-outlined text-[20px] transition-transform duration-300 ${open ? '' : 'rotate-180'}`}>keyboard_arrow_up</span>
-        </button>
-        <div className={`grid transition-[grid-template-rows,opacity] duration-500 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-          <ul className="overflow-hidden flex flex-col gap-[1.6vh] pt-[1.6vh] max-w-lg">
-            {INCLUDED.map(([icon, head, text]) => (
-              <li key={head} className="flex gap-3">
-                <span className="material-symbols-outlined text-orange-400 text-[22px] mt-0.5">{icon}</span>
-                <span>
-                  <span className="block font-body-md text-body-md font-semibold">{head}</span>
-                  <span className="block font-label-md text-label-md text-white/60">{text}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <p className="mt-[1.8vh] text-[clamp(14px,2.1vh,18px)] text-white/70 max-w-lg">{subtitle}</p>
       </div>
 
       {/* the owl, peeking over the books, watching you */}
-      <div className="relative z-10 mt-[2vh] flex-none flex justify-center">
-        <PeekingOwl className="h-[28vh] w-auto max-w-[400px] drop-shadow-[0_-10px_40px_rgba(249,115,22,0.18)]" />
+      <div className="relative z-10 flex-1 min-h-0 flex items-end justify-center pt-[3vh]">
+        <PeekingOwl
+          covering={owlCovering}
+          className="w-full max-w-[680px] h-full max-h-[58vh] drop-shadow-[0_-10px_40px_rgba(249,115,22,0.18)]"
+        />
       </div>
     </aside>
   )

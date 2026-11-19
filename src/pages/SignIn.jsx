@@ -38,6 +38,8 @@ function SignIn() {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  // The owl covers its eyes while the password box is in use.
+  const [passwordFocused, setPasswordFocused] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
 
   const [accountExists, setAccountExists] = useState(null)
@@ -183,7 +185,7 @@ function SignIn() {
   return (
     <main className="min-h-screen md:h-[100dvh] md:min-h-0 md:overflow-hidden w-full md:grid md:grid-cols-[1.08fr_1fr] bg-black text-on-surface">
       {/* Desktop: the night-sky library and the owl watching the cursor */}
-      <AuthShowcase />
+      <AuthShowcase owlCovering={showEmailForm && passwordFocused} />
       <CursorTrail />
 
       <section
@@ -302,6 +304,8 @@ function SignIn() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
                 placeholder="Password"
                 autoComplete={accountExists === true ? 'current-password' : 'new-password'}
                 className="w-full h-12 rounded-md bg-white/5 border border-white/20 pl-4 pr-12 text-white font-body-md placeholder:text-white/40 focus:outline-none focus:border-white/50"

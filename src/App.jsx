@@ -51,20 +51,20 @@ function App() {
             {!standalone && <LeftSidebarNav />}
             <AppRoutes />
             {!standalone && <RightSidebarPanel />}
-            <InstallPrompt />
+            {!standalone && <InstallPrompt />}
             <ApkUpdateBanner />
             <SpotlightTour />
             <MissingDetailsPrompt />
             <BirthdayCelebration />
             <NewMonthCelebration />
-            <DailyWordPopup />
-            <PushPermissionAsk />
+            {!standalone && <DailyWordPopup />}
+            {!standalone && <PushPermissionAsk />}
             <DownloadFx />
             <TransferFx />
-            <FeedbackPrompt />
+            {!standalone && <FeedbackPrompt />}
             {!standalone && <BroPaulButton />}
             <LeaveSiteDialog />
-            <AmbientOwl />
+            {!standalone && <AmbientOwl />}
             {!standalone && <NotificationsModal />}
             <FloatingStudyButton />
           </PresenceProvider>
