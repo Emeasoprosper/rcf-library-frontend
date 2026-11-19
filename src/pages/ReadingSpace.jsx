@@ -116,7 +116,7 @@ function ReadingSpace() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Reading Space" showBack />
 
-      <main className="pb-24 pt-[68px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile">
+      <main className="pb-24 pt-[80px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile">
         {error && (
           <div className="mb-stack-md p-stack-md rounded-xl bg-error/10 border border-error/30">
             <p className="font-body-md text-body-md text-error">{error}</p>
@@ -209,7 +209,7 @@ function ReadingSpace() {
                     />
                   </div>
                   <div className="flex gap-3">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <label className="font-label-md text-label-md text-on-surface-variant mb-1 block">When</label>
                       <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} className={inputClass} />
                     </div>

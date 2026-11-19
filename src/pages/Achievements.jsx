@@ -35,7 +35,7 @@ function Achievements() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Achievements" showBack />
 
-      <main className="pb-32 pt-[68px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile flex flex-col gap-stack-lg">
+      <main className="pb-32 pt-[80px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile flex flex-col gap-stack-lg">
         <div className="mt-stack-md">
           <h1 className="font-display text-[34px] md:text-[44px] leading-[1.05] font-extrabold tracking-tight">Your progress</h1>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">

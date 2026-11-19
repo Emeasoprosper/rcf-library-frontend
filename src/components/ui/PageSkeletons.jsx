@@ -69,7 +69,7 @@ export function CollectionSkeleton() {
         </div>
       </div>
 
-      <div className="pt-[68px] md:pt-24">
+      <div className="pt-[80px] md:pt-24">
         <section className="px-margin-mobile pt-stack-lg pb-stack-md flex flex-col items-center">
           <Block className="w-40 h-40 md:w-48 md:h-48 rounded-xl mb-stack-md" />
           <Block className="h-6 w-56 mb-2" />

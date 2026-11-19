@@ -307,7 +307,7 @@ function AdminWhatsApp() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="WhatsApp Bot" showBack />
 
-      <main className="pb-32 pt-[68px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile flex flex-col gap-stack-lg">
+      <main className="pb-32 pt-[80px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile flex flex-col gap-stack-lg">
         {error && (
           <div className="p-stack-md rounded-xl bg-error/10 border border-error/30">
             <p className="font-body-md text-body-md text-error">{error}</p>

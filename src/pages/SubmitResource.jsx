@@ -215,7 +215,7 @@ function SubmitResource() {
       />
 
       {phase === 'type' && (
-        <main className="pb-32 pt-[68px] md:pt-24 px-margin-mobile">
+        <main className="pb-32 pt-[80px] md:pt-24 px-margin-mobile">
           {shared.length > 0 && (
             <section className="mb-stack-md p-stack-md rounded-xl border border-primary/40 bg-primary/10 flex items-start gap-3">
               <span className="material-symbols-outlined text-primary flex-none">upload_file</span>
@@ -258,7 +258,7 @@ function SubmitResource() {
 
       {phase === 'upload' && (
         <>
-          <main className="pb-40 pt-[68px] md:pt-24 px-margin-mobile">
+          <main className="pb-40 pt-[80px] md:pt-24 px-margin-mobile">
             <section className="mb-stack-lg">
               <p className="font-body-md text-body-md text-on-surface-variant">
                 Add your {selectedTypeData?.title.toLowerCase()} file{selectedTypeData?.id !== 'other' ? 's' : ''} below.

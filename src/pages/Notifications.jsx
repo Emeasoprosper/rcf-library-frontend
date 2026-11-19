@@ -244,7 +244,7 @@ function Notifications() {
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-80 lg:pr-80">
       <TopAppBar title="Notifications" showBack />
-      <main className="pb-24 pt-[68px] md:pt-24">
+      <main className="pb-24 pt-[80px] md:pt-24">
         <NotificationsContent />
       </main>
       <BottomNav />

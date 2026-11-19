@@ -10,7 +10,7 @@ import { studyApi } from '../services/api'
 
 const SHELL =
   'min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out'
-const MAIN = 'pb-24 pt-[68px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile'
+const MAIN = 'pb-24 pt-[80px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile'
 
 function formatClock(totalSeconds) {
   const m = Math.floor(totalSeconds / 60)

@@ -181,7 +181,7 @@ function AdminHomeRails() {
 
       <TopAppBar title="Home Rails" showBack />
 
-      <main className="relative z-10 px-margin-mobile pt-[68px] md:pt-24 md:max-w-2xl md:mx-auto pb-32">
+      <main className="relative z-10 px-margin-mobile pt-[80px] md:pt-24 md:max-w-2xl md:mx-auto pb-32">
         <div className="mt-stack-md mb-stack-lg">
           <h2 className="font-headline-lg text-headline-lg font-display text-on-surface">Curate Home</h2>
           <p className="font-body-md text-body-md text-on-surface-variant">

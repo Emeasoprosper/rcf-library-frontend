@@ -61,7 +61,7 @@ function StudyNotes() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="My notes" showBack />
 
-      <main className="pb-24 pt-[68px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile">
+      <main className="pb-24 pt-[80px] md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile">
         {error && (
           <div className="mb-stack-md p-stack-md rounded-xl bg-error/10 border border-error/30">
             <p className="font-body-md text-body-md text-error">{error}</p>

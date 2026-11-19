@@ -265,7 +265,7 @@ function AdminAnnouncements() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Announcements" showBack />
 
-      <main className="pb-32 pt-[68px] md:pt-24 md:max-w-3xl md:mx-auto md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile">
+      <main className="pb-32 pt-[80px] md:pt-24 md:max-w-3xl md:mx-auto md:pt-24 md:max-w-3xl md:mx-auto px-margin-mobile">
         <div className="flex gap-2 mb-stack-lg">
           {Object.entries(typeConfig).map(([key, cfg]) => (
             <button
@@ -425,13 +425,13 @@ function AdminAnnouncements() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="flex-1 h-12 px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
+                className="flex-1 min-w-0 h-12 px-3 sm:px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
               />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="flex-1 h-12 px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
+                className="flex-1 min-w-0 h-12 px-3 sm:px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
               />
             </div>
           </div>
@@ -445,13 +445,13 @@ function AdminAnnouncements() {
                 type="time"
                 value={dailyStartTime}
                 onChange={(e) => setDailyStartTime(e.target.value)}
-                className="flex-1 h-12 px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
+                className="flex-1 min-w-0 h-12 px-3 sm:px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
               />
               <input
                 type="time"
                 value={dailyEndTime}
                 onChange={(e) => setDailyEndTime(e.target.value)}
-                className="flex-1 h-12 px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
+                className="flex-1 min-w-0 h-12 px-3 sm:px-4 bg-surface-container-low border border-outline rounded text-on-surface focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all font-body-md"
               />
             </div>
           </div>
@@ -612,56 +612,69 @@ function AdminAnnouncements() {
             </h2>
             <div className="flex flex-col gap-gutter">
               {sentLog.map((item) => (
-                <div key={item.id} className="p-stack-md rounded-xl bg-surface-container border border-outline">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-primary text-[16px]">
-                        {typeConfig[item.type].icon}
+                <div key={item.id} className="p-3 sm:p-4 rounded-2xl bg-surface-container border border-outline">
+                  {/* picture on the left (or the type icon), details on the right */}
+                  <div className="flex gap-3 sm:gap-4">
+                    {item.attachment_url && /^image\//.test(item.attachment_mime || 'image/') ? (
+                      <img
+                        src={item.attachment_url}
+                        alt=""
+                        className="flex-none w-20 h-24 sm:w-28 sm:h-32 rounded-xl object-cover border border-outline bg-surface-container-high"
+                      />
+                    ) : (
+                      <span className="flex-none w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[22px]">
+                          {item.attachment_url ? 'description' : typeConfig[item.type].icon}
+                        </span>
                       </span>
-                      <p className="font-body-md text-body-md font-semibold text-on-surface truncate">{item.title}</p>
-                      {musicById[item.id] && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-pink-500/15 text-pink-400 text-[9px] uppercase tracking-wide flex-none inline-flex items-center gap-0.5">
-                          <span className="material-symbols-outlined text-[11px]">music_note</span>
-                          Music
-                        </span>
-                      )}
-                      {item.type === 'announcement' && item.popup_style === 'image_only' && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] uppercase tracking-wide flex-none">
-                          Image only
-                        </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold uppercase tracking-wide">
+                              <span className="material-symbols-outlined text-[12px]">{typeConfig[item.type].icon}</span>
+                              {typeConfig[item.type].label}
+                            </span>
+                            {item.type === 'announcement' && item.popup_style === 'image_only' && (
+                              <span className="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[10px] font-semibold uppercase tracking-wide">
+                                Image only
+                              </span>
+                            )}
+                            {musicById[item.id] && (
+                              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-400 text-[10px] font-semibold uppercase tracking-wide">
+                                <span className="material-symbols-outlined text-[12px]">music_note</span>
+                                Music
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-body-md text-body-md font-semibold text-on-surface leading-snug line-clamp-2 break-words">{item.title}</p>
+                        </div>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deletingId === item.id}
+                          aria-label="Delete"
+                          className="flex-none -mt-1 -mr-1 w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            {deletingId === item.id ? 'hourglass_empty' : 'delete'}
+                          </span>
+                        </button>
+                      </div>
+                      <p className="mt-1 font-label-sm text-label-sm text-on-surface-variant whitespace-pre-line line-clamp-4 break-words">{item.message}</p>
+                      <p className="mt-1.5 text-[11px] text-on-surface-variant/80">
+                        {new Date(item.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                      </p>
+                      {formatSchedule(item) && (
+                        <p className="font-label-sm text-label-sm text-primary mt-1">{formatSchedule(item)}</p>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      disabled={deletingId === item.id}
-                      aria-label="Delete"
-                      className="flex-none w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-error transition-colors disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">
-                        {deletingId === item.id ? 'hourglass_empty' : 'delete'}
-                      </span>
-                    </button>
                   </div>
-                  <p className="font-label-sm text-label-sm text-on-surface-variant whitespace-pre-line">{item.message}</p>
-                  {item.attachment_url && (
-                    <img
-                      src={item.attachment_url}
-                      alt=""
-                      className="w-full max-w-[160px] rounded mt-2 border border-outline"
-                    />
-                  )}
-                  <p className="font-label-sm text-label-sm text-on-surface-variant mt-1">
-                    {new Date(item.created_at).toLocaleString()}
-                    {item.send_email ? ' • queued for email (not yet wired)' : ''}
-                  </p>
-                  {formatSchedule(item) && (
-                    <p className="font-label-sm text-label-sm text-primary mt-1">{formatSchedule(item)}</p>
-                  )}
-                  <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-outline">
-                    <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 min-w-0">
-                      <span className="material-symbols-outlined text-[14px] text-emerald-500">forum</span>
+                  <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-outline">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1.5 min-w-0">
+                      <span className="material-symbols-outlined text-[16px] text-emerald-500">forum</span>
                       <span className="truncate">
-                        WhatsApp group
+                        WhatsApp groups
                         {item.post_to_whatsapp && item.whatsapp_repeat_hours ? ` • every ${item.whatsapp_repeat_hours}h` : ''}
                         {item.whatsapp_posted_at ? ` • last posted ${new Date(item.whatsapp_posted_at).toLocaleString()}` : item.post_to_whatsapp ? ' • waiting for Bro Paul' : ''}
                       </span>

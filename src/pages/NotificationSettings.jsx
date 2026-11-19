@@ -110,7 +110,7 @@ function NotificationSettings() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Notifications" showBack />
 
-      <main className="pb-24 pt-[68px] md:pt-36 md:max-w-2xl md:mx-auto px-margin-mobile">
+      <main className="pb-24 pt-[80px] md:pt-36 md:max-w-2xl md:mx-auto px-margin-mobile">
         {status === 'loading' && <LibraryLoader size={100} fullScreen />}
 
         <section className="relative overflow-hidden rounded-2xl border border-outline bg-gradient-to-br from-orange-500/15 via-surface-container to-surface-container p-5 mb-stack-md">

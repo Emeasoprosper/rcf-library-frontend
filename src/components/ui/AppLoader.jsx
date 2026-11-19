@@ -105,7 +105,7 @@ function HomeSkeleton() {
         </div>
       </div>
 
-      <div className="pt-[68px] md:pt-24">
+      <div className="pt-[80px] md:pt-24">
         <div className="pt-stack-md px-margin-mobile">
           <Block className="h-12 w-full rounded-full mb-stack-lg" />
 

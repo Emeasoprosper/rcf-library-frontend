@@ -330,7 +330,7 @@ function ReadingPath() {
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="My Reading Path" showBack />
-      <main className="pb-32 pt-[68px] md:pt-24 md:max-w-2xl md:mx-auto px-margin-mobile flex flex-col gap-8">
+      <main className="pb-32 pt-[80px] md:pt-24 md:max-w-2xl md:mx-auto px-margin-mobile flex flex-col gap-8">
         <div className="mt-stack-md">
           <h1 className="text-[36px] md:text-[46px] leading-[1.05] font-bold tracking-tight" style={SERIF}>
             {showResult ? 'Your reading path' : 'Find your reading path'}

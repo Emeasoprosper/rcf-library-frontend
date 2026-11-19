@@ -7,7 +7,14 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#000000" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Pages stay one size on phones, like an app: no pinch or double-tap
+         zoom, and no zoom-in when a text box is tapped. The PDF reader has
+         its own zoom (buttons, and pinch on the pages). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <script>
+      // iPhone Safari ignores user-scalable=no, so stop its pinch gesture too.
+      document.addEventListener('gesturestart', function (e) { e.preventDefault() }, { passive: false })
+    </script>
     <title>RCFMOUAUlib</title>
 
     <!-- iOS Safari doesn't support beforeinstallprompt or the web manifest's

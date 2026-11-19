@@ -156,6 +156,14 @@ body,
   background-color: var(--color-background);
 }
 
+/* Like an app: no double-tap zoom, and text never auto-resizes when the
+   phone is turned. (Pinch-zoom is off in index.html's viewport tag.) */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;

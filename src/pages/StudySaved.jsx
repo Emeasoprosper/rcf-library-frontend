@@ -91,7 +91,7 @@ function StudySaved() {
     <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Saved material" showBack />
 
-      <main className="pb-24 pt-[68px] md:pt-36 md:max-w-4xl md:mx-auto px-margin-mobile">
+      <main className="pb-24 pt-[80px] md:pt-36 md:max-w-4xl md:mx-auto px-margin-mobile">
         <section className="relative overflow-hidden rounded-2xl border border-outline bg-gradient-to-br from-orange-500/15 via-surface-container to-surface-container p-5 mb-stack-md">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">

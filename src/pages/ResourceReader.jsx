@@ -572,6 +572,39 @@ function ResourceReader() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // The app locks the browser's own pinch-zoom (pages stay one size, like an
+  // app), so a two-finger pinch on the pages drives the reader's zoom
+  // instead: applied when the fingers lift, in the same 0.25 steps.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return undefined
+    let start = null
+    const gap = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+    const onStart = (e) => { if (e.touches.length === 2) start = { d: gap(e.touches), last: gap(e.touches) } }
+    const onMove = (e) => {
+      if (!start || e.touches.length !== 2) return
+      e.preventDefault()
+      start.last = gap(e.touches)
+    }
+    const onEnd = () => {
+      if (!start) return
+      const ratio = start.last / start.d
+      start = null
+      if (Math.abs(ratio - 1) < 0.08) return
+      setZoom((z) => Math.min(3, Math.max(0.5, Math.round((z * ratio) * 4) / 4)))
+    }
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchmove', onMove, { passive: false })
+    el.addEventListener('touchend', onEnd)
+    el.addEventListener('touchcancel', onEnd)
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchmove', onMove)
+      el.removeEventListener('touchend', onEnd)
+      el.removeEventListener('touchcancel', onEnd)
+    }
+  }, [viewerKind, numPages])
+
   function zoomIn() { setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2))) }
   function zoomOut() { setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2))) }
   function rotate() { setRotation((r) => (r + 90) % 360) }
