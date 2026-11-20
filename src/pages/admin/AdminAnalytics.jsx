@@ -61,6 +61,23 @@ function useApi(fetcher, deps, enabled = true) {
   return state
 }
 
+// The chart's real width on screen, so charts are drawn at that size (labels
+// stay readable on a phone instead of being shrunk with the whole picture).
+function useWidth(fallback = 640) {
+  const [el, setEl] = useState(null) // callback ref: follows the element if it changes
+  const [width, setWidth] = useState(fallback)
+  useEffect(() => {
+    if (!el || typeof ResizeObserver === 'undefined') return undefined
+    const ro = new ResizeObserver(([entry]) => {
+      const w = Math.round(entry.contentRect.width)
+      if (w > 0) setWidth(w)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [el])
+  return [setEl, Math.max(260, width)]
+}
+
 function Empty({ text = 'No data for this period yet.' }) {
   return <p className="font-label-sm text-label-sm text-on-surface-variant py-4 text-center">{text}</p>
 }
@@ -69,10 +86,10 @@ function Section({ title, action, children }) {
   return (
     <section className="mb-stack-lg">
       <div className="flex items-center justify-between gap-3 mb-stack-sm">
-        <h2 className="font-headline-sm text-headline-sm font-display text-on-surface">{title}</h2>
-        {action}
+        <h2 className="font-headline-sm text-headline-sm font-display text-on-surface min-w-0 break-words">{title}</h2>
+        {action && <div className="flex-none">{action}</div>}
       </div>
-      <div className="p-stack-md rounded-xl bg-surface-container border border-outline">{children}</div>
+      <div className="p-3 sm:p-stack-md rounded-xl bg-surface-container border border-outline min-w-0">{children}</div>
     </section>
   )
 }
@@ -99,9 +116,9 @@ function Kpi({ label, value, growth, note, invert = false }) {
     }
   }
   return (
-    <div className="p-stack-md rounded-xl bg-surface-container border border-outline">
+    <div className="h-full p-3 sm:p-stack-md rounded-xl bg-surface-container border border-outline min-w-0">
       <p className="font-label-sm text-label-sm text-on-surface-variant">{label}</p>
-      <p className="font-headline-lg text-headline-lg font-display text-on-surface">{value}</p>
+      <p className="font-headline-lg text-headline-lg font-display text-on-surface max-sm:text-[22px] max-sm:leading-tight break-words">{value}</p>
       {growthText && <p className={`font-label-sm text-label-sm ${growthClass}`}>{growthText}</p>}
       {note && <p className="font-label-sm text-label-sm text-on-surface-variant/70">{note}</p>}
     </div>
@@ -123,8 +140,9 @@ function Legend({ series }) {
 
 function LineChart({ rows, series, xKey = 'date' }) {
   const [hover, setHover] = useState(null)
-  const W = 640, H = 200, P = { l: 38, r: 8, t: 10, b: 22 }
-  if (!rows?.length) return <Empty />
+  const [boxRef, W] = useWidth()
+  const H = W < 500 ? 170 : 200, P = { l: 38, r: 8, t: 10, b: 22 }
+  if (!rows?.length) return <div ref={boxRef}><Empty /></div>
   const max = Math.max(1, ...rows.flatMap((r) => series.map((s) => r[s.key] || 0)))
   const innerW = W - P.l - P.r
   const x = (i) => P.l + (rows.length === 1 ? innerW / 2 : (i / (rows.length - 1)) * innerW)
@@ -137,14 +155,14 @@ function LineChart({ rows, series, xKey = 'date' }) {
   }
   const h = hover != null ? rows[hover] : null
   return (
-    <div>
+    <div ref={boxRef} className="min-w-0">
       <Legend series={series} />
-      <p className="font-label-sm text-label-sm text-on-surface-variant h-5">
+      <p className="font-label-sm text-label-sm text-on-surface-variant min-h-5 break-words">
         {h ? `${fmtDate(h[xKey])}: ${series.map((s) => `${s.label} ${fmt(h[s.key] || 0)}`).join(' · ')}` : 'Touch or hover the chart for exact values'}
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
+        className="w-full block"
         style={{ touchAction: 'pan-y' }}
         onMouseMove={(e) => pick(e.clientX, e.currentTarget)}
         onTouchMove={(e) => pick(e.touches[0].clientX, e.currentTarget)}
@@ -173,13 +191,15 @@ function LineChart({ rows, series, xKey = 'date' }) {
 }
 
 function ColumnChart({ rows, yKey, color = COLORS.orange, xKey = 'date' }) {
-  const W = 640, H = 180, P = { l: 38, r: 8, t: 10, b: 22 }
-  if (!rows?.length) return <Empty />
+  const [boxRef, W] = useWidth()
+  const H = W < 500 ? 160 : 180, P = { l: 38, r: 8, t: 10, b: 22 }
+  if (!rows?.length) return <div ref={boxRef}><Empty /></div>
   const max = Math.max(1, ...rows.map((r) => r[yKey] || 0))
   const slot = (W - P.l - P.r) / rows.length
-  const barW = Math.max(2, slot * 0.7)
+  const barW = Math.max(1.5, slot * 0.7)
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+    <div ref={boxRef} className="min-w-0">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full block">
       {[0, 0.5, 1].map((t) => {
         const yy = P.t + (1 - t) * (H - P.t - P.b)
         return (
@@ -201,6 +221,7 @@ function ColumnChart({ rows, yKey, color = COLORS.orange, xKey = 'date' }) {
       <text x={P.l} y={H - 4} fontSize="11" fill="currentColor" opacity="0.6">{fmtDate(rows[0][xKey])}</text>
       <text x={W - P.r} y={H - 4} textAnchor="end" fontSize="11" fill="currentColor" opacity="0.6">{fmtDate(rows[rows.length - 1][xKey])}</text>
     </svg>
+    </div>
   )
 }
 
@@ -538,7 +559,7 @@ function OverviewTab({ range }) {
     <>
       {note && <p className="mb-stack-md p-stack-sm rounded-lg bg-surface-container border border-outline font-label-sm text-label-sm text-on-surface-variant">{note}</p>}
 
-      <section className="grid grid-cols-2 xl:grid-cols-4 gap-gutter mb-stack-lg">
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-gutter mb-stack-lg">
         <Kpi label="Total users" value={fmt(k.totalUsers)} />
         <Kpi label="New registrations" value={fmt(k.newRegistrations.current)} growth={k.newRegistrations.growthPct} />
         <Kpi label="Active users (unique)" value={fmt(k.activeUsers.current)} growth={k.activeUsers.growthPct} />
@@ -579,12 +600,12 @@ function OverviewTab({ range }) {
 
       <Section title="Compared with the previous period">
         <div className="flex flex-col divide-y divide-outline">
-          <div className="grid grid-cols-4 gap-2 pb-2 font-label-sm text-label-sm text-on-surface-variant">
-            <span className="col-span-1">Metric</span><span className="text-right">Now</span><span className="text-right">Before</span><span className="text-right">Change</span>
+          <div className="grid grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))] gap-2 pb-2 font-label-sm text-label-sm text-on-surface-variant">
+            <span>Metric</span><span className="text-right">Now</span><span className="text-right">Before</span><span className="text-right">Change</span>
           </div>
           {comp.map(([label, v]) => (
-            <div key={label} className="grid grid-cols-4 gap-2 py-2 font-label-sm text-label-sm text-on-surface">
-              <span className="truncate">{label}</span>
+            <div key={label} className="grid grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))] gap-2 py-2 font-label-sm text-label-sm text-on-surface">
+              <span className="break-words leading-snug">{label}</span>
               <span className="text-right">{fmt(v.current)}</span>
               <span className="text-right text-on-surface-variant">{fmt(v.previous)}</span>
               <span className="text-right">{v.growthPct == null ? '–' : `${v.growthPct > 0 ? '+' : ''}${v.growthPct}%`}</span>
@@ -648,7 +669,7 @@ function ResourcesTab() {
 
   return (
     <>
-      <section className="grid grid-cols-2 xl:grid-cols-4 gap-gutter mb-stack-lg">
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-gutter mb-stack-lg">
         <Kpi label="Total resources" value={fmt(rs.totals.all)} />
         <Kpi label="Approved" value={fmt(rs.totals.approved)} />
         <Kpi label="Pending" value={fmt(rs.totals.pending)} />
@@ -713,14 +734,14 @@ function HealthTab({ range }) {
   }
   return (
     <>
-      <section className="grid grid-cols-2 xl:grid-cols-4 gap-gutter mb-stack-lg">
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-gutter mb-stack-lg">
         <Kpi label="Server uptime" value={`${upH}h ${upM}m`} note="Since the last restart" />
         <Kpi label="Memory" value={`${fmt(sys.memoryMb)} MB`} />
         <Kpi label="Database response" value={`${fmt(sys.dbLatencyMs)} ms`} />
         <Kpi label="Queries waiting" value={fmt(sys.dbPool.waiting)} note={`${fmt(sys.dbPool.idle)} idle of ${fmt(sys.dbPool.total)}`} />
       </section>
 
-      <section className="grid grid-cols-2 xl:grid-cols-4 gap-gutter mb-stack-lg">
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-gutter mb-stack-lg">
         {Object.keys(EVENT_LABELS).map((key) => (
           <Kpi key={key} label={EVENT_LABELS[key]} value={fmt(ev.totals[key])} growth={growth(key)} invert />
         ))}
@@ -770,15 +791,16 @@ function AdminAnalytics() {
   })
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
+    <div className="min-h-screen overflow-x-hidden bg-background text-on-surface font-body-md md:pl-[var(--sb-left)] lg:pr-[var(--sb-right)] transition-[padding] duration-300 ease-in-out">
       <TopAppBar title="Analytics" showBack />
-      <main className="pb-32 pt-[80px] md:pt-24 md:max-w-5xl md:mx-auto px-margin-mobile">
-        <div className="flex gap-2 mb-stack-md mt-stack-md">
+      <main className="pb-32 pt-[80px] md:pt-24 md:max-w-5xl md:mx-auto px-margin-mobile min-w-0">
+        {/* phones: the four tabs share the row equally; wider screens: pills */}
+        <div className="grid grid-cols-4 gap-1.5 sm:flex sm:gap-2 mb-stack-md mt-stack-md">
           {TABS.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 h-9 rounded-full font-label-md text-label-md ${tab === t ? 'bg-primary text-on-primary' : 'border border-outline text-on-surface'}`}
+              className={`min-w-0 px-1 sm:px-4 h-9 rounded-full font-label-md text-label-md max-sm:text-[13px] truncate ${tab === t ? 'bg-primary text-on-primary' : 'border border-outline text-on-surface'}`}
             >
               {t}
             </button>
